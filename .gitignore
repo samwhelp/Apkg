@@ -20,3 +20,7 @@ app.db*
 .angular/
 .yarn/
 *.tsbuildinfo
+
+# Prevent large binaries from being committed
+*.deb
+apt-test/
