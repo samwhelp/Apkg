@@ -49,6 +49,10 @@
                     </button>
                     <pre class="mb-0"><code>sudo apkg add-source @(Context.Request.Scheme)://@(Context.Request.Host)/api/sources/@Model.Repo.Id</code></pre>
                 </div>
+                <p class="text-muted small mb-0">
+                    @Localizer["Don't have <code>apkg</code>?"]
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="install-apkg">@Localizer["See how to install APKG CLI."]</a>
+                </p>
                 <hr />
                 <h6>@Localizer["Manual Setup (bash):"]</h6>
 

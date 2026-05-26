@@ -606,23 +606,69 @@ readinessProbe:
 
 ---
 
-## 总结与行动清单
+## 第二轮追问：文档覆盖不到的实现细节与运维实况
 
-| 问题 | 优先级 | 建议行动 |
-|------|-------|--------|
-| 1. 命名体系 | 信息 | 参考实体关系图，理解层次划分 |
-| 2. DB Provider | 高 | 确认生产 MySQL 配置，本地开发 SQLite |
-| 3. 后台任务 | 高 | 添加任务失败告警，考虑升级 Canon 3.x |
-| 4. MirrorSync | 中 | 监控磁盘占用，定期 GC，考虑限速 |
-| 5. GPG 签名 | 中 | 建立密钥轮换 SOP，测试恢复流程 |
-| 6. Auth 双模式 | 中 | 确认生产用 OIDC，文档 SSO 配置 |
-| 7. SDK 拆分 | 信息 | 新命令按 Apkg.Client 模式实现 |
-| 8. 测试覆盖 | 高 | 添加 CI Matrix Build（SQLite/MySQL） |
-| 9. 依赖升级 | 中 | 建立版本管理 SOP，锁定关键版本 |
-| 10. 生产部署 | 高 | 实施单点迁移，增强 healthcheck |
+> 以下问题在 `design.md`、`job_ballet.md`、`pipeline_v2.md`、`current_system_design.md`、`local_package.md` 中**均未找到答案**，只能由你回答。
+
+### 11. 生产部署到底长什么样？
+
+文档里说 Watchtower 自动拉镜像，Q1 回答也说 "Watchtower ✅ 已用、K8s ❌ 未确认"。具体到 `apkg.aiursoft.com` 这一台服务器：
+
+- 是单机 Docker（Watchtower + `--restart unless-stopped`）？还是 K8s 集群？
+- 如果是单机，那 Q10 的多副本 migration 竞争问题实际上不存在？
+- 如果是 K8s，`UpdateDbAsync()` 多副本同时启动跑 EF migration，真没人遇到过冲突？
+
+### 12. CI 全绿要多久？
+
+从 push 到 pipeline 全绿，实际 Wall Clock Time 是多少？最慢的是哪个阶段（我猜是 lint，ReSharper 出了名的慢）？如果加 Matrix Build（SQLite + MySQL），预期增加多少时长？
+
+### 13. 你平时本地怎么验证？
+
+假设只改了 `AptMirrorController` 一行路由。你的个人最小验证路径是：
+
+- `dotnet build` → `dotnet test --filter "AptMirror"` → 收工？
+- 还是必须全量 363 个测试？（全量跑一次多久？）
+- 还是必须 `./lint.sh`？
+- 还是必须 `dotnet run` 然后在浏览器里手工操作一遍？
+
+我特别想知道你对手工验证的信任程度——集成测试够不够让你不跑 UI 就 push？
+
+### 14. 后台任务的测试是怎么 mock 外部 HTTP 的？
+
+`MirrorSyncJob` 用 `IHttpClientFactory` 真去连 `http://archive.ubuntu.com/ubuntu/`。`job_ballet.md` 列了 `AtomicBucketCreationTests`、`GcSignRaceConditionTests`——但这些测试怎么处理外部 HTTP？
+
+- 用 `MockHttpMessageHandler` 返回预制 Release/Packages 文件？
+- 还是测试真去访问外网？
+- 还是 MirrorSyncJob 本身就没自动化测试，只靠手工？
+
+### 15. 迁移失败后恢复路径是什么？
+
+`Program.cs`:`app.UpdateDbAsync()` 抛异常 → `RunAsync` 不执行 → 容器启动失败。Watchtower 场景下：是旧容器继续活到新容器 healthy，还是先停旧再启新导致服务全挂？
+
+另外——EF migration SQL 写错了怎么恢复？手动连数据库？有回滚机制吗？
+
+### 16. API Key 在 CLI 端有缓存吗？
+
+服务端做 `SHA256(rawKey)` 比对。CLI 这边 `apkg push --api-key ABCD1234`——用户每次都要粘贴 key？有没有缓存到 `~/.apkg/config`？有没有 `apkg login` 命令？缓存的 key 是明文吗？文件权限 0600 吗？
+
+### 17. `ninja.yaml` 的模板同步是自动的吗？
+
+模板仓库 `gitlab.aiursoft.com/aiursoft/template` 更新后，是 bot 自动提 PR 还是手工跑？如果我在本地改 `.gitlab-ci.yml`，下次同步会被覆盖吗？
+
+### 18. .NET 版本——README 说 .NET 10，`current_system_design.md` 说 .NET 8？
+
+README 写 ".NET 10 SDK"，`current_system_design.md:12` 写 "ASP.NET Core 8.0 Web 应用"。哪个是准的？TFM 在 csproj 里固定了还是随 SDK？
+
+### 19. GC 删错 Bucket 会怎样？
+
+`job_ballet.md` 说 GC 不删活跃 bucket。但如果出了 bug 误删——APT 客户端是报 404 还是 Hash Sum Mismatch？恢复路径是手动触发一轮 MirrorSync → RepositorySync → RepositorySign 重跑吗？数据库有没有 FK `ON DELETE RESTRICT` 做最后防线？
+
+### 20. 你最不想改的代码是哪里？
+
+说人话：测试覆盖最薄、逻辑最绕、改一行可能炸一片的模块是哪个？我猜 `RepositorySyncJob`——流式复制 + LocalPackage 合并 + Release 生成 + HashingStream——一个方法四个职责。但也可能是 `ApiPackagesController.UploadApkg` 手工 tar.gz 解包？或者 `AptVersionComparisonService` 的 epoch 比较？你的答案是什么？
 
 ---
 
-**撰写**：GitHub Copilot CLI  
+**撰写**：Claude Code (DeepSeek v4)  
 **最后更新**：2026-05-26  
-**状态**：✅ 完整回答
+**状态**：🔍 等待第二轮回答

@@ -35,6 +35,44 @@
     </div>
 </section>
 
+<section class="py-5 bg-body-tertiary" id="install-apkg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h2 class="mb-2">@Localizer["Install APKG CLI"]</h2>
+                <p class="text-muted mb-4">@Localizer["A single command to install the APKG client and start managing your APT packages."]</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <span class="badge badge-subtle-primary me-2">1</span>
+                            <strong>@Localizer["Prerequisite: Install .NET SDK"]</strong>
+                            <p class="text-muted small mt-1 ms-4 ps-1 mb-0">
+                                <a href="https://dotnet.microsoft.com/en-us/download" target="_blank">@Localizer["Download .NET 8.0 or later"]</a>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-subtle-primary me-2">2</span>
+                            <strong>@Localizer["Install APKG CLI"]</strong>
+                            <pre class="bg-dark text-white p-2 rounded small mt-1 ms-4 ps-1 mb-0" style="white-space:pre-wrap;"><code>dotnet tool install -g Aiursoft.Apkg.Client</code></pre>
+                        </div>
+                        <div>
+                            <span class="badge badge-subtle-primary me-2">3</span>
+                            <strong>@Localizer["Add a source (requires sudo)"]</strong>
+                            <p class="text-muted small mt-1 ms-4 ps-1 mb-1">@Localizer["To use <code>sudo apkg</code>, make the dotnet tools path available to root:"]</p>
+                            <pre class="bg-dark text-white p-2 rounded small mt-1 ms-4 ps-1 mb-0" style="white-space:pre-wrap;"><code>sudo env "PATH=$PATH" apkg add-source https://apkg-dev.aiursoft.com/api/sources/{id}</code></pre>
+                            <p class="text-muted small mt-1 ms-4 ps-1 mb-0">@Localizer["Or configure it permanently:"] <code>sudo sh -c 'echo "export PATH=\"\$PATH:$HOME/.dotnet/tools\"" >> /root/.bashrc'</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="py-6">
     <div class="container">
         <div class="mb-5 text-center">
