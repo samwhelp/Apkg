@@ -108,18 +108,11 @@ public class ApiPackagesApkgUploadTests : TestBase
         var garbage = new byte[128];
         new Random(42).NextBytes(garbage);
 
-        using var fileContent = new ByteArrayContent(garbage)
-        {
-            Headers = { ContentType = new MediaTypeHeaderValue("application/octet-stream") }
-        };
+        using var fileContent = CreateOctetStreamContent(garbage);
         using var form = new MultipartFormDataContent();
         form.Add(fileContent, "apkg", "garbage.apkg");
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/packages/apkg-upload")
-        {
-            Headers = { Authorization = new AuthenticationHeaderValue("Bearer", rawKey) },
-            Content = form
-        };
+        using var request = CreateAuthedUploadRequest(rawKey, form);
 
         var response = await Http.SendAsync(request);
 
@@ -134,18 +127,11 @@ public class ApiPackagesApkgUploadTests : TestBase
 
         // Create a minimal valid gzip stream (empty tar archive: 2 × 512-byte EOF blocks)
         var emptyTarGz = CreateEmptyTarGz();
-        using var fileContent = new ByteArrayContent(emptyTarGz)
-        {
-            Headers = { ContentType = new MediaTypeHeaderValue("application/octet-stream") }
-        };
+        using var fileContent = CreateOctetStreamContent(emptyTarGz);
         using var form = new MultipartFormDataContent();
         form.Add(fileContent, "apkg", "empty.apkg");
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/packages/apkg-upload")
-        {
-            Headers = { Authorization = new AuthenticationHeaderValue("Bearer", rawKey) },
-            Content = form
-        };
+        using var request = CreateAuthedUploadRequest(rawKey, form);
 
         var response = await Http.SendAsync(request);
 
@@ -163,12 +149,29 @@ public class ApiPackagesApkgUploadTests : TestBase
     /// </summary>
     private static byte[] CreateEmptyTarGz()
     {
-        using var ms = new System.IO.MemoryStream();
+        using var ms = new MemoryStream();
         using (var gz = new System.IO.Compression.GZipStream(ms, System.IO.Compression.CompressionMode.Compress, leaveOpen: true))
         {
             // Standard tar EOF: two 512-byte blocks of zeros
             gz.Write(new byte[1024]);
         }
         return ms.ToArray();
+    }
+
+    private static ByteArrayContent CreateOctetStreamContent(byte[] data)
+    {
+        var content = new ByteArrayContent(data);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        return content;
+    }
+
+    private static HttpRequestMessage CreateAuthedUploadRequest(string apiKey, HttpContent content)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/packages/apkg-upload")
+        {
+            Content = content
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        return request;
     }
 }

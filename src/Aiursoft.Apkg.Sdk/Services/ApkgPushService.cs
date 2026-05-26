@@ -17,18 +17,11 @@ public class ApkgPushService(HttpClient httpClient)
 
         using var content = new MultipartFormDataContent();
         await using var fileStream = File.OpenRead(apkgFilePath);
-        using var fileContent = new StreamContent(fileStream)
-        {
-            Headers = { ContentType = new MediaTypeHeaderValue("application/octet-stream") }
-        };
+        using var fileContent = CreateApkgFileContent(fileStream);
         content.Add(fileContent, "apkg", Path.GetFileName(apkgFilePath));
 
         var url = $"{serverUrl}/api/packages/apkg-upload?skipDuplicate={skipDuplicate}";
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = content
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        using var request = CreateRequest(url, content, apiKey);
 
         using var response = await httpClient.SendAsync(request);
         var body = await response.Content.ReadAsStringAsync();
@@ -37,5 +30,22 @@ public class ApkgPushService(HttpClient httpClient)
             throw new InvalidOperationException($"Server returned {(int)response.StatusCode}: {body}");
 
         return body;
+    }
+
+    private static StreamContent CreateApkgFileContent(Stream fileStream)
+    {
+        var content = new StreamContent(fileStream);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        return content;
+    }
+
+    private static HttpRequestMessage CreateRequest(string url, HttpContent content, string apiKey)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = content
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        return request;
     }
 }
