@@ -17,7 +17,14 @@ public static class Extensions
     public static IServiceCollection AddApkgLocalTools(this IServiceCollection services)
     {
         services.AddSingleton<ManifestSerializer>();
+        services.AddSingleton<DebPackageValidator>();
         services.AddSingleton<SystemInfoProvider>();
+        return services;
+    }
+
+    public static IServiceCollection AddApkgPush(this IServiceCollection services)
+    {
+        services.AddHttpClient<ApkgPushService>();
         return services;
     }
 
