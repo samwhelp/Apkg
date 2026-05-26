@@ -1,4 +1,5 @@
 using Aiursoft.AiurProtocol;
+using Aiursoft.Apkg.Sdk.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aiursoft.Apkg.Sdk;
@@ -10,6 +11,12 @@ public static class Extensions
         services.AddAiurProtocolClient();
         services.Configure<ServerConfig>(options => options.Instance = endPointUrl);
         services.AddScoped<ServerAccess>();
+        return services;
+    }
+
+    public static IServiceCollection AddApkgLocalTools(this IServiceCollection services)
+    {
+        services.AddSingleton<ManifestSerializer>();
         return services;
     }
 
