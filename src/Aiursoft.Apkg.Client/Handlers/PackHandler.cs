@@ -2,7 +2,6 @@ using System.CommandLine;
 using Aiursoft.CommandFramework.Framework;
 using Aiursoft.CommandFramework.Models;
 using Aiursoft.CommandFramework.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aiursoft.Apkg.Client.Handlers;
 
@@ -34,13 +33,10 @@ public class PackHandler : ExecutableCommandHandlerBuilder
     protected override Task Execute(ParseResult context)
     {
         var verbose = context.GetValue(CommonOptionsProvider.VerboseOption);
-        var path = context.GetValue(PathOption)!;
-        var output = context.GetValue(OutputOption)!;
 
-        var services = ServiceBuilder
+        ServiceBuilder
             .CreateCommandHostBuilder<Startup>(verbose)
-            .Build()
-            .Services;
+            .Build();
 
         // TODO: Implement package packing logic.
         throw new NotImplementedException();
