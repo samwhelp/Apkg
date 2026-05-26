@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <Version>10.0.0</Version>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Aiursoft.Apkg.Sdk</AssemblyName>
+    <RootNamespace>Aiursoft.Apkg.Sdk</RootNamespace>
+    <IsTestProject>false</IsTestProject>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Company>Aiursoft</Company>
+    <Product>Apkg.Sdk</Product>
+    <Description>Nuget package of 'Apkg.Sdk' provided by Aiursoft</Description>
+    <PackageId>Aiursoft.Apkg.Sdk</PackageId>
+    <PackageTags>nuget package dotnet apkg</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/aiursoftweb/apkg</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/aiursoftweb/apkg.git</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="." />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aiursoft.AiurProtocol" Version="10.0.17" />
+  </ItemGroup>
+</Project>

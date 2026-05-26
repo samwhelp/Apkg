@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Version>10.0.0</Version>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>apkg</AssemblyName>
+    <RootNamespace>Aiursoft.Apkg.Client</RootNamespace>
+    <IsTestProject>false</IsTestProject>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>apkg</ToolCommandName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SelfContained>false</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <PublishSingleFile>false</PublishSingleFile>
+    <Company>Aiursoft</Company>
+    <Product>Apkg.Client</Product>
+    <Authors>anduin2017</Authors>
+    <Description>A CLI client tool for the Apkg package server.</Description>
+    <PackageId>Aiursoft.Apkg.Client</PackageId>
+    <PackageTags>cli nuget dotnet tool apkg package</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/aiursoftweb/apkg</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/aiursoftweb/apkg.git</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="." />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Aiursoft.CommandFramework" Version="10.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Aiursoft.Apkg.Sdk\Aiursoft.Apkg.Sdk.csproj" />
+  </ItemGroup>
+</Project>
