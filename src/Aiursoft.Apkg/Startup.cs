@@ -57,6 +57,7 @@ public class Startup : IWebStartup
         services.AddApkgLocalTools();
         services.AddAssemblyDependencies(typeof(Startup).Assembly);
         services.AddTransient<IGpgSigningService, GpgSigningService>();
+        services.AddScoped<DebUploadService>();
         services.AddSingleton<NavigationState<Startup>>();
 
         // Explicitly register dependency check services
@@ -69,6 +70,7 @@ public class Startup : IWebStartup
 
         // Background jobs
         var orphanAvatarCleanupJob = services.RegisterBackgroundJob<OrphanAvatarCleanupJob>();
+        var apkgTempCleanupJob = services.RegisterBackgroundJob<ApkgTempCleanupJob>();
         var mirrorSyncJob = services.RegisterBackgroundJob<MirrorSyncJob>();
         var repositorySyncJob = services.RegisterBackgroundJob<RepositorySyncJob>();
         var repositorySignJob = services.RegisterBackgroundJob<RepositorySignJob>();
@@ -79,6 +81,11 @@ public class Startup : IWebStartup
             registration: orphanAvatarCleanupJob,
             period: TimeSpan.FromHours(6),
             startDelay: TimeSpan.FromMinutes(5));
+
+        services.RegisterScheduledTask(
+            registration: apkgTempCleanupJob,
+            period: TimeSpan.FromMinutes(10),
+            startDelay: TimeSpan.FromMinutes(7));
 
         // Mirror Job runs every 6 hours, delay 10 minutes.
         services.RegisterScheduledTask(

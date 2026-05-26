@@ -1,7 +1,6 @@
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using Aiursoft.Apkg.Authorization;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Sdk.Models;
@@ -23,13 +22,11 @@ namespace Aiursoft.Apkg.Controllers;
 [Authorize(AuthenticationSchemes = "ApiKey,Identity.Application")]
 public class ApiPackagesController(
     ApkgDbContext db,
-    DebPackageParserService debParser,
+    DebUploadService debUploadService,
     FeatureFoldersProvider folders,
     ManifestSerializer manifestSerializer,
     ILogger<ApiPackagesController> logger) : ControllerBase
 {
-    private string ObjectsRoot => folders.GetObjectsFolder();
-
     [HttpPost("upload")]
     [RequestSizeLimit(500 * 1024 * 1024)]
     public async Task<IActionResult> Upload(
@@ -60,7 +57,8 @@ public class ApiPackagesController(
             await using (var fs = System.IO.File.Create(tempPath))
                 await deb.CopyToAsync(fs);
 
-            var result = await UploadDebToRepositoryAsync(repo, component, tempPath);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, tempPath, userId);
             if (result.Package == null)
                 return StatusCode(result.StatusCode, new { error = result.Error });
 
@@ -96,8 +94,10 @@ public class ApiPackagesController(
             return BadRequest(summary);
         }
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var apkgTempPath = CreateWorkspaceTempFilePath(".apkg");
         var extractedEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        ApkgUpload? uploadRecord = null;
         try
         {
             await using (var fs = System.IO.File.Create(apkgTempPath))
@@ -127,6 +127,24 @@ public class ApiPackagesController(
                 summary.Errors.Add("manifest.xml: at least one <Target> is required.");
                 return BadRequest(summary);
             }
+
+            uploadRecord = new ApkgUpload
+            {
+                UploadedByUserId = userId,
+                FileName = Path.GetFileName(apkg.FileName),
+                Package = manifest.Package,
+                Version = manifest.Version,
+                Component = component,
+                Description = NullIfEmpty(manifest.Description),
+                Maintainer = NullIfEmpty(manifest.Maintainer),
+                Homepage = NullIfEmpty(manifest.Homepage),
+                VaultPath = null,
+                IsPublished = false,
+                IsListed = true
+            };
+            db.ApkgUploads.Add(uploadRecord);
+            await db.SaveChangesAsync();
+            summary.UploadId = uploadRecord.Id;
 
             var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
             var canUploadRestricted = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanUploadToRestrictedRepositories);
@@ -165,7 +183,7 @@ public class ApiPackagesController(
                 {
                     if (!CanUploadToRepository(repo, isAdmin, canUploadRestricted))
                     {
-                        var warning = $"Skipping repository {GetRepositoryDisplayName(repo)} because you do not have permission to upload to it.";
+                        var warning = $"Skipping repository {DebUploadService.GetRepositoryDisplayName(repo)} because you do not have permission to upload to it.";
                         logger.LogWarning("{Warning}", warning);
                         summary.Warnings.Add(warning);
                         continue;
@@ -178,12 +196,12 @@ public class ApiPackagesController(
                         await using (var destination = System.IO.File.Create(uploadTempPath))
                             await source.CopyToAsync(destination);
 
-                        var result = await UploadDebToRepositoryAsync(repo, component, uploadTempPath);
+                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, uploadTempPath, userId, uploadRecord.Id);
                         if (result.Package != null)
                         {
                             summary.Uploaded.Add(new UploadedPackageSummary
                             {
-                                Repository = GetRepositoryDisplayName(repo),
+                                Repository = DebUploadService.GetRepositoryDisplayName(repo),
                                 Package = result.Package.Package,
                                 Version = result.Package.Version,
                                 Arch = result.Package.Architecture
@@ -195,19 +213,19 @@ public class ApiPackagesController(
                         {
                             if (skipDuplicate)
                             {
-                                var warning = result.Error ?? $"Package already exists in {GetRepositoryDisplayName(repo)}.";
+                                var warning = result.Error ?? $"Package already exists in {DebUploadService.GetRepositoryDisplayName(repo)}.";
                                 logger.LogWarning("{Warning}", warning);
                                 summary.Warnings.Add(warning);
                             }
                             else
                             {
-                                summary.Errors.Add(result.Error ?? $"Package already exists in {GetRepositoryDisplayName(repo)}.");
+                                summary.Errors.Add(result.Error ?? $"Package already exists in {DebUploadService.GetRepositoryDisplayName(repo)}.");
                             }
 
                             continue;
                         }
 
-                        summary.Errors.Add(result.Error ?? $"Upload failed for repository {GetRepositoryDisplayName(repo)}.");
+                        summary.Errors.Add(result.Error ?? $"Upload failed for repository {DebUploadService.GetRepositoryDisplayName(repo)}.");
                         return StatusCode(result.StatusCode, summary);
                     }
                     finally
@@ -220,6 +238,8 @@ public class ApiPackagesController(
             if (summary.Errors.Count > 0 && !skipDuplicate)
                 return Conflict(summary);
 
+            uploadRecord.IsPublished = true;
+            await db.SaveChangesAsync();
             return Ok(summary);
         }
         finally
@@ -266,145 +286,6 @@ public class ApiPackagesController(
         return manifest;
     }
 
-    private async Task<DebUploadResult> UploadDebToRepositoryAsync(AptRepository repo, string component, string tempPath)
-    {
-        string sha256;
-        string sha1;
-        string md5sum;
-        string sha512;
-        long fileSize;
-        await using (var fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-        {
-            fileSize = fs.Length;
-            using var sha256Hasher = SHA256.Create();
-            using var sha1Hasher = SHA1.Create();
-            using var md5Hasher = MD5.Create();
-            using var sha512Hasher = SHA512.Create();
-            var buffer = new byte[81920];
-            int read;
-            while ((read = await fs.ReadAsync(buffer)) > 0)
-            {
-                sha256Hasher.TransformBlock(buffer, 0, read, null, 0);
-                sha1Hasher.TransformBlock(buffer, 0, read, null, 0);
-                md5Hasher.TransformBlock(buffer, 0, read, null, 0);
-                sha512Hasher.TransformBlock(buffer, 0, read, null, 0);
-            }
-
-            sha256Hasher.TransformFinalBlock([], 0, 0);
-            sha1Hasher.TransformFinalBlock([], 0, 0);
-            md5Hasher.TransformFinalBlock([], 0, 0);
-            sha512Hasher.TransformFinalBlock([], 0, 0);
-            sha256 = BitConverter.ToString(sha256Hasher.Hash!).Replace("-", "").ToLowerInvariant();
-            sha1 = BitConverter.ToString(sha1Hasher.Hash!).Replace("-", "").ToLowerInvariant();
-            md5sum = BitConverter.ToString(md5Hasher.Hash!).Replace("-", "").ToLowerInvariant();
-            sha512 = BitConverter.ToString(sha512Hasher.Hash!).Replace("-", "").ToLowerInvariant();
-        }
-
-        var sha256Conflict = await db.LocalPackages
-            .AnyAsync(lp => lp.RepositoryId == repo.Id && lp.SHA256 == sha256);
-        if (sha256Conflict)
-        {
-            return new DebUploadResult
-            {
-                StatusCode = StatusCodes.Status409Conflict,
-                Error = $"A package with this exact file content (SHA256) already exists in repository {GetRepositoryDisplayName(repo)}."
-            };
-        }
-
-        Dictionary<string, string> control;
-        try
-        {
-            control = await debParser.ParseControlAsync(tempPath);
-        }
-        catch (Exception ex)
-        {
-            return new DebUploadResult
-            {
-                StatusCode = StatusCodes.Status400BadRequest,
-                Error = $"Failed to parse .deb control file: {ex.Message}"
-            };
-        }
-
-        if (!control.TryGetValue("Package", out var pkgName) || string.IsNullOrWhiteSpace(pkgName) ||
-            !control.TryGetValue("Version", out var pkgVersion) || string.IsNullOrWhiteSpace(pkgVersion) ||
-            !control.TryGetValue("Architecture", out var pkgArch) || string.IsNullOrWhiteSpace(pkgArch))
-        {
-            return new DebUploadResult
-            {
-                StatusCode = StatusCodes.Status400BadRequest,
-                Error = "The .deb control file is missing required fields (Package, Version, Architecture)."
-            };
-        }
-
-        var slotConflict = await db.LocalPackages
-            .AnyAsync(lp => lp.RepositoryId == repo.Id
-                            && lp.Package == pkgName
-                            && lp.Version == pkgVersion
-                            && lp.Architecture == pkgArch
-                            && lp.Component == component
-                            && lp.IsEnabled);
-        if (slotConflict)
-        {
-            return new DebUploadResult
-            {
-                StatusCode = StatusCodes.Status409Conflict,
-                Error = $"Package {pkgName} {pkgVersion} ({pkgArch}) in repository {GetRepositoryDisplayName(repo)} and component '{component}' already exists. Use skip-duplicate to skip it."
-            };
-        }
-
-        var hashPrefix = sha256[..2];
-        var casPath = Path.Combine(ObjectsRoot, hashPrefix, $"{sha256}.deb");
-        Directory.CreateDirectory(Path.GetDirectoryName(casPath)!);
-
-        if (System.IO.File.Exists(casPath))
-            System.IO.File.Delete(tempPath);
-        else
-            System.IO.File.Move(tempPath, casPath);
-
-        var pkgFirstChar = pkgName[0].ToString();
-        var filename = $"pool/{component}/{pkgFirstChar}/{pkgName}/{pkgName}_{pkgVersion}_{pkgArch}.deb";
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var lp = new LocalPackage
-        {
-            UploadedByUserId = userId,
-            RepositoryId = repo.Id,
-            Component = component,
-            Package = pkgName,
-            Version = pkgVersion,
-            Architecture = pkgArch,
-            Maintainer = control.GetValueOrDefault("Maintainer", "Unknown"),
-            Description = control.GetValueOrDefault("Description"),
-            Section = control.GetValueOrDefault("Section"),
-            Priority = control.GetValueOrDefault("Priority"),
-            Homepage = control.GetValueOrDefault("Homepage"),
-            InstalledSize = control.GetValueOrDefault("Installed-Size"),
-            Depends = control.GetValueOrDefault("Depends"),
-            Recommends = control.GetValueOrDefault("Recommends"),
-            Suggests = control.GetValueOrDefault("Suggests"),
-            Conflicts = control.GetValueOrDefault("Conflicts"),
-            Breaks = control.GetValueOrDefault("Breaks"),
-            Replaces = control.GetValueOrDefault("Replaces"),
-            Provides = control.GetValueOrDefault("Provides"),
-            Source = control.GetValueOrDefault("Source"),
-            MultiArch = control.GetValueOrDefault("Multi-Arch"),
-            OriginalMaintainer = control.GetValueOrDefault("Original-Maintainer"),
-            Filename = filename,
-            Size = fileSize.ToString(),
-            SHA256 = sha256,
-            SHA1 = sha1,
-            MD5sum = md5sum,
-            SHA512 = sha512
-        };
-        db.LocalPackages.Add(lp);
-        await db.SaveChangesAsync();
-
-        return new DebUploadResult
-        {
-            StatusCode = StatusCodes.Status200OK,
-            Package = lp
-        };
-    }
-
     private static bool CanUploadToRepository(AptRepository repo, bool isAdmin, bool canUploadRestricted)
     {
         return repo.AllowAnyoneToUpload || isAdmin || canUploadRestricted;
@@ -434,20 +315,14 @@ public class ApiPackagesController(
             System.IO.File.Delete(path);
     }
 
-    private static string GetRepositoryDisplayName(AptRepository repo)
+    private static string? NullIfEmpty(string? value)
     {
-        return $"{repo.Name} ({repo.Distro} {repo.Suite} {repo.Architecture})";
-    }
-
-    private sealed class DebUploadResult
-    {
-        public int StatusCode { get; init; }
-        public string? Error { get; init; }
-        public LocalPackage? Package { get; init; }
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     public sealed class ApkgUploadSummary
     {
+        public int? UploadId { get; set; }
         public List<UploadedPackageSummary> Uploaded { get; } = [];
         public List<string> Warnings { get; } = [];
         public List<string> Errors { get; } = [];

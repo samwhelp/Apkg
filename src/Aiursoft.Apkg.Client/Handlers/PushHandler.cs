@@ -77,26 +77,29 @@ public class PushHandler : ExecutableCommandHandlerBuilder
         var root = document.RootElement;
         var hasErrors = false;
 
-        if (root.TryGetProperty("uploaded", out var uploaded) && uploaded.ValueKind == JsonValueKind.Array)
+        if (TryGetPropertyIgnoreCase(root, "uploadId", out var uploadId) && uploadId.ValueKind == JsonValueKind.Number)
+            logger.LogInformation("Upload record ID: {UploadId}", uploadId.GetInt32());
+
+        if (TryGetPropertyIgnoreCase(root, "uploaded", out var uploaded) && uploaded.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in uploaded.EnumerateArray())
             {
                 logger.LogInformation(
                     "  ✓ Uploaded to {Repository}: {Package} {Version} ({Arch})",
-                    item.GetProperty("repository").GetString(),
-                    item.GetProperty("package").GetString(),
-                    item.GetProperty("version").GetString(),
-                    item.GetProperty("arch").GetString());
+                    GetStringProperty(item, "repository"),
+                    GetStringProperty(item, "package"),
+                    GetStringProperty(item, "version"),
+                    GetStringProperty(item, "arch"));
             }
         }
 
-        if (root.TryGetProperty("warnings", out var warnings) && warnings.ValueKind == JsonValueKind.Array)
+        if (TryGetPropertyIgnoreCase(root, "warnings", out var warnings) && warnings.ValueKind == JsonValueKind.Array)
         {
             foreach (var warning in warnings.EnumerateArray())
                 logger.LogWarning("  ⚠ {Warning}", warning.GetString());
         }
 
-        if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
+        if (TryGetPropertyIgnoreCase(root, "errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
         {
             foreach (var error in errors.EnumerateArray())
             {
@@ -109,5 +112,28 @@ public class PushHandler : ExecutableCommandHandlerBuilder
             throw new InvalidOperationException("Push completed with errors.");
 
         logger.LogInformation("Push complete.");
+    }
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement element, string propertyName, out JsonElement value)
+    {
+        if (element.TryGetProperty(propertyName, out value))
+            return true;
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static string? GetStringProperty(JsonElement element, string propertyName)
+    {
+        return TryGetPropertyIgnoreCase(element, propertyName, out var value) ? value.GetString() : null;
     }
 }

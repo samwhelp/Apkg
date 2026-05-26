@@ -1,0 +1,170 @@
+@using Aiursoft.Apkg.Models.LocalPackagesViewModels
+@model Aiursoft.Apkg.Models.ApkgUploadsViewModels.ApkgUploadsDetailsViewModel
+
+<div class="row mb-2 mb-xl-3">
+    <div class="col-auto">
+        <h3>APKG Upload Details</h3>
+    </div>
+    <div class="col-auto ms-auto">
+        <a asp-action="Index" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+            <div>
+                <h4 class="mb-1">@Model.Upload.Package</h4>
+                <div class="text-muted">@Model.Upload.FileName</div>
+            </div>
+            <div>
+                @if (Model.Upload.IsListed)
+                {
+                    <span class="badge bg-success">Listed</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Unlisted</span>
+                }
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label text-muted">Version</label>
+                <div><span class="badge bg-info">@Model.Upload.Version</span></div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted">Component</label>
+                <div><span class="badge bg-dark">@Model.Upload.Component</span></div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted">Uploaded At</label>
+                <div>@Model.Upload.UploadedAt.ToString("yyyy/M/d HH:mm") UTC</div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted">Uploader</label>
+                <div>@(Model.Upload.UploadedByUser?.UserName ?? "—")</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted">Maintainer</label>
+                <div>@(string.IsNullOrWhiteSpace(Model.Upload.Maintainer) ? "—" : Model.Upload.Maintainer)</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label text-muted">Homepage</label>
+                <div>
+                    @if (string.IsNullOrWhiteSpace(Model.Upload.Homepage))
+                    {
+                        <span>—</span>
+                    }
+                    else
+                    {
+                        <a href="@Model.Upload.Homepage" target="_blank" rel="noopener noreferrer">@Model.Upload.Homepage</a>
+                    }
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label text-muted">Description</label>
+                <div>@(string.IsNullOrWhiteSpace(Model.Upload.Description) ? "—" : Model.Upload.Description)</div>
+            </div>
+        </div>
+
+        <hr />
+        <div class="d-flex flex-wrap gap-2">
+            @if (Model.Upload.IsListed && (Model.IsOwner || Model.IsAdmin))
+            {
+                <form method="post" asp-action="Unlist" asp-route-id="@Model.Upload.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-warning">Unlist</button>
+                </form>
+            }
+            else if (!Model.Upload.IsListed && Model.IsAdmin)
+            {
+                <form method="post" asp-action="Relist" asp-route-id="@Model.Upload.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success">Relist</button>
+                </form>
+            }
+
+            @if (Model.IsAdmin)
+            {
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Upload.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Generated LocalPackages</div>
+    <div class="card-body">
+        @if (!Model.Packages.Any())
+        {
+            <p class="text-muted mb-0">No LocalPackages were generated for this upload.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Version</th>
+                            <th>Architecture</th>
+                            <th>Repository</th>
+                            <th>Sync Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var info in Model.Packages)
+                        {
+                            var pkg = info.Package;
+                            <tr>
+                                <td><strong>@pkg.Package</strong></td>
+                                <td><span class="badge bg-info">@pkg.Version</span></td>
+                                <td><span class="badge bg-dark">@pkg.Architecture</span></td>
+                                <td><small>@(pkg.Repository?.Suite ?? "—")</small></td>
+                                <td>
+                                    @switch (info.Status)
+                                    {
+                                        case LocalPackageStatus.Live:
+                                            <span class="badge bg-success" title="@info.StatusMessage">
+                                                <i class="align-middle me-1" data-lucide="check-circle" style="width:12px; height:12px;"></i> Live
+                                            </span>
+                                            break;
+                                        case LocalPackageStatus.StagedForSigning:
+                                            <span class="badge bg-info" title="@info.StatusMessage">
+                                                <i class="align-middle me-1" data-lucide="clock" style="width:12px; height:12px;"></i> Staged
+                                            </span>
+                                            break;
+                                        case LocalPackageStatus.PendingSync:
+                                            <span class="badge bg-warning text-dark" title="@info.StatusMessage">
+                                                <i class="align-middle me-1" data-lucide="refresh-cw" style="width:12px; height:12px;"></i> Pending Sync
+                                            </span>
+                                            break;
+                                        case LocalPackageStatus.Disabled:
+                                            <span class="badge bg-secondary" title="@info.StatusMessage">
+                                                <i class="align-middle me-1" data-lucide="slash" style="width:12px; height:12px;"></i> Disabled
+                                            </span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (info.Status == LocalPackageStatus.Live && info.LivePackageId.HasValue)
+                                    {
+                                        <a asp-controller="Repositories" asp-action="PackageDetails" asp-route-id="@info.LivePackageId.Value" class="btn btn-sm btn-outline-info">
+                                            <i class="align-middle" data-lucide="external-link"></i>
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

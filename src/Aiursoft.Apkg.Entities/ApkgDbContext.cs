@@ -13,6 +13,7 @@ public abstract class ApkgDbContext(DbContextOptions options) : IdentityDbContex
     public DbSet<AptBucket> AptBuckets => Set<AptBucket>();
     public DbSet<AptPackage> AptPackages => Set<AptPackage>();
     public DbSet<AptCertificate> AptCertificates => Set<AptCertificate>();
+    public DbSet<ApkgUpload> ApkgUploads => Set<ApkgUpload>();
     public DbSet<LocalPackage> LocalPackages => Set<LocalPackage>();
     public DbSet<UserApiKey> UserApiKeys => Set<UserApiKey>();
     public DbSet<DependencyCheckReport> DependencyCheckReports => Set<DependencyCheckReport>();
