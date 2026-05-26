@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
 using Aiursoft.Apkg.Client.Handlers;
@@ -15,7 +17,8 @@ public class IntegrationTests
         .WithGlobalOptions(CommonOptionsProvider.VerboseOption)
         .WithFeature(new NewHandler())
         .WithFeature(new PackHandler())
-        .WithFeature(new PushHandler());        .WithFeature(new InstallHandler());
+        .WithFeature(new PushHandler())
+        .WithFeature(new InstallHandler());
 
     [TestMethod]
     public async Task InvokeHelp()
@@ -71,6 +74,16 @@ public class IntegrationTests
     }
 
     [TestMethod]
+    public async Task InvokePushHelp()
+    {
+        var result = await Program.TestRunAsync(["push", "--help"]);
+        Assert.AreEqual(0, result.ProgramReturn);
+        Assert.IsTrue(result.StdOut.Contains("--source"));
+        Assert.IsTrue(result.StdOut.Contains("--api-key"));
+        Assert.IsTrue(string.IsNullOrWhiteSpace(result.StdErr));
+    }
+
+    [TestMethod]
     public async Task InvokeInstallHelp()
     {
         var result = await Program.TestRunAsync(["install", "--help"]);
@@ -91,8 +104,7 @@ public class IntegrationTests
     [TestMethod]
     public async Task InvokeNew_CreatesProjectStructure()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        Directory.CreateDirectory(tempDir);
+        var tempDir = CreateTestDirectory();
         try
         {
             var result = await Program.TestRunAsync(["new", "--name", "my-test-pkg", "--output", tempDir]);
@@ -120,7 +132,7 @@ public class IntegrationTests
     [TestMethod]
     public async Task InvokeNew_FailsIfDirectoryAlreadyExists()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        var tempDir = CreateTestDirectory();
         Directory.CreateDirectory(Path.Combine(tempDir, "my-pkg"));
         try
         {
@@ -137,8 +149,7 @@ public class IntegrationTests
     [TestMethod]
     public async Task InvokePack_CreatesApkgFile()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        Directory.CreateDirectory(tempDir);
+        var tempDir = CreateTestDirectory();
         try
         {
             // Set up a project directory manually.
@@ -168,8 +179,12 @@ public class IntegrationTests
             };
             await serializer.SerializeToFileAsync(manifest, Path.Combine(projectDir, "manifest.xml"));
 
-            // Create a dummy .deb file (content doesn't matter for packing).
-            await File.WriteAllBytesAsync(Path.Combine(debsDir, "my-pkg_2.0.0_amd64.deb"), [0x00, 0x01, 0x02]);
+            await EnsureDpkgDebAvailableAsync();
+            await CreateMinimalDebAsync(
+                path: Path.Combine(debsDir, "my-pkg_2.0.0_amd64.deb"),
+                packageName: manifest.Package,
+                version: manifest.Version,
+                arch: "amd64");
 
             var outputDir = Path.Combine(tempDir, "output");
             var result = await Program.TestRunAsync(["pack", "--path", projectDir, "--output", outputDir]);
@@ -200,8 +215,7 @@ public class IntegrationTests
     [TestMethod]
     public async Task InvokePack_FailsWhenDebMissing()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        Directory.CreateDirectory(tempDir);
+        var tempDir = CreateTestDirectory();
         try
         {
             var projectDir = Path.Combine(tempDir, "my-pkg");
@@ -229,6 +243,109 @@ public class IntegrationTests
             var result = await Program.TestRunAsync(["pack", "--path", projectDir, "--output", tempDir]);
 
             Assert.AreNotEqual(0, result.ProgramReturn, "Should fail when a .deb file is missing.");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task InvokePack_CreatesApkgFileWhenDebArchitectureIsAll()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "my-pkg");
+            var debsDir = Path.Combine(projectDir, "debs");
+            Directory.CreateDirectory(debsDir);
+
+            var serializer = new ManifestSerializer();
+            var manifest = new ApkgManifest
+            {
+                Package = "my-pkg",
+                Version = "2.1.0",
+                Maintainer = "Test <test@example.com>",
+                Description = "Test package",
+                License = "MIT",
+                Component = "main",
+                Targets =
+                [
+                    new ManifestTarget
+                    {
+                        Distro = "ubuntu",
+                        Suites = "plucky",
+                        Architecture = "amd64",
+                        DebFile = "debs/my-pkg_2.1.0_all.deb"
+                    }
+                ]
+            };
+            await serializer.SerializeToFileAsync(manifest, Path.Combine(projectDir, "manifest.xml"));
+
+            await EnsureDpkgDebAvailableAsync();
+            await CreateMinimalDebAsync(
+                path: Path.Combine(debsDir, "my-pkg_2.1.0_all.deb"),
+                packageName: manifest.Package,
+                version: manifest.Version,
+                arch: "all");
+
+            var outputDir = Path.Combine(tempDir, "output");
+            var result = await Program.TestRunAsync(["pack", "--path", projectDir, "--output", outputDir]);
+
+            Assert.AreEqual(0, result.ProgramReturn, result.StdErr);
+            Assert.IsTrue(File.Exists(Path.Combine(outputDir, "my-pkg.2.1.0.apkg")), ".apkg file should be created for arch:all debs.");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task InvokePack_FailsWhenDebArchMismatch()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "my-pkg");
+            var debsDir = Path.Combine(projectDir, "debs");
+            Directory.CreateDirectory(debsDir);
+
+            var serializer = new ManifestSerializer();
+            var manifest = new ApkgManifest
+            {
+                Package = "my-pkg",
+                Version = "3.0.0",
+                Maintainer = "Test <test@example.com>",
+                Description = "Test package",
+                License = "MIT",
+                Component = "main",
+                Targets =
+                [
+                    new ManifestTarget
+                    {
+                        Distro = "ubuntu",
+                        Suites = "plucky",
+                        Architecture = "amd64",
+                        DebFile = "debs/my-pkg_3.0.0_arm64.deb"
+                    }
+                ]
+            };
+            await serializer.SerializeToFileAsync(manifest, Path.Combine(projectDir, "manifest.xml"));
+
+            await EnsureDpkgDebAvailableAsync();
+            await CreateMinimalDebAsync(
+                path: Path.Combine(debsDir, "my-pkg_3.0.0_arm64.deb"),
+                packageName: manifest.Package,
+                version: manifest.Version,
+                arch: "arm64");
+
+            var outputDir = Path.Combine(tempDir, "output");
+            var result = await Program.TestRunAsync(["pack", "--path", projectDir, "--output", outputDir]);
+            var output = string.Concat(result.StdOut, result.StdErr);
+
+            Assert.AreNotEqual(0, result.ProgramReturn, "Should fail when deb architecture mismatches the manifest target.");
+            Assert.IsTrue(output.Contains("Architecture mismatch"), "Expected architecture mismatch error message.");
         }
         finally
         {
@@ -280,5 +397,86 @@ public class IntegrationTests
             new[] { "plucky", "plucky-updates" },
             roundTripped.Targets[0].SuiteList);
         Assert.AreEqual("arm64", roundTripped.Targets[1].Architecture);
+    }
+
+    private static string CreateTestDirectory()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "test-workspace", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    private static async Task EnsureDpkgDebAvailableAsync()
+    {
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
+        {
+            FileName = "dpkg-deb",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        process.StartInfo.ArgumentList.Add("--version");
+
+        try
+        {
+            process.Start();
+        }
+        catch (Win32Exception)
+        {
+            Assert.Inconclusive("Requires dpkg-deb.");
+            return;
+        }
+
+        await process.WaitForExitAsync();
+        if (process.ExitCode != 0)
+            Assert.Inconclusive("Requires dpkg-deb.");
+    }
+
+    private static async Task CreateMinimalDebAsync(string path, string packageName, string version, string arch)
+    {
+        var packageDir = Path.Combine(Path.GetDirectoryName(path)!, Guid.NewGuid().ToString("N"));
+        var controlDir = Path.Combine(packageDir, "DEBIAN");
+        Directory.CreateDirectory(controlDir);
+
+        try
+        {
+            var controlFile = Path.Combine(controlDir, "control");
+            await File.WriteAllTextAsync(
+                controlFile,
+                $"Package: {packageName}\nVersion: {version}\nArchitecture: {arch}\nMaintainer: Test <test@example.com>\nDescription: Test package\n");
+
+            using var process = new Process();
+            process.StartInfo = new ProcessStartInfo
+            {
+                FileName = "dpkg-deb",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            process.StartInfo.ArgumentList.Add("--build");
+            process.StartInfo.ArgumentList.Add(packageDir);
+            process.StartInfo.ArgumentList.Add(path);
+            process.Start();
+
+            var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+            var standardErrorTask = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            var standardError = await standardErrorTask;
+            if (process.ExitCode != 0)
+            {
+                Assert.Fail($"Failed to build test .deb file: {standardError}");
+            }
+
+            await standardOutputTask;
+        }
+        finally
+        {
+            if (Directory.Exists(packageDir))
+                Directory.Delete(packageDir, recursive: true);
+        }
     }
 }
