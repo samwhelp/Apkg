@@ -93,7 +93,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         {
             var debFileName = Path.GetFileName(debPath);
             var (suite, arch) = ParseDebFileName(debFileName, project.PackageName, project.PackageVersion);
-            var distro = InferDistro(suite, project);
+            var distro = project.TargetDistro;
 
             entries.Add(new ApkgPackageEntry
             {
@@ -170,26 +170,6 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
                 $"Cannot parse suite/arch from deb filename '{fileName}'. Expected format: {packageName}_{version}_<suite>_<arch>.deb");
 
         return (suite: rest[..lastUnderscore], arch: rest[(lastUnderscore + 1)..]);
-    }
-
-    private static string InferDistro(string suite, AosprojProject project)
-    {
-        // If there's only one target distro, use that
-        if (project.DistroList.Length == 1)
-            return project.DistroList[0];
-
-        // Ubuntu suites (well-known codenames)
-        var ubuntuSuites = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "focal", "jammy", "lunar", "mantic", "noble", "oracular", "plucky", "questing", "resolute"
-        };
-
-        // Strip suite qualifier suffixes like -updates, -security, -backports
-        var baseSuite = suite.Split('-')[0];
-        if (ubuntuSuites.Contains(baseSuite))
-            return "ubuntu";
-
-        return project.DistroList.FirstOrDefault() ?? "ubuntu";
     }
 
     private static string SerializeManifest(ApkgPackageManifest manifest)

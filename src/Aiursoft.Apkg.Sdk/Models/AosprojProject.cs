@@ -29,8 +29,8 @@ public class AosprojProject
     public string Component { get; set; } = "main";
 
     // ── Build targets ────────────────────────────────────────────────────────
-    /// <summary>Space- or comma-separated distro names, e.g. "ubuntu debian".</summary>
-    public string TargetDistros { get; set; } = "ubuntu";
+    /// <summary>The target distro for this package, e.g. "ubuntu", "anduinos".</summary>
+    public string TargetDistro { get; set; } = "ubuntu";
     /// <summary>Space- or comma-separated suite names, e.g. "jammy noble resolute".</summary>
     public string SupportedSuites { get; set; } = string.Empty;
     /// <summary>Space- or comma-separated architectures, e.g. "amd64 arm64".</summary>
@@ -46,7 +46,6 @@ public class AosprojProject
     public List<SystemdUnitItem> SystemdUnits { get; set; } = [];
 
     // ── Computed helpers ─────────────────────────────────────────────────────
-    public string[] DistroList => Split(TargetDistros);
     public string[] SuiteList => Split(SupportedSuites);
     public string[] ArchList => Split(SupportedArch);
 

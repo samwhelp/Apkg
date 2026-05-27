@@ -97,18 +97,17 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
 
         if (buildAll)
         {
-            if (project.DistroList.Length == 0)
-                throw new InvalidOperationException("Project has no <TargetDistros> declared. Cannot use --all.");
+            if (string.IsNullOrWhiteSpace(project.TargetDistro))
+                throw new InvalidOperationException("Project has no <TargetDistro> declared. Cannot use --all.");
             if (project.SuiteList.Length == 0)
                 throw new InvalidOperationException("Project has no <SupportedSuites> declared. Cannot use --all.");
             if (project.ArchList.Length == 0)
                 throw new InvalidOperationException("Project has no <SupportedArch> declared. Cannot use --all.");
 
             targets = (
-                from distro in project.DistroList
                 from suite in project.SuiteList
                 from arch in project.ArchList
-                select (distro, suite, arch)
+                select (project.TargetDistro, suite, arch)
             ).ToList();
         }
         else
@@ -119,7 +118,7 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
                 throw new InvalidOperationException("Specify --arch (e.g. --arch amd64) or use --all.");
 
             var distro = string.IsNullOrWhiteSpace(distroArg)
-                ? (project.DistroList.FirstOrDefault() ?? "ubuntu")
+                ? (string.IsNullOrWhiteSpace(project.TargetDistro) ? "ubuntu" : project.TargetDistro)
                 : distroArg;
 
             targets = [(distro, suiteArg, archArg)];

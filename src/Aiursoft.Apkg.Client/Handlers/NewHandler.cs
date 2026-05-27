@@ -74,7 +74,7 @@ public class NewHandler : ExecutableCommandHandlerBuilder
             PackageHomepage = $"https://github.com/example/{baseName}",
             LicenseType = "MIT",
             Component = "main",
-            TargetDistros = "ubuntu",
+            TargetDistro = "ubuntu",
             SupportedSuites = "jammy noble resolute",
             SupportedArch = "amd64 arm64",
         };

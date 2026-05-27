@@ -53,7 +53,7 @@ public class AosprojSerializer
                 case "Conflicts":          project.Conflicts = el.Value; break;
                 case "Replaces":           project.Replaces = el.Value; break;
                 case "Component":          project.Component = el.Value; break;
-                case "TargetDistros":      project.TargetDistros = el.Value; break;
+                case "TargetDistro":       project.TargetDistro = el.Value; break;
                 case "SupportedSuites":    project.SupportedSuites = el.Value; break;
                 case "SupportedArch":      project.SupportedArch = el.Value; break;
                 case "DependencyList":
@@ -158,7 +158,7 @@ public class AosprojSerializer
             Elem("Conflicts", project.Conflicts),
             Elem("Replaces", project.Replaces),
             Elem("Component", project.Component),
-            Elem("TargetDistros", project.TargetDistros),
+            Elem("TargetDistro", project.TargetDistro),
             Elem("SupportedSuites", project.SupportedSuites),
             Elem("SupportedArch", project.SupportedArch)
         );
