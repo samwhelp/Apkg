@@ -19,6 +19,10 @@ public static class Extensions
         services.AddSingleton<ManifestSerializer>();
         services.AddSingleton<DebPackageValidator>();
         services.AddSingleton<SystemInfoProvider>();
+        services.AddSingleton<AosprojSerializer>();
+        services.AddSingleton<ConditionEvaluator>();
+        services.AddSingleton<DebBuilder>();
+        services.AddSingleton<AosprojLinter>();
         return services;
     }
 

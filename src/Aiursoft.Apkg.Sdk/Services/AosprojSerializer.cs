@@ -1,0 +1,252 @@
+using System.Xml.Linq;
+using Aiursoft.Apkg.Sdk.Models;
+
+namespace Aiursoft.Apkg.Sdk.Services;
+
+/// <summary>
+/// Reads and writes .aosproj files using XDocument for full flexibility
+/// (handles Condition attributes, multiple PropertyGroups and ItemGroups).
+/// </summary>
+public class AosprojSerializer
+{
+    // ── Deserialize ──────────────────────────────────────────────────────────
+
+    public Task<AosprojProject> DeserializeFromFileAsync(string path)
+    {
+        var xml = XDocument.Load(path);
+        return Task.FromResult(Deserialize(xml));
+    }
+
+    public AosprojProject Deserialize(XDocument doc)
+    {
+        var root = doc.Root ?? throw new InvalidDataException("Empty .aosproj file.");
+        var project = new AosprojProject();
+
+        // Collect all PropertyGroup elements
+        foreach (var pg in root.Elements("PropertyGroup"))
+            ReadPropertyGroup(pg, project);
+
+        // Collect all ItemGroup elements
+        foreach (var ig in root.Elements("ItemGroup"))
+            ReadItemGroup(ig, project);
+
+        return project;
+    }
+
+    private static void ReadPropertyGroup(XElement pg, AosprojProject project)
+    {
+        foreach (var el in pg.Elements())
+        {
+            switch (el.Name.LocalName)
+            {
+                case "PackageName":        project.PackageName = el.Value; break;
+                case "PackageVersion":     project.PackageVersion = el.Value; break;
+                case "PackageDescription": project.PackageDescription = el.Value; break;
+                case "PackageAuthors":     project.PackageAuthors = el.Value; break;
+                case "Maintainer":         project.Maintainer = el.Value; break;
+                case "PackageHomepage":    project.PackageHomepage = el.Value; break;
+                case "RepositoryUrl":      project.RepositoryUrl = el.Value; break;
+                case "LicenseType":        project.LicenseType = el.Value; break;
+                case "LicenseFile":        project.LicenseFile = el.Value; break;
+                case "PackageTags":        project.PackageTags = el.Value; break;
+                case "Provides":           project.Provides = el.Value; break;
+                case "Conflicts":          project.Conflicts = el.Value; break;
+                case "Replaces":           project.Replaces = el.Value; break;
+                case "Component":          project.Component = el.Value; break;
+                case "TargetDistros":      project.TargetDistros = el.Value; break;
+                case "SupportedSuites":    project.SupportedSuites = el.Value; break;
+                case "SupportedArch":      project.SupportedArch = el.Value; break;
+                case "DependencyList":
+                    project.DependencyLists.Add(new ConditionalValue
+                    {
+                        Condition = (string?)el.Attribute("Condition"),
+                        Value = el.Value
+                    });
+                    break;
+            }
+        }
+    }
+
+    private static void ReadItemGroup(XElement ig, AosprojProject project)
+    {
+        foreach (var el in ig.Elements())
+        {
+            var condition = (string?)el.Attribute("Condition");
+            switch (el.Name.LocalName)
+            {
+                case "PrebuildCommand":
+                    project.PrebuildCommands.Add(new PrebuildCommandItem
+                    {
+                        Run = (string?)el.Attribute("Run") ?? el.Value,
+                        Condition = condition
+                    });
+                    break;
+                case "IncludeFile":
+                    project.IncludeFiles.Add(new IncludeFileItem
+                    {
+                        Source = (string?)el.Attribute("Source") ?? string.Empty,
+                        Target = (string?)el.Attribute("Target") ?? string.Empty,
+                        Condition = condition
+                    });
+                    break;
+                case "IncludeFolder":
+                    project.IncludeFolders.Add(new IncludeFolderItem
+                    {
+                        Source = (string?)el.Attribute("Source") ?? string.Empty,
+                        Target = (string?)el.Attribute("Target") ?? string.Empty,
+                        Condition = condition
+                    });
+                    break;
+                case "IncludeConfigFile":
+                    project.IncludeConfigFiles.Add(new IncludeConfigFileItem
+                    {
+                        Source = (string?)el.Attribute("Source") ?? string.Empty,
+                        Target = (string?)el.Attribute("Target") ?? string.Empty,
+                        Condition = condition
+                    });
+                    break;
+                case "PostInstallScript":
+                    project.PostInstallScripts.Add(new PostInstallScriptItem
+                    {
+                        Source = (string?)el.Attribute("Source") ?? el.Value,
+                        Condition = condition
+                    });
+                    break;
+                case "PreRemoveScript":
+                    project.PreRemoveScripts.Add(new PreRemoveScriptItem
+                    {
+                        Source = (string?)el.Attribute("Source") ?? el.Value,
+                        Condition = condition
+                    });
+                    break;
+                case "SystemdUnit":
+                    var autoEnableAttr = (string?)el.Attribute("AutoEnable");
+                    project.SystemdUnits.Add(new SystemdUnitItem
+                    {
+                        Source = (string?)el.Attribute("Source") ?? el.Value,
+                        Condition = condition,
+                        AutoEnable = autoEnableAttr == null || bool.Parse(autoEnableAttr)
+                    });
+                    break;
+            }
+        }
+    }
+
+    // ── Serialize ────────────────────────────────────────────────────────────
+
+    public Task SerializeToFileAsync(AosprojProject project, string path)
+    {
+        var doc = Serialize(project);
+        doc.Save(path);
+        return Task.CompletedTask;
+    }
+
+    public XDocument Serialize(AosprojProject project)
+    {
+        var pg = new XElement("PropertyGroup",
+            Elem("PackageName", project.PackageName),
+            Elem("PackageVersion", project.PackageVersion),
+            Elem("PackageDescription", project.PackageDescription),
+            Elem("PackageAuthors", project.PackageAuthors),
+            Elem("Maintainer", project.Maintainer),
+            Elem("PackageHomepage", project.PackageHomepage),
+            Elem("RepositoryUrl", project.RepositoryUrl),
+            Elem("LicenseType", project.LicenseType),
+            Elem("LicenseFile", project.LicenseFile),
+            Elem("PackageTags", project.PackageTags),
+            Elem("Provides", project.Provides),
+            Elem("Conflicts", project.Conflicts),
+            Elem("Replaces", project.Replaces),
+            Elem("Component", project.Component),
+            Elem("TargetDistros", project.TargetDistros),
+            Elem("SupportedSuites", project.SupportedSuites),
+            Elem("SupportedArch", project.SupportedArch)
+        );
+
+        foreach (var dep in project.DependencyLists)
+        {
+            var depEl = new XElement("DependencyList", dep.Value);
+            if (!string.IsNullOrWhiteSpace(dep.Condition))
+                depEl.Add(new XAttribute("Condition", dep.Condition));
+            pg.Add(depEl);
+        }
+
+        var itemGroups = new List<XElement>();
+
+        if (project.PrebuildCommands.Count > 0)
+        {
+            itemGroups.Add(new XElement("ItemGroup",
+                project.PrebuildCommands.Select(c => ItemElem("PrebuildCommand", c.Condition,
+                    new XAttribute("Run", c.Run)))));
+        }
+
+        var fileItems = new List<object>();
+        fileItems.AddRange(project.IncludeFiles.Select(f =>
+            (object)ItemElem("IncludeFile", f.Condition,
+                new XAttribute("Source", f.Source),
+                new XAttribute("Target", f.Target))));
+        fileItems.AddRange(project.IncludeFolders.Select(f =>
+            (object)ItemElem("IncludeFolder", f.Condition,
+                new XAttribute("Source", f.Source),
+                new XAttribute("Target", f.Target))));
+        fileItems.AddRange(project.IncludeConfigFiles.Select(f =>
+            (object)ItemElem("IncludeConfigFile", f.Condition,
+                new XAttribute("Source", f.Source),
+                new XAttribute("Target", f.Target))));
+
+        if (fileItems.Count > 0)
+            itemGroups.Add(new XElement("ItemGroup", fileItems));
+
+        var scriptItems = new List<object>();
+        scriptItems.AddRange(project.PostInstallScripts.Select(s =>
+            (object)ItemElem("PostInstallScript", s.Condition,
+                new XAttribute("Source", s.Source))));
+        scriptItems.AddRange(project.PreRemoveScripts.Select(s =>
+            (object)ItemElem("PreRemoveScript", s.Condition,
+                new XAttribute("Source", s.Source))));
+        scriptItems.AddRange(project.SystemdUnits.Select(u =>
+            (object)ItemElem("SystemdUnit", u.Condition,
+                new XAttribute("Source", u.Source),
+                new XAttribute("AutoEnable", u.AutoEnable.ToString().ToLowerInvariant()))));
+
+        if (scriptItems.Count > 0)
+            itemGroups.Add(new XElement("ItemGroup", scriptItems));
+
+        var root = new XElement("Project",
+            new XAttribute("Sdk", "Aiursoft.Apkg.Sdk"),
+            pg);
+        foreach (var ig in itemGroups)
+            root.Add(ig);
+
+        return new XDocument(new XDeclaration("1.0", "utf-8", null), root);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static XElement Elem(string name, string value) => new(name, value);
+
+    private static XElement ItemElem(string name, string? condition, params object[] attrs)
+    {
+        var el = new XElement(name, attrs);
+        if (!string.IsNullOrWhiteSpace(condition))
+            el.Add(new XAttribute("Condition", condition));
+        return el;
+    }
+
+    // ── Find project file ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Finds the .aosproj file in a directory. Throws if zero or multiple found.
+    /// </summary>
+    public static string FindProjectFile(string directory)
+    {
+        var files = Directory.GetFiles(directory, "*.aosproj");
+        return files.Length switch
+        {
+            0 => throw new FileNotFoundException($"No .aosproj file found in {directory}"),
+            1 => files[0],
+            _ => throw new InvalidOperationException(
+                $"Multiple .aosproj files found in {directory}. Specify one explicitly.")
+        };
+    }
+}

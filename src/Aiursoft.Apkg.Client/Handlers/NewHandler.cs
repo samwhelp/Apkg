@@ -12,7 +12,7 @@ namespace Aiursoft.Apkg.Client.Handlers;
 public class NewHandler : ExecutableCommandHandlerBuilder
 {
     protected override string Name => "new";
-    protected override string Description => "Create a new Apkg package manifest in the current directory.";
+    protected override string Description => "Create a new .aosproj package project in the current directory.";
 
     private static readonly Option<string> NameOption =
         new(name: "--name", aliases: ["-n"])
@@ -45,57 +45,47 @@ public class NewHandler : ExecutableCommandHandlerBuilder
             .Build()
             .Services;
 
-        var serializer = services.GetRequiredService<ManifestSerializer>();
+        var aosprojSerializer = services.GetRequiredService<AosprojSerializer>();
         var logger = services.GetRequiredService<ILogger<NewHandler>>();
 
-        var projectDir = Path.GetFullPath(Path.Combine(output, name));
-        var debsDir = Path.Combine(projectDir, "debs");
-        var manifestPath = Path.Combine(projectDir, "manifest.xml");
+        // Strip .aosproj extension if user typed it — we add it ourselves
+        var baseName = name.EndsWith(".aosproj", StringComparison.OrdinalIgnoreCase)
+            ? name[..^".aosproj".Length]
+            : name;
 
-        if (Directory.Exists(projectDir))
+        var outputDir = Path.GetFullPath(output);
+        var projectFilePath = Path.Combine(outputDir, $"{baseName}.aosproj");
+
+        if (File.Exists(projectFilePath))
         {
-            logger.LogError("Directory already exists: {Path}", projectDir);
-            throw new InvalidOperationException($"Directory already exists: {projectDir}");
+            logger.LogError("File already exists: {Path}", projectFilePath);
+            throw new InvalidOperationException($"File already exists: {projectFilePath}");
         }
 
-        logger.LogInformation("Creating package project at {Path}", projectDir);
-        Directory.CreateDirectory(debsDir);
+        logger.LogInformation("Creating {File}", projectFilePath);
 
-        var manifest = new ApkgManifest
+        var project = new AosprojProject
         {
-            Package = name,
-            Version = "1.0.0",
+            PackageName = baseName,
+            PackageVersion = "1.0.0",
+            PackageDescription = $"Description of {baseName}",
+            PackageAuthors = "Your Name <you@example.com>",
             Maintainer = "Your Name <you@example.com>",
-            Description = $"Description of {name}",
-            Homepage = $"https://github.com/example/{name}",
-            License = "MIT",
+            PackageHomepage = $"https://github.com/example/{baseName}",
+            LicenseType = "MIT",
             Component = "main",
-            Targets =
-            [
-                new ManifestTarget
-                {
-                    Distro = "ubuntu",
-                    Suites = "jammy noble resolute",
-                    Architecture = "amd64",
-                    DebFile = $"debs/{name}_1.0.0_amd64.deb"
-                },
-                new ManifestTarget
-                {
-                    Distro = "ubuntu",
-                    Suites = "jammy noble resolute",
-                    Architecture = "arm64",
-                    DebFile = $"debs/{name}_1.0.0_arm64.deb"
-                }
-            ]
+            TargetDistros = "ubuntu",
+            SupportedSuites = "jammy noble resolute",
+            SupportedArch = "amd64 arm64",
         };
 
-        await serializer.SerializeToFileAsync(manifest, manifestPath);
-        await File.WriteAllTextAsync(Path.Combine(debsDir, ".gitkeep"), string.Empty);
+        await aosprojSerializer.SerializeToFileAsync(project, projectFilePath);
 
-        logger.LogInformation("Created manifest.xml and debs/ directory.");
+        logger.LogInformation("Created {File}", projectFilePath);
         logger.LogInformation("Next steps:");
-        logger.LogInformation("  1. Edit {ManifestPath} to fill in your package metadata.", manifestPath);
-        logger.LogInformation("  2. Add your .deb files to {DebsDir}", debsDir);
-        logger.LogInformation("  3. Run: apkg pack --path {ProjectDir}", projectDir);
+        logger.LogInformation("  1. Edit {File} to fill in metadata, SupportedSuites, SupportedArch.", projectFilePath);
+        logger.LogInformation("  2. Add source files:  apkg add ./myfile --target /usr/lib/myfile");
+        logger.LogInformation("  3. Build debs:        apkg build --all");
+        logger.LogInformation("  4. Pack for upload:   apkg publish");
     }
 }

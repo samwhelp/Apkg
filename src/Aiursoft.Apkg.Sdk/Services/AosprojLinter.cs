@@ -1,0 +1,121 @@
+using Aiursoft.Apkg.Sdk.Models;
+
+namespace Aiursoft.Apkg.Sdk.Services;
+
+/// <summary>
+/// Validates an .aosproj project file and returns a list of issues.
+/// </summary>
+public class AosprojLinter
+{
+    private readonly ConditionEvaluator _evaluator;
+
+    public AosprojLinter(ConditionEvaluator evaluator)
+    {
+        _evaluator = evaluator;
+    }
+
+    public record LintIssue(Severity Level, string Message);
+    public enum Severity { Warning, Error }
+
+    public IReadOnlyList<LintIssue> Lint(AosprojProject project, string projectDir)
+    {
+        var issues = new List<LintIssue>();
+
+        // Required fields
+        RequireField(issues, project.PackageName, "PackageName");
+        RequireField(issues, project.PackageVersion, "PackageVersion");
+        RequireField(issues, project.PackageDescription, "PackageDescription");
+        RequireField(issues, project.SupportedSuites, "SupportedSuites");
+
+        // Maintainer or Authors
+        if (string.IsNullOrWhiteSpace(project.Maintainer) && string.IsNullOrWhiteSpace(project.PackageAuthors))
+            issues.Add(new LintIssue(Severity.Warning, "Neither <Maintainer> nor <PackageAuthors> is set."));
+
+        // Package name must be lowercase with only letters, digits, and hyphens
+        if (!string.IsNullOrWhiteSpace(project.PackageName) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(project.PackageName, @"^[a-z0-9][a-z0-9\-+.]*$"))
+        {
+            issues.Add(new LintIssue(Severity.Error,
+                $"PackageName '{project.PackageName}' is not a valid Debian package name (lowercase, alphanumeric and hyphens only)."));
+        }
+
+        // Verify source files exist
+        foreach (var item in project.IncludeFiles)
+            CheckSourceExists(issues, projectDir, item.Source, "IncludeFile");
+
+        foreach (var item in project.IncludeFolders)
+            CheckSourceExists(issues, projectDir, item.Source, "IncludeFolder", isDirectory: true);
+
+        foreach (var item in project.IncludeConfigFiles)
+            CheckSourceExists(issues, projectDir, item.Source, "IncludeConfigFile");
+
+        foreach (var item in project.PostInstallScripts)
+            CheckSourceExists(issues, projectDir, item.Source, "PostInstallScript");
+
+        foreach (var item in project.PreRemoveScripts)
+            CheckSourceExists(issues, projectDir, item.Source, "PreRemoveScript");
+
+        foreach (var item in project.SystemdUnits)
+            CheckSourceExists(issues, projectDir, item.Source, "SystemdUnit");
+
+        // Validate conditions are parseable
+        var allConditions = project.DependencyLists.Select(d => d.Condition)
+            .Concat(project.IncludeFiles.Select(f => f.Condition))
+            .Concat(project.IncludeFolders.Select(f => f.Condition))
+            .Concat(project.IncludeConfigFiles.Select(f => f.Condition))
+            .Concat(project.PostInstallScripts.Select(s => s.Condition))
+            .Concat(project.PreRemoveScripts.Select(s => s.Condition))
+            .Concat(project.SystemdUnits.Select(u => u.Condition))
+            .Concat(project.PrebuildCommands.Select(c => c.Condition));
+
+        var dummyCtx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64");
+        foreach (var cond in allConditions.Where(c => !string.IsNullOrWhiteSpace(c)))
+        {
+            try { _evaluator.Evaluate(cond, dummyCtx); }
+            catch (Exception ex)
+            {
+                issues.Add(new LintIssue(Severity.Error, $"Invalid condition '{cond}': {ex.Message}"));
+            }
+        }
+
+        // Target fields existence check
+        if (!project.IncludeFiles.Any() && !project.IncludeFolders.Any() && !project.IncludeConfigFiles.Any())
+            issues.Add(new LintIssue(Severity.Warning, "No files declared to include. The package will be empty."));
+
+        // Verify targets exist
+        foreach (var item in project.IncludeFiles)
+            RequireField(issues, item.Target, $"IncludeFile[@Source='{item.Source}'] Target");
+
+        foreach (var item in project.IncludeFolders)
+            RequireField(issues, item.Target, $"IncludeFolder[@Source='{item.Source}'] Target");
+
+        foreach (var item in project.IncludeConfigFiles)
+            RequireField(issues, item.Target, $"IncludeConfigFile[@Source='{item.Source}'] Target");
+
+        return issues;
+    }
+
+    private static void RequireField(List<LintIssue> issues, string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            issues.Add(new LintIssue(Severity.Error, $"<{fieldName}> is required but not set."));
+    }
+
+    private static void CheckSourceExists(List<LintIssue> issues, string projectDir,
+        string source, string itemType, bool isDirectory = false)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            issues.Add(new LintIssue(Severity.Error, $"<{itemType}> has empty Source attribute."));
+            return;
+        }
+
+        var fullPath = Path.GetFullPath(Path.Combine(projectDir, source));
+        var exists = isDirectory ? Directory.Exists(fullPath) : File.Exists(fullPath);
+        if (!exists)
+        {
+            issues.Add(new LintIssue(Severity.Warning,
+                $"<{itemType} Source=\"{source}\" /> — source path not found: {fullPath}"));
+        }
+    }
+}

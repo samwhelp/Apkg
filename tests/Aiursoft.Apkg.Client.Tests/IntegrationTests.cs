@@ -384,17 +384,15 @@ public class IntegrationTests
 
             Assert.AreEqual(0, result.ProgramReturn, result.StdErr);
 
-            var projectDir = Path.Combine(tempDir, "my-test-pkg");
-            Assert.IsTrue(Directory.Exists(projectDir), "Project directory should be created.");
-            Assert.IsTrue(File.Exists(Path.Combine(projectDir, "manifest.xml")), "manifest.xml should exist.");
-            Assert.IsTrue(Directory.Exists(Path.Combine(projectDir, "debs")), "debs/ directory should exist.");
+            var projectFile = Path.Combine(tempDir, "my-test-pkg.aosproj");
+            Assert.IsTrue(File.Exists(projectFile), "my-test-pkg.aosproj should be created.");
 
-            // Verify manifest is valid XML with the correct package name.
-            var serializer = new ManifestSerializer();
-            var manifest = await serializer.DeserializeFromFileAsync(Path.Combine(projectDir, "manifest.xml"));
-            Assert.AreEqual("my-test-pkg", manifest.Package);
-            Assert.AreEqual("main", manifest.Component);
-            Assert.IsTrue(manifest.Targets.Count > 0, "At least one target should exist in the template.");
+            // Verify it is valid XML with the correct package name.
+            var serializer = new AosprojSerializer();
+            var project = await serializer.DeserializeFromFileAsync(projectFile);
+            Assert.AreEqual("my-test-pkg", project.PackageName);
+            Assert.AreEqual("main", project.Component);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(project.SupportedSuites), "SupportedSuites should be set.");
         }
         finally
         {
@@ -403,15 +401,15 @@ public class IntegrationTests
     }
 
     [TestMethod]
-    public async Task InvokeNew_FailsIfDirectoryAlreadyExists()
+    public async Task InvokeNew_FailsIfProjectFileAlreadyExists()
     {
         var tempDir = CreateTestDirectory();
-        Directory.CreateDirectory(Path.Combine(tempDir, "my-pkg"));
+        await File.WriteAllTextAsync(Path.Combine(tempDir, "my-pkg.aosproj"), "<Project />");
         try
         {
             var result = await Program.TestRunAsync(["new", "--name", "my-pkg", "--output", tempDir]);
 
-            Assert.AreNotEqual(0, result.ProgramReturn, "Should fail when directory already exists.");
+            Assert.AreNotEqual(0, result.ProgramReturn, "Should fail when .aosproj file already exists.");
         }
         finally
         {
