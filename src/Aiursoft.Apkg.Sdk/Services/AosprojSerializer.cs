@@ -244,7 +244,9 @@ public class AosprojSerializer
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static XElement Elem(string name, string value) => new(name, value);
+    // Returns null for empty/whitespace values so XElement silently skips them.
+    private static XElement? Elem(string name, string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : new XElement(name, value);
 
     private static XElement ItemElem(string name, string? condition, params object[] attrs)
     {
