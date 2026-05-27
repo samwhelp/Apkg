@@ -12,14 +12,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Aiursoft.Apkg.Client.Handlers;
 
-/// <summary>
-/// <c>apkg publish [--path .]</c>
-/// Packages all built .deb files from bin/ into a single .apkg archive ready for upload.
-/// </summary>
 public class PublishHandler : ExecutableCommandHandlerBuilder
 {
     protected override string Name => "publish";
-    protected override string Description => "Pack built .deb files into a .apkg archive for distribution.";
+    protected override string Description => "Build .deb packages and pack them into a .apkg archive for distribution.";
 
     private static readonly Option<string> PathOption =
         new(name: "--path", aliases: ["-p"])
@@ -31,22 +27,54 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
     private static readonly Option<string> OutputOption =
         new(name: "--output", aliases: ["-o"])
         {
-            Description = "Output directory for the .apkg file (defaults to bin/ inside the project directory).",
+            Description = "Output directory (defaults to bin/ inside the project directory).",
             DefaultValueFactory = _ => string.Empty
         };
 
-    private static readonly Option<string> BinDirOption =
-        new(name: "--bin-dir")
+    private static readonly Option<string> DistroOption =
+        new(name: "--distro")
         {
-            Description = "Directory containing the built .deb files (defaults to bin/ inside the project directory).",
+            Description = "Target Linux distribution (e.g. ubuntu). Required unless --all is specified.",
             DefaultValueFactory = _ => string.Empty
+        };
+
+    private static readonly Option<string> SuiteOption =
+        new(name: "--suite")
+        {
+            Description = "Target suite/codename (e.g. jammy). Required unless --all is specified.",
+            DefaultValueFactory = _ => string.Empty
+        };
+
+    private static readonly Option<string> ArchOption =
+        new(name: "--arch")
+        {
+            Description = "Target CPU architecture (e.g. amd64). Required unless --all is specified.",
+            DefaultValueFactory = _ => string.Empty
+        };
+
+    private static readonly Option<bool> AllOption =
+        new(name: "--all")
+        {
+            Description = "Build for all combinations of TargetSuites × TargetArchitectures declared in the project.",
+            DefaultValueFactory = _ => false
+        };
+
+    private static readonly Option<bool> NoBuildOption =
+        new(name: "--no-build")
+        {
+            Description = "Skip the build step and only pack existing .deb files from bin/.",
+            DefaultValueFactory = _ => false
         };
 
     protected override IEnumerable<Option> GetCommandOptions() =>
     [
         PathOption,
         OutputOption,
-        BinDirOption,
+        DistroOption,
+        SuiteOption,
+        ArchOption,
+        AllOption,
+        NoBuildOption,
     ];
 
     protected override async Task Execute(ParseResult context)
@@ -54,39 +82,72 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         var verbose = context.GetValue(CommonOptionsProvider.VerboseOption);
         var pathArg = context.GetValue(PathOption)!;
         var outputArg = context.GetValue(OutputOption)!;
-        var binDirArg = context.GetValue(BinDirOption)!;
+        var distroArg = context.GetValue(DistroOption)!;
+        var suiteArg = context.GetValue(SuiteOption)!;
+        var archArg = context.GetValue(ArchOption)!;
+        var buildAll = context.GetValue(AllOption);
+        var noBuild = context.GetValue(NoBuildOption);
 
         var services = ServiceBuilder
             .CreateCommandHostBuilder<Startup>(verbose)
             .Build()
             .Services;
 
-        var aosprojSerializer = services.GetRequiredService<AosprojSerializer>();
         var logger = services.GetRequiredService<ILogger<PublishHandler>>();
+        var aosprojSerializer = services.GetRequiredService<AosprojSerializer>();
+        var debBuilder = services.GetRequiredService<DebBuilder>();
+        var conditionEvaluator = services.GetRequiredService<ConditionEvaluator>();
 
         var projectDir = Path.GetFullPath(pathArg);
         var projectFile = AosprojSerializer.FindProjectFile(projectDir);
         var project = await aosprojSerializer.DeserializeFromFileAsync(projectFile);
 
-        var binDir = string.IsNullOrWhiteSpace(binDirArg)
-            ? Path.Combine(projectDir, "bin")
-            : Path.GetFullPath(binDirArg);
+        // ── Build (unless --no-build) ─────────────────────────────────────────
+        if (!noBuild)
+        {
+            // Lint first
+            var linter = new AosprojLinter(conditionEvaluator);
+            var issues = linter.Lint(project, projectDir);
+            foreach (var issue in issues)
+            {
+                if (issue.Level == AosprojLinter.Severity.Error)
+                    logger.LogError("[Lint/{Level}] {Message}", issue.Level, issue.Message);
+                else
+                    logger.LogWarning("[Lint/{Level}] {Message}", issue.Level, issue.Message);
+            }
+            if (issues.Any(i => i.Level == AosprojLinter.Severity.Error))
+                throw new InvalidOperationException("Lint found errors. Fix them before publishing.");
 
+            var targets = ResolveBuildTargets(project, buildAll, distroArg, suiteArg, archArg);
+
+            logger.LogInformation("Building {Count} target(s) for {Package} {Version}...",
+                targets.Count, project.PackageName, project.PackageVersion);
+
+            var binDir = Path.Combine(projectDir, "bin");
+
+            foreach (var (distro, suite, arch) in targets)
+            {
+                logger.LogInformation("  [{Distro}/{Suite}/{Arch}]", distro, suite, arch);
+                await debBuilder.BuildAsync(projectDir, project, distro, suite, arch, binDir);
+            }
+        }
+
+        // ── Pack .deb files into .apkg ────────────────────────────────────────
+        var binDirectory = Path.Combine(projectDir, "bin");
         var outputDir = string.IsNullOrWhiteSpace(outputArg)
             ? Path.Combine(projectDir, "bin")
             : Path.GetFullPath(outputArg);
 
-        // Discover all .deb files in bin/ that match "pkgname_version_<suite>_<arch>.deb"
-        if (!Directory.Exists(binDir))
+        if (!Directory.Exists(binDirectory))
             throw new DirectoryNotFoundException(
-                $"bin/ directory not found at {binDir}. Run 'apkg build' first.");
+                $"bin/ directory not found at {binDirectory}. Run 'apkg publish' without --no-build first.");
 
-        var debFiles = Directory.GetFiles(binDir, $"{project.PackageName}_*.deb");
+        var debFiles = Directory.GetFiles(binDirectory, $"{project.PackageName}_*.deb");
         if (debFiles.Length == 0)
             throw new FileNotFoundException(
-                $"No .deb files found in {binDir} matching '{project.PackageName}_*.deb'. Run 'apkg build' first.");
+                $"No .deb files found in {binDirectory} matching '{project.PackageName}_*.deb'.");
 
-        logger.LogInformation("Found {Count} .deb file(s) to pack:", debFiles.Length);
+        logger.LogInformation("Packing {Count} .deb file(s) into .apkg:", debFiles.Length);
 
         var entries = new List<ApkgPackageEntry>();
         foreach (var debPath in debFiles)
@@ -107,7 +168,6 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
             logger.LogInformation("  + {File} → {Distro}/{Suite}", debFileName, distro, suite);
         }
 
-        // Build manifest
         var manifest = new ApkgPackageManifest
         {
             Name = project.PackageName,
@@ -119,10 +179,8 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
             Entries = entries
         };
 
-        // Serialize manifest to XML string
         var manifestXml = SerializeManifest(manifest);
 
-        // Write .apkg (tar.gz)
         Directory.CreateDirectory(outputDir);
         var apkgFileName = $"{project.PackageName}.{project.PackageVersion}.apkg";
         var apkgPath = Path.Combine(outputDir, apkgFileName);
@@ -133,7 +191,6 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         await using (var gzip = new GZipStream(fileStream, CompressionLevel.Optimal))
         await using (var tar = new TarWriter(gzip, TarEntryFormat.Pax, leaveOpen: false))
         {
-            // Write manifest.xml
             var manifestBytes = System.Text.Encoding.UTF8.GetBytes(manifestXml);
             var manifestEntry = new PaxTarEntry(TarEntryType.RegularFile, "manifest.xml")
             {
@@ -142,7 +199,6 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
             await tar.WriteEntryAsync(manifestEntry);
             logger.LogDebug("  + manifest.xml");
 
-            // Write deb files
             foreach (var debPath in debFiles)
             {
                 var debFileName = Path.GetFileName(debPath);
@@ -152,12 +208,41 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         }
 
         logger.LogInformation("Done! Created {ApkgPath}", apkgPath);
-        logger.LogInformation("To upload: apkg push --file {File} --source <URL> --api-key <KEY>", apkgPath);
+    }
+
+    private static List<(string distro, string suite, string arch)> ResolveBuildTargets(
+        AosprojProject project, bool buildAll, string distroArg, string suiteArg, string archArg)
+    {
+        if (buildAll)
+        {
+            if (string.IsNullOrWhiteSpace(project.TargetDistro))
+                throw new InvalidOperationException("Project has no <TargetDistro> declared. Cannot use --all.");
+            if (project.SuiteList.Length == 0)
+                throw new InvalidOperationException("Project has no <TargetSuites> declared. Cannot use --all.");
+            if (project.ArchList.Length == 0)
+                throw new InvalidOperationException("Project has no <TargetArchitectures> declared. Cannot use --all.");
+
+            return (
+                from suite in project.SuiteList
+                from arch in project.ArchList
+                select (project.TargetDistro, suite, arch)
+            ).ToList();
+        }
+
+        if (string.IsNullOrWhiteSpace(suiteArg))
+            throw new InvalidOperationException("Specify --suite (e.g. --suite jammy) or use --all.");
+        if (string.IsNullOrWhiteSpace(archArg))
+            throw new InvalidOperationException("Specify --arch (e.g. --arch amd64) or use --all.");
+
+        var distro = string.IsNullOrWhiteSpace(distroArg)
+            ? (string.IsNullOrWhiteSpace(project.TargetDistro) ? "ubuntu" : project.TargetDistro)
+            : distroArg;
+
+        return [(distro, suiteArg, archArg)];
     }
 
     private static (string suite, string arch) ParseDebFileName(string fileName, string packageName, string version)
     {
-        // Expected: pkgname_version_suite_arch.deb
         var withoutExt = Path.GetFileNameWithoutExtension(fileName);
         var prefix = $"{packageName}_{version}_";
         if (!withoutExt.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))

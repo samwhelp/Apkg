@@ -228,9 +228,9 @@ Packages.xz (包含哈希) → 验证 chromium.deb
 
 命令未找到提示 (`cnf/Commands-{arch}.xz`)、AppStream (`dep11`) 和翻译 (`i18n`) 数据的同步和路由暂未实现，属于未来规划。
 
-### 6.4 下载与 ETag
+### 6.4 下载
 
-`.deb` 文件下载通过 `artifacts/{distro}/pool/{**path}` 路径提供（AptMirrorController.GetPool）。若请求的包为虚包（`IsVirtual=true`），则在本次请求中从上游 RemoteUrl 下载并写入 CAS 存储（`Objects/{sha256[..2]}/{sha256}.deb`），后续请求直接走快速路径返回。ETag 由文件最后写入时间与长度的 XOR 生成，用于 HTTP 304 响应。
+`.deb` 文件下载通过 `artifacts/{distro}/pool/{**path}` 路径提供（AptMirrorController.GetPool）。若请求的包为虚包（`IsVirtual=true`），则在本次请求中从上游 RemoteUrl 下载并写入 CAS 存储（`Objects/{sha256[..2]}/{sha256}.deb`），后续请求直接走快速路径返回。通用文件下载由 `FilesController`（`download/{**folderNames}`）独立处理，附带基于 `LastWriteTime ^ Length` 的 ETag 用于 HTTP 304。
 
 ## 7. 签名 & 证书管理
 
