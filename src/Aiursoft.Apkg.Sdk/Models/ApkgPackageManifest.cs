@@ -1,5 +1,3 @@
-using System.Xml.Linq;
-
 namespace Aiursoft.Apkg.Sdk.Models;
 
 /// <summary>

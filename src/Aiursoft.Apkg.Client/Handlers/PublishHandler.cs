@@ -176,7 +176,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
     private static string SerializeManifest(ApkgPackageManifest manifest)
     {
         var serializer = new XmlSerializer(typeof(ApkgPackageManifest));
-        using var sw = new System.IO.StringWriter();
+        using var sw = new StringWriter();
         serializer.Serialize(sw, manifest);
         return sw.ToString();
     }

@@ -381,6 +381,7 @@ public class DebBuilderTests
             Assert.IsTrue(File.Exists(scriptDest), "IncludeScript should be copied.");
 
             // Verify 0755 permissions — this is the key difference from IncludeFile
+#pragma warning disable CA1416
             try
             {
                 var mode = File.GetUnixFileMode(scriptDest);
@@ -664,6 +665,530 @@ public class DebBuilderTests
         {
             Directory.Delete(tempDir, recursive: true);
         }
+    }
+
+    // ── Upstream control merging ──────────────────────────────────────────────
+
+    [TestMethod]
+    public void BuildControl_UpstreamMergesDepends()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc"
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Package"] = "base-files",
+            ["Version"] = "13ubuntu10",
+            ["Depends"] = "libc6, libssl3",
+            ["Section"] = "admin",
+            ["Priority"] = "required"
+        };
+
+        // Merge local depends with upstream (as BuildAsync does)
+        var merged = DebBuilder.MergeDepends(["libc6", "my-new-dep"], upstreamControl);
+        var control = DebBuilder.BuildControl(project, "amd64", merged, upstreamControl);
+
+        Assert.IsTrue(control.Contains("Depends: libc6, libssl3, my-new-dep"));
+        Assert.IsTrue(control.Contains("Section: admin"));
+        Assert.IsTrue(control.Contains("Priority: required"));
+    }
+
+    [TestMethod]
+    public void BuildControl_UpstreamDependsDedup_ByBaseName()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc"
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Depends"] = "libc6 (>= 2.34), libssl3"
+        };
+
+        // "libc6" should be dedup'd even though upstream has version constraint
+        var merged = DebBuilder.MergeDepends(["libc6"], upstreamControl);
+        var control = DebBuilder.BuildControl(project, "amd64", merged, upstreamControl);
+
+        Assert.IsTrue(control.Contains("Depends: libc6 (>= 2.34), libssl3"));
+        Assert.IsFalse(control.Contains("libc6, libc6"));
+    }
+
+    [TestMethod]
+    public void BuildControl_UpstreamFallsBackToHomepage()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            PackageHomepage = "" // not set locally
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Homepage"] = "https://ubuntu.com"
+        };
+
+        var control = DebBuilder.BuildControl(project, "amd64", [], upstreamControl);
+        Assert.IsTrue(control.Contains("Homepage: https://ubuntu.com"));
+    }
+
+    [TestMethod]
+    public void BuildControl_LocalHomepageOverridesUpstream()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            PackageHomepage = "https://anduinos.com"
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Homepage"] = "https://ubuntu.com"
+        };
+
+        var control = DebBuilder.BuildControl(project, "amd64", [], upstreamControl);
+        Assert.IsTrue(control.Contains("Homepage: https://anduinos.com"));
+    }
+
+    [TestMethod]
+    public void BuildControl_LocalProvidesOverridesUpstream()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            Provides = "my-virtual-pkg"
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Provides"] = "upstream-virtual-pkg"
+        };
+
+        var control = DebBuilder.BuildControl(project, "amd64", [], upstreamControl);
+        Assert.IsTrue(control.Contains("Provides: my-virtual-pkg"));
+    }
+
+    [TestMethod]
+    public void BuildControl_ProvidesFallsBackToUpstream()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            Provides = ""
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Provides"] = "upstream-virtual-pkg"
+        };
+
+        var control = DebBuilder.BuildControl(project, "amd64", [], upstreamControl);
+        Assert.IsTrue(control.Contains("Provides: upstream-virtual-pkg"));
+    }
+
+    [TestMethod]
+    public void BuildControl_UpstreamConflictsReplaces_FallBack()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            Conflicts = "",
+            Replaces = ""
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Conflicts"] = "old-pkg",
+            ["Replaces"] = "old-pkg"
+        };
+
+        var control = DebBuilder.BuildControl(project, "amd64", [], upstreamControl);
+        Assert.IsTrue(control.Contains("Conflicts: old-pkg"));
+        Assert.IsTrue(control.Contains("Replaces: old-pkg"));
+    }
+
+    [TestMethod]
+    public void BuildControl_NoUpstream_NoSectionPriority()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc"
+        };
+
+        var control = DebBuilder.BuildControl(project, "amd64", []);
+        Assert.IsFalse(control.Contains("Section:"));
+        Assert.IsFalse(control.Contains("Priority:"));
+    }
+
+    // ── ParseControlFile ──────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void ParseControlFile_BasicFields()
+    {
+        // ParseControlFile is private; tested indirectly through BuildControl with upstreamControl
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc"
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Package"] = "base-files",
+            ["Version"] = "13ubuntu10",
+            ["Architecture"] = "amd64",
+            ["Maintainer"] = "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
+            ["Installed-Size"] = "328"
+        };
+
+        var result = DebBuilder.BuildControl(project, "amd64", [], upstreamControl);
+        // Verify upstream fields don't leak through (local always wins for identity fields)
+        Assert.IsTrue(result.Contains("Package: my-pkg"));
+        Assert.IsTrue(result.Contains("Version: 1.0"));
+    }
+
+    [TestMethod]
+    public void BuildControl_UpstreamDependsWithVersionConstraints_Merged()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "my-pkg",
+            PackageVersion = "1.0",
+            PackageDescription = "desc"
+        };
+
+        var upstreamControl = new Dictionary<string, string>
+        {
+            ["Depends"] = "base-files (>= 11), libc6 (>= 2.34), libssl3 (>= 3.0.2)"
+        };
+
+        var merged = DebBuilder.MergeDepends(["my-dep (>= 2.0)"], upstreamControl);
+        var control = DebBuilder.BuildControl(project, "amd64", merged, upstreamControl);
+        Assert.IsTrue(control.Contains("Depends: base-files (>= 11), libc6 (>= 2.34), libssl3 (>= 3.0.2), my-dep (>= 2.0)"));
+    }
+
+    // ── MergeDepends ─────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void MergeDepends_NoUpstream_ReturnsLocal()
+    {
+        var local = new List<string> { "libc6", "libssl3" };
+        var result = DebBuilder.MergeDepends(local, null);
+        Assert.AreEqual(2, result.Count);
+        Assert.AreEqual("libc6", result[0]);
+        Assert.AreEqual("libssl3", result[1]);
+    }
+
+    [TestMethod]
+    public void MergeDepends_EmptyUpstreamDepends_ReturnsLocal()
+    {
+        var local = new List<string> { "libc6" };
+        var upstream = new Dictionary<string, string> { ["Depends"] = "" };
+        var result = DebBuilder.MergeDepends(local, upstream);
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual("libc6", result[0]);
+    }
+
+    [TestMethod]
+    public void MergeDepends_UpstreamWithoutDependsKey_ReturnsLocal()
+    {
+        var local = new List<string> { "libc6" };
+        var upstream = new Dictionary<string, string> { ["Package"] = "test" };
+        var result = DebBuilder.MergeDepends(local, upstream);
+        Assert.AreEqual(1, result.Count);
+    }
+
+    [TestMethod]
+    public void MergeDepends_DedupByBaseName()
+    {
+        var local = new List<string> { "libc6", "my-dep" };
+        var upstream = new Dictionary<string, string> { ["Depends"] = "libc6 (>= 2.34), libssl3" };
+        var result = DebBuilder.MergeDepends(local, upstream);
+        Assert.AreEqual(3, result.Count);
+        Assert.AreEqual("libc6 (>= 2.34)", result[0]); // upstream version wins
+        Assert.AreEqual("libssl3", result[1]);
+        Assert.AreEqual("my-dep", result[2]); // local-only appended
+    }
+
+    [TestMethod]
+    public void MergeDepends_NoOverlap_Concatenates()
+    {
+        var local = new List<string> { "my-dep" };
+        var upstream = new Dictionary<string, string> { ["Depends"] = "libc6, libssl3" };
+        var result = DebBuilder.MergeDepends(local, upstream);
+        Assert.AreEqual(3, result.Count);
+        Assert.AreEqual("libc6", result[0]);
+        Assert.AreEqual("libssl3", result[1]);
+        Assert.AreEqual("my-dep", result[2]);
+    }
+
+    [TestMethod]
+    public void MergeDepends_EmptyLocal_ReturnsUpstream()
+    {
+        var local = new List<string>();
+        var upstream = new Dictionary<string, string> { ["Depends"] = "libc6, libssl3" };
+        var result = DebBuilder.MergeDepends(local, upstream);
+        Assert.AreEqual(2, result.Count);
+        Assert.AreEqual("libc6", result[0]);
+        Assert.AreEqual("libssl3", result[1]);
+    }
+
+    // ── Error paths ───────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task BuildAsync_PrebuildCommandFailure_Throws()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            var project = new AosprojProject
+            {
+                PackageName = "fail-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Prebuild failure test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                PrebuildCommands =
+                {
+                    new PrebuildCommandItem { Run = "exit 42" }
+                }
+            };
+
+            try
+            {
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+                Assert.Fail("Expected InvalidOperationException was not thrown.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("exit 42"));
+                Assert.IsTrue(ex.Message.Contains("exit code 42"));
+            }
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    // ── Mixed item types ───────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task BuildAsync_MixedItemTypes_AllCopied()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            // Create all source files
+            File.WriteAllText(Path.Combine(projectDir, "readme.txt"), "readme");
+            Directory.CreateDirectory(Path.Combine(projectDir, "scripts"));
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "scripts", "helper.sh"), "#!/bin/sh\necho hi\n");
+            Directory.CreateDirectory(Path.Combine(projectDir, "config"));
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "config", "app.conf"), "key=val\n");
+            Directory.CreateDirectory(Path.Combine(projectDir, "deploy"));
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "deploy", "app.service"),
+                "[Unit]\nDescription=App\n\n[Service]\nExecStart=/usr/bin/app\n\n[Install]\nWantedBy=multi-user.target\n");
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "postinst.sh"), "echo postinstall\n");
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "prerm.sh"), "echo preremove\n");
+
+            var project = new AosprojProject
+            {
+                PackageName = "mixed-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Mixed item types",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                IncludeFiles =
+                {
+                    new IncludeFileItem { Source = "readme.txt", Target = "/usr/share/doc/mixed-pkg/readme.txt" }
+                },
+                IncludeScripts =
+                {
+                    new IncludeScriptItem { Source = "scripts/helper.sh", Target = "/usr/lib/mixed-pkg/helper" }
+                },
+                ConfFiles =
+                {
+                    new ConfFileItem { Source = "config/app.conf", Target = "/etc/mixed-pkg/app.conf" }
+                },
+                SystemdUnits =
+                {
+                    new SystemdUnitItem { Source = "deploy/app.service", AutoEnable = true }
+                },
+                PostInstallScripts =
+                {
+                    new PostInstallScriptItem { Source = "postinst.sh" }
+                },
+                PreRemoveScripts =
+                {
+                    new PreRemoveScriptItem { Source = "prerm.sh" }
+                }
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+            var staging = Path.Combine(projectDir, "obj", "jammy_amd64");
+
+            // IncludeFile
+            Assert.IsTrue(File.Exists(Path.Combine(staging, "usr", "share", "doc", "mixed-pkg", "readme.txt")));
+            // IncludeScript (executable)
+            Assert.IsTrue(File.Exists(Path.Combine(staging, "usr", "lib", "mixed-pkg", "helper")));
+            // ConfFile
+            Assert.IsTrue(File.Exists(Path.Combine(staging, "etc", "mixed-pkg", "app.conf")));
+            // SystemdUnit
+            Assert.IsTrue(File.Exists(Path.Combine(staging, "lib", "systemd", "system", "app.service")));
+            // PostInstallScript merged into postinst
+            var postinst = await File.ReadAllTextAsync(Path.Combine(staging, "DEBIAN", "postinst"));
+            Assert.IsTrue(postinst.Contains("echo postinstall"));
+            // PreRemoveScript merged into prerm
+            var prerm = await File.ReadAllTextAsync(Path.Combine(staging, "DEBIAN", "prerm"));
+            Assert.IsTrue(prerm.Contains("echo preremove"));
+            // conffiles
+            Assert.IsTrue(File.Exists(Path.Combine(staging, "DEBIAN", "conffiles")));
+            // .deb produced
+            Assert.IsTrue(File.Exists(Path.Combine(outputDir, "mixed-pkg_1.0.0_jammy_amd64.deb")));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    // ── BuildDownloadSpec ────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void BuildDownloadSpec_ArchAll_ReturnsPackageSlashSuite()
+    {
+        var result = DebBuilder.BuildDownloadSpec("base-files", "all", "jammy");
+        Assert.AreEqual("base-files/jammy", result);
+    }
+
+    [TestMethod]
+    public void BuildDownloadSpec_ArchSpecific_ReturnsPackageColonArchSlashSuite()
+    {
+        var result = DebBuilder.BuildDownloadSpec("libc6", "amd64", "noble");
+        Assert.AreEqual("libc6:amd64/noble", result);
+    }
+
+    [TestMethod]
+    public void BuildDownloadSpec_EmptyArch_TreatedAsAll()
+    {
+        var result = DebBuilder.BuildDownloadSpec("base-files", "", "jammy");
+        Assert.AreEqual("base-files/jammy", result);
+    }
+
+    // ── StripShebang ─────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void StripShebang_RemovesShebangLine()
+    {
+        var input = "#!/bin/sh\nset -e\necho hello\n";
+        var result = DebBuilder.StripShebang(input);
+        Assert.IsFalse(result.StartsWith("#!"));
+        Assert.IsTrue(result.Contains("set -e"));
+        Assert.IsTrue(result.Contains("echo hello"));
+    }
+
+    [TestMethod]
+    public void StripShebang_OnlyShebang_ReturnsEmpty()
+    {
+        var result = DebBuilder.StripShebang("#!/bin/bash\n");
+        Assert.AreEqual("", result);
+    }
+
+    [TestMethod]
+    public void StripShebang_NoShebang_Unchanged()
+    {
+        var input = "set -e\necho hello\n";
+        var result = DebBuilder.StripShebang(input);
+        Assert.AreEqual("set -e\necho hello\n", result);
+    }
+
+    [TestMethod]
+    public void StripShebang_TrimsLeadingBlankLines()
+    {
+        var input = "\n\nset -e\necho hello\n";
+        var result = DebBuilder.StripShebang(input);
+        Assert.AreEqual("set -e\necho hello\n", result);
+    }
+
+    // ── ParseControlFile ─────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void ParseControlFile_SimpleFields()
+    {
+        var input = "Package: base-files\nVersion: 13ubuntu10\nArchitecture: amd64\n";
+        var result = DebBuilder.ParseControlFile(input);
+        Assert.AreEqual("base-files", result["Package"]);
+        Assert.AreEqual("13ubuntu10", result["Version"]);
+        Assert.AreEqual("amd64", result["Architecture"]);
+    }
+
+    [TestMethod]
+    public void ParseControlFile_MultiLineField()
+    {
+        var input = """
+            Package: base-files
+            Description: This is a short description
+             This is a continuation line.
+             Another continuation line.
+            Homepage: https://example.com
+            """;
+        var result = DebBuilder.ParseControlFile(input);
+        Assert.AreEqual("base-files", result["Package"]);
+        Assert.IsTrue(result["Description"].Contains("This is a short description"));
+        Assert.IsTrue(result["Description"].Contains("This is a continuation line."));
+        Assert.IsTrue(result["Description"].Contains("Another continuation line."));
+        Assert.AreEqual("https://example.com", result["Homepage"]);
+    }
+
+    [TestMethod]
+    public void ParseControlFile_DependsWithVersionConstraints()
+    {
+        var input = "Depends: libc6 (>= 2.34), libssl3 (>= 3.0.2)\n";
+        var result = DebBuilder.ParseControlFile(input);
+        Assert.AreEqual("libc6 (>= 2.34), libssl3 (>= 3.0.2)", result["Depends"]);
+    }
+
+    [TestMethod]
+    public void ParseControlFile_TabContinuation()
+    {
+        var input = "Description: Short\n\tTab continuation.\nHomepage: https://x.com\n";
+        var result = DebBuilder.ParseControlFile(input);
+        Assert.IsTrue(result["Description"].Contains("Tab continuation."));
+    }
+
+    [TestMethod]
+    public void ParseControlFile_EmptyInput_ReturnsEmpty()
+    {
+        var result = DebBuilder.ParseControlFile("");
+        Assert.AreEqual(0, result.Count);
     }
 
     private static string CreateTestDirectory()

@@ -36,6 +36,20 @@ public class AosprojProject
     /// <summary>Space- or comma-separated architectures, e.g. "amd64 arm64".</summary>
     public string TargetArchitectures { get; set; } = "amd64";
 
+    // ── Upstream source (optional — derive from an existing .deb) ─────────────
+    /// <summary>APT repository base URL of the upstream package, e.g. "http://archive.ubuntu.com/ubuntu".</summary>
+    public string UpstreamUrl { get; set; } = string.Empty;
+    /// <summary>Distro identifier of the upstream repository, e.g. "ubuntu".</summary>
+    public string UpstreamDistro { get; set; } = string.Empty;
+    /// <summary>Package name to derive from, e.g. "base-files".</summary>
+    public string UpstreamPackage { get; set; } = string.Empty;
+    /// <summary>Upstream suite to pull from. Supports $(Suite) variable. e.g. "resolute", "$(Suite)".</summary>
+    public string UpstreamSuite { get; set; } = string.Empty;
+    /// <summary>Upstream APT component, e.g. "main".</summary>
+    public string UpstreamComponent { get; set; } = "main";
+    /// <summary>Architecture of the upstream package, e.g. "all", "amd64".</summary>
+    public string UpstreamArch { get; set; } = "all";
+
     // ── Items ────────────────────────────────────────────────────────────────
     public List<PrebuildCommandItem> PrebuildCommands { get; set; } = [];
     public List<IncludeFileItem> IncludeFiles { get; set; } = [];
@@ -49,6 +63,8 @@ public class AosprojProject
     // ── Computed helpers ─────────────────────────────────────────────────────
     public string[] SuiteList => Split(TargetSuites);
     public string[] ArchList => Split(TargetArchitectures);
+    /// <summary>True when this project derives from an upstream .deb (base-files pattern).</summary>
+    public bool HasUpstreamSource => !string.IsNullOrWhiteSpace(UpstreamPackage);
 
     private static string[] Split(string value) =>
         value.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

@@ -163,4 +163,51 @@ public class AosprojProjectTests
         Assert.AreEqual("/usr/bin/deploy", item.Target);
         Assert.AreEqual("'$(Arch)' == 'amd64'", item.Condition);
     }
+
+    // ── UpstreamSource ─────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void HasUpstreamSource_WhenUpstreamPackageIsSet_ReturnsTrue()
+    {
+        var project = new AosprojProject { UpstreamPackage = "base-files" };
+        Assert.IsTrue(project.HasUpstreamSource);
+    }
+
+    [TestMethod]
+    public void HasUpstreamSource_WhenUpstreamPackageIsEmpty_ReturnsFalse()
+    {
+        var project = new AosprojProject();
+        Assert.IsFalse(project.HasUpstreamSource);
+    }
+
+    [TestMethod]
+    public void HasUpstreamSource_WhenUpstreamPackageIsWhitespace_ReturnsFalse()
+    {
+        var project = new AosprojProject { UpstreamPackage = "  " };
+        Assert.IsFalse(project.HasUpstreamSource);
+    }
+
+    [TestMethod]
+    public void Defaults_UpstreamComponentIsMain()
+    {
+        var project = new AosprojProject();
+        Assert.AreEqual("main", project.UpstreamComponent);
+    }
+
+    [TestMethod]
+    public void Defaults_UpstreamArchIsAll()
+    {
+        var project = new AosprojProject();
+        Assert.AreEqual("all", project.UpstreamArch);
+    }
+
+    [TestMethod]
+    public void Defaults_UpstreamFieldsAreEmpty()
+    {
+        var project = new AosprojProject();
+        Assert.AreEqual("", project.UpstreamUrl);
+        Assert.AreEqual("", project.UpstreamDistro);
+        Assert.AreEqual("", project.UpstreamPackage);
+        Assert.AreEqual("", project.UpstreamSuite);
+    }
 }

@@ -56,6 +56,12 @@ public class AosprojSerializer
                 case "TargetDistro":       project.TargetDistro = el.Value; break;
                 case "TargetSuites":       project.TargetSuites = el.Value; break;
                 case "TargetArchitectures": project.TargetArchitectures = el.Value; break;
+                case "UpstreamUrl":        project.UpstreamUrl = el.Value; break;
+                case "UpstreamDistro":     project.UpstreamDistro = el.Value; break;
+                case "UpstreamPackage":    project.UpstreamPackage = el.Value; break;
+                case "UpstreamSuite":      project.UpstreamSuite = el.Value; break;
+                case "UpstreamComponent":  project.UpstreamComponent = el.Value; break;
+                case "UpstreamArch":       project.UpstreamArch = el.Value; break;
             }
         }
     }
@@ -169,7 +175,13 @@ public class AosprojSerializer
             Elem("Component", project.Component),
             Elem("TargetDistro", project.TargetDistro),
             Elem("TargetSuites", project.TargetSuites),
-            Elem("TargetArchitectures", project.TargetArchitectures)
+            Elem("TargetArchitectures", project.TargetArchitectures),
+            Elem("UpstreamUrl", project.UpstreamUrl),
+            Elem("UpstreamDistro", project.UpstreamDistro),
+            Elem("UpstreamPackage", project.UpstreamPackage),
+            Elem("UpstreamSuite", project.UpstreamSuite),
+            Elem("UpstreamComponent", project.UpstreamComponent),
+            Elem("UpstreamArch", project.UpstreamArch)
         );
 
         var itemGroups = new List<XElement>();

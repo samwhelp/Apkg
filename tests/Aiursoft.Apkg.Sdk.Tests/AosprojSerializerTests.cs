@@ -414,6 +414,153 @@ public class AosprojSerializerTests
         }
     }
 
+    // ── UpstreamSource properties ─────────────────────────────────────────────
+
+    [TestMethod]
+    public void RoundTrip_UpstreamSourceProperties()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0.0",
+            PackageDescription = "desc",
+            UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+            UpstreamDistro = "ubuntu",
+            UpstreamPackage = "base-files",
+            UpstreamSuite = "$(Suite)",
+            UpstreamComponent = "main",
+            UpstreamArch = "all"
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual(original.UpstreamUrl, roundTripped.UpstreamUrl);
+        Assert.AreEqual(original.UpstreamDistro, roundTripped.UpstreamDistro);
+        Assert.AreEqual(original.UpstreamPackage, roundTripped.UpstreamPackage);
+        Assert.AreEqual(original.UpstreamSuite, roundTripped.UpstreamSuite);
+        Assert.AreEqual(original.UpstreamComponent, roundTripped.UpstreamComponent);
+        Assert.AreEqual(original.UpstreamArch, roundTripped.UpstreamArch);
+    }
+
+    [TestMethod]
+    public void Serialize_UpstreamFieldsOmittedWhenEmpty()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0.0",
+            PackageDescription = "desc"
+        };
+
+        var doc = _serializer.Serialize(project);
+        var xml = doc.ToString();
+
+        Assert.IsFalse(xml.Contains("UpstreamUrl"), "Empty UpstreamUrl should be omitted.");
+        Assert.IsFalse(xml.Contains("UpstreamPackage"), "Empty UpstreamPackage should be omitted.");
+    }
+
+    [TestMethod]
+    public void Deserialize_UpstreamSourceFromXml()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>base-files</PackageName>
+                <PackageVersion>13</PackageVersion>
+                <PackageDescription>AnduinOS base files</PackageDescription>
+                <UpstreamUrl>http://archive.ubuntu.com/ubuntu</UpstreamUrl>
+                <UpstreamDistro>ubuntu</UpstreamDistro>
+                <UpstreamPackage>base-files</UpstreamPackage>
+                <UpstreamSuite>$(Suite)</UpstreamSuite>
+                <UpstreamComponent>main</UpstreamComponent>
+                <UpstreamArch>amd64</UpstreamArch>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+
+        Assert.AreEqual("http://archive.ubuntu.com/ubuntu", project.UpstreamUrl);
+        Assert.AreEqual("ubuntu", project.UpstreamDistro);
+        Assert.AreEqual("base-files", project.UpstreamPackage);
+        Assert.AreEqual("$(Suite)", project.UpstreamSuite);
+        Assert.AreEqual("main", project.UpstreamComponent);
+        Assert.AreEqual("amd64", project.UpstreamArch);
+        Assert.IsTrue(project.HasUpstreamSource);
+    }
+
+    // ── File API round-trip ──────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task DeserializeFromFileAsync_RoundTrip()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "file-read-pkg",
+            PackageVersion = "2.0.0",
+            PackageDescription = "File read test",
+            Maintainer = "File <file@example.com>",
+            TargetDistro = "debian",
+            TargetSuites = "bookworm",
+            IncludeFiles =
+            {
+                new IncludeFileItem { Source = "src/app", Target = "/usr/bin/app" }
+            }
+        };
+
+        var path = Path.GetTempFileName();
+        try
+        {
+            await _serializer.SerializeToFileAsync(original, path);
+            var roundTripped = await _serializer.DeserializeFromFileAsync(path);
+
+            Assert.AreEqual(original.PackageName, roundTripped.PackageName);
+            Assert.AreEqual(original.PackageVersion, roundTripped.PackageVersion);
+            Assert.AreEqual("debian", roundTripped.TargetDistro);
+            Assert.AreEqual(1, roundTripped.IncludeFiles.Count);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [TestMethod]
+    public async Task DeserializeFromFileAsync_ReadsSavedXml()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "saved-pkg",
+            PackageVersion = "3.0.0",
+            PackageDescription = "Save test",
+            TargetSuites = "jammy noble",
+            Provides = "virtual-thing",
+            PrebuildCommands =
+            {
+                new PrebuildCommandItem { Run = "make" }
+            }
+        };
+
+        var path = Path.GetTempFileName();
+        try
+        {
+            await _serializer.SerializeToFileAsync(project, path);
+            var read = await _serializer.DeserializeFromFileAsync(path);
+
+            Assert.AreEqual("saved-pkg", read.PackageName);
+            Assert.AreEqual("3.0.0", read.PackageVersion);
+            Assert.AreEqual("jammy noble", read.TargetSuites);
+            Assert.AreEqual("virtual-thing", read.Provides);
+            Assert.AreEqual(1, read.PrebuildCommands.Count);
+            Assert.AreEqual("make", read.PrebuildCommands[0].Run);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     // ── Condition attributes on items ─────────────────────────────────────────
 
     [TestMethod]

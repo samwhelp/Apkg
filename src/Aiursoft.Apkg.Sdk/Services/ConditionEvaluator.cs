@@ -50,12 +50,19 @@ public class ConditionEvaluator
     private static string Unquote(string s) => s.Trim().Trim('\'', '"');
 
     public static IReadOnlyDictionary<string, string> BuildContext(
-        string distro, string suite, string arch) =>
+        string distro, string suite, string arch,
+        string? upstreamDistro = null,
+        string? upstreamSuite = null,
+        string? upstreamArch = null) =>
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Distro"] = distro,
             ["Suite"] = suite,
             ["Arch"] = arch,
             ["Architecture"] = arch,
+            ["UpstreamDistro"] = upstreamDistro ?? string.Empty,
+            ["UpstreamSuite"] = upstreamSuite ?? string.Empty,
+            ["UpstreamArch"] = upstreamArch ?? string.Empty,
+            ["UpstreamArchitecture"] = upstreamArch ?? string.Empty,
         };
 }

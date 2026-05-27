@@ -37,6 +37,18 @@ public class AosprojLinter
         if (string.IsNullOrWhiteSpace(project.Maintainer) && string.IsNullOrWhiteSpace(project.PackageAuthors))
             issues.Add(new LintIssue(Severity.Warning, "Neither <Maintainer> nor <PackageAuthors> is set."));
 
+        // UpstreamSource: if deriving from a package, all upstream fields must be present
+        if (project.HasUpstreamSource)
+        {
+            RequireField(issues, project.UpstreamUrl, "UpstreamUrl (required when UpstreamPackage is set)");
+            RequireField(issues, project.UpstreamDistro, "UpstreamDistro (required when UpstreamPackage is set)");
+            RequireField(issues, project.UpstreamSuite, "UpstreamSuite (required when UpstreamPackage is set)");
+            if (string.IsNullOrWhiteSpace(project.UpstreamComponent))
+                issues.Add(new LintIssue(Severity.Warning, "<UpstreamComponent> is not set. Defaulting to 'main'."));
+            if (string.IsNullOrWhiteSpace(project.UpstreamArch))
+                issues.Add(new LintIssue(Severity.Warning, "<UpstreamArch> is not set. Defaulting to 'all'."));
+        }
+
         // Package name must be lowercase with only letters, digits, and hyphens
         if (!string.IsNullOrWhiteSpace(project.PackageName) &&
             !System.Text.RegularExpressions.Regex.IsMatch(project.PackageName, @"^[a-z0-9][a-z0-9\-+.]*$"))
@@ -78,7 +90,10 @@ public class AosprojLinter
             .Concat(project.SystemdUnits.Select(u => u.Condition))
             .Concat(project.PrebuildCommands.Select(c => c.Condition));
 
-        var dummyCtx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64");
+        var dummyCtx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64",
+            upstreamDistro: project.UpstreamDistro,
+            upstreamSuite: project.UpstreamSuite,
+            upstreamArch: project.UpstreamArch);
         foreach (var cond in allConditions.Where(c => !string.IsNullOrWhiteSpace(c)))
         {
             try { _evaluator.Evaluate(cond, dummyCtx); }

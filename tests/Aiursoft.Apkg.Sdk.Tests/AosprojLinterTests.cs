@@ -666,6 +666,341 @@ public class AosprojLinterTests
         }
     }
 
+    // ── UpstreamSource validation ─────────────────────────────────────────────
+
+    [TestMethod]
+    public void Lint_UpstreamPackageSet_MissingUpstreamUrl_Error()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = "jammy",
+                UpstreamUrl = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Error && i.Message.Contains("UpstreamUrl")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamPackageSet_MissingUpstreamDistro_Error()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamSuite = "jammy",
+                UpstreamDistro = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Error && i.Message.Contains("UpstreamDistro")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamPackageSet_MissingUpstreamSuite_Error()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Error && i.Message.Contains("UpstreamSuite")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamPackageSet_MissingUpstreamComponent_Warning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Warning && i.Message.Contains("UpstreamComponent")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamPackageSet_MissingUpstreamArch_Warning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = "jammy",
+                UpstreamArch = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Warning && i.Message.Contains("UpstreamArch")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamPackageSet_AllFieldsPresent_NoUpstreamErrors()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "app"), "binary");
+
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = "main",
+                UpstreamArch = "all",
+                IncludeFiles =
+                {
+                    new IncludeFileItem { Source = "app", Target = "/usr/bin/app" }
+                }
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsFalse(issues.Any(i => i.Message.Contains("Upstream")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_NoUpstreamPackage_NoUpstreamValidation()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "app"), "binary");
+
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "",
+                UpstreamUrl = "",
+                UpstreamDistro = "",
+                UpstreamSuite = "",
+                IncludeFiles =
+                {
+                    new IncludeFileItem { Source = "app", Target = "/usr/bin/app" }
+                }
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsFalse(issues.Any(i => i.Message.Contains("Upstream")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamConditionParseable_NoError()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "app"), "binary");
+
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = "$(Suite)",
+                UpstreamComponent = "main",
+                UpstreamArch = "all",
+                Dependencies =
+                {
+                    new ConditionalValue { Value = "libc6", Condition = "'$(UpstreamSuite)' != ''" }
+                },
+                IncludeFiles =
+                {
+                    new IncludeFileItem { Source = "app", Target = "/usr/bin/app" }
+                }
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsFalse(issues.Any(i => i.Message.Contains("Invalid condition")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_MissingTargetDistro_Warning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                TargetDistro = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Warning
+                && i.Message.Contains("TargetDistro")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_MissingTargetArchitectures_Warning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                TargetArchitectures = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Level == AosprojLinter.Severity.Warning
+                && i.Message.Contains("TargetArchitectures")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_InvalidConditionOnPrebuildCommand_Error()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                PrebuildCommands =
+                {
+                    new PrebuildCommandItem { Run = "echo hi", Condition = "$(Suite) junk $(Distro)" }
+                }
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Message.Contains("Invalid condition")
+                && i.Message.Contains("$(Suite) junk $(Distro)")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
     private static string CreateTempDir()
     {
         var path = Path.Combine(Path.GetTempPath(), "lint-tests", Guid.NewGuid().ToString("N"));

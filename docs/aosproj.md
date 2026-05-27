@@ -99,8 +99,62 @@
 | `Provides` | — | deb `Provides` 字段，声明此包提供哪些虚包 |
 | `Conflicts` | — | deb `Conflicts` 字段，声明与哪些包冲突 |
 | `Replaces` | — | deb `Replaces` 字段，声明此包替换哪些旧包 |
+| `UpstreamUrl` | ⚠️ | 上游 APT 仓库的 base URL（如 `http://archive.ubuntu.com/ubuntu`）。设置 `UpstreamPackage` 时必填 |
+| `UpstreamDistro` | ⚠️ | 上游仓库的发行版标识（如 `ubuntu`）。设置 `UpstreamPackage` 时必填 |
+| `UpstreamPackage` | — | 上游 .deb 的包名（如 `base-files`）。一旦设置，触发上游派生模式 |
+| `UpstreamSuite` | ⚠️ | 上游 suite（如 `$(Suite)` 表示与构建 suite 同名）。设置 `UpstreamPackage` 时必填 |
+| `UpstreamComponent` | — | 上游 APT 组件，默认为 `main` |
+| `UpstreamArch` | — | 上游包架构，默认为 `all` |
 
-### `apkg lint` 检查规则
+### 上游派生（UpstreamSource）
+
+当 `.aosproj` 设置了 `<UpstreamPackage>` 时，`apkg build` 进入**上游派生模式**——不从零构建，而是从一个已存在的 `.deb` 派生：
+
+1. **下载**：通过隔离的 `apt-get` 从 `UpstreamUrl` 的 `UpstreamSuite` 下载 `UpstreamPackage`
+2. **解包**：用 `dpkg-deb -x` 提取上游数据到暂存区，用 `dpkg-deb -e` 提取控制文件
+3. **PrebuildCommand**：执行预构建命令（此时可对上游文件执行 `sed` 等操作）
+4. **合并**：本地条目（`IncludeFile`、`IncludeScript`、`IncludeFolder`）覆盖到暂存区
+5. **合并 control 字段**：
+   - `Depends`：上游依赖在前，本地 `Dependency` 附录在后。以基础包名去重（如上游有 `libc6 (>= 2.34)` 而本地声明 `libc6`，保留上游版本）
+   - `Provides`、`Conflicts`、`Replaces`：本地优先，未填时回退到上游值
+   - `Homepage`：本地优先，未填时回退到上游值
+   - `Section`、`Priority`：始终从上继承
+6. **链式 maintainer scripts**：上游 `postinst`/`prerm`/`postrm`（去除 shebang）→ 本地脚本 → systemd 自动脚本，按序追加
+
+这是 AnduinOS 替换 Ubuntu `base-files`（`Essential: yes`）等基础包的推荐模式：通过 APT pinning 设置 `Pin-Priority: 1001`，让 AnduinOS 的派生包覆盖 Ubuntu 原包，同时保持一切兼容。
+
+**`base-files` 示例：**
+
+```xml
+<Project Sdk="Aiursoft.Apkg.Sdk">
+  <PropertyGroup>
+    <PackageName>base-files</PackageName>
+    <PackageVersion>13</PackageVersion>
+    <PackageDescription>AnduinOS base files (derived from Ubuntu)</PackageDescription>
+    <Maintainer>AnduinOS Team &lt;dev@anduinos.com&gt;</Maintainer>
+    <TargetDistro>anduinos</TargetDistro>
+    <TargetSuites>resolute questing</TargetSuites>
+    <TargetArchitectures>amd64 arm64</TargetArchitectures>
+
+    <!-- 上游派生：从 Ubuntu archive 下载 base-files .deb 并在此基础上叠加本地文件 -->
+    <UpstreamUrl>http://archive.ubuntu.com/ubuntu</UpstreamUrl>
+    <UpstreamDistro>ubuntu</UpstreamDistro>
+    <UpstreamPackage>base-files</UpstreamPackage>
+    <UpstreamSuite>$(Suite)</UpstreamSuite>
+    <UpstreamComponent>main</UpstreamComponent>
+    <UpstreamArch>amd64</UpstreamArch>
+  </PropertyGroup>
+
+  <!-- 覆盖上游文件：用 AnduinOS 定制的 /etc/issue, /etc/os-release 等替换上游文件 -->
+  <ItemGroup>
+    <IncludeFile Include="deploy/issue" Target="/etc/issue" />
+    <IncludeFile Include="deploy/os-release" Target="/etc/os-release" />
+    <IncludeFile Include="deploy/lsb-release" Target="/etc/lsb-release" />
+  </ItemGroup>
+</Project>
+```
+
+`$(Suite)` 变量会在构建时解析为 `resolute`、`questing` 等，实现同一 `.aosproj` 从不同上游 suite 下载对应版本。
 
 `apkg lint` 可单独执行，也由 `apkg build` 在构建前自动调用。Error 级别问题会中止构建，Warning 仅打印提示。以下是它检查的全部规则：
 
@@ -111,6 +165,11 @@
 | 所有条目的 `Target=` 不能为空 | **Error** |
 | `Condition` 表达式必须能被解析 | **Error** |
 | `Maintainer` 与 `PackageAuthors` 至少填一个 | Warning |
+| `UpstreamPackage` 设置时必须同时设置 `UpstreamUrl`、`UpstreamDistro`、`UpstreamSuite` | **Error** |
+| `UpstreamPackage` 设置时 `UpstreamComponent` 未填（默认 `main`） | Warning |
+| `UpstreamPackage` 设置时 `UpstreamArch` 未填（默认 `all`） | Warning |
+| `TargetDistro` 未设（`--all` 模式必须，默认回退 `ubuntu`） | Warning |
+| `TargetArchitectures` 未设（`--all` 模式必须） | Warning |
 | 所有 `Include=` 指向的源文件/目录在磁盘上实际存在 | Warning |
 | 至少声明一个文件条目（`IncludeFile`/`IncludeScript`/`IncludeFolder`/`ConfFile`），否则包为空 | Warning |
 
@@ -118,7 +177,7 @@ Error 级别问题会中止构建；Warning 级别问题会打印提示但不中
 
 ### ItemGroup 条目类型
 
-所有条目都支持 MSBuild 风格的 `Condition` 属性，可用 `$(Distro)`、`$(Suite)`、`$(Arch)` 在构建矩阵中做条件分支。
+所有条目都支持 MSBuild 风格的 `Condition` 属性，可用 `$(Distro)`、`$(Suite)`、`$(Arch)`、`$(UpstreamDistro)`、`$(UpstreamSuite)`、`$(UpstreamArch)` 在构建矩阵中做条件分支。
 
 #### IncludeFile — 安装单个文件
 
@@ -217,12 +276,17 @@ Error 级别问题会中止构建；Warning 级别问题会打印提示但不中
 ```xml
 <!--
   在打 deb 之前执行的 shell 命令，适合编译步骤或资源生成。
+  执行顺序：上游解包（如果配置了 UpstreamSource）→ PrebuildCommand → IncludeFile 等文件覆盖。
+  因此可以在 PrebuildCommand 中对上游文件执行 sed、patch 等操作，再让本地文件覆盖最终版本。
   Run = 要执行的命令（在 .aosproj 所在目录下执行）
 -->
 <PrebuildCommand Run="make release" />
 
 <!-- 带条件：只在 amd64 上执行特定编译步骤 -->
 <PrebuildCommand Run="make amd64-extras" Condition="'$(Arch)' == 'amd64'" />
+
+<!-- 上游派生模式下修改上游文件 -->
+<PrebuildCommand Run="sed -i 's/Ubuntu/AnduinOS/g' obj/$(Suite)_$(Arch)/etc/issue" />
 ```
 
 #### PostInstallScript — 安装后脚本
