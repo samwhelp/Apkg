@@ -173,8 +173,6 @@
 | 所有 `Include=` 指向的源文件/目录在磁盘上实际存在 | Warning |
 | 至少声明一个文件条目（`IncludeFile`/`IncludeScript`/`IncludeFolder`/`ConfFile`），否则包为空 | Warning |
 
-Error 级别问题会中止构建；Warning 级别问题会打印提示但不中止。
-
 ### ItemGroup 条目类型
 
 所有条目都支持 MSBuild 风格的 `Condition` 属性，可用 `$(Distro)`、`$(Suite)`、`$(Arch)`、`$(UpstreamDistro)`、`$(UpstreamSuite)`、`$(UpstreamArch)` 在构建矩阵中做条件分支。
