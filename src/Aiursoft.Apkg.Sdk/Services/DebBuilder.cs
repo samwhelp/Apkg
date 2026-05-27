@@ -233,7 +233,7 @@ public class DebBuilder
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static string BuildControl(AosprojProject p, string arch, List<string> depends)
+    internal static string BuildControl(AosprojProject p, string arch, List<string> depends)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"Package: {p.PackageName}");
@@ -264,7 +264,7 @@ public class DebBuilder
         return sb.ToString();
     }
 
-    private static string NormalizeTargetPath(string target)
+    internal static string NormalizeTargetPath(string target)
     {
         // Strip leading slash so we can Path.Combine with the staging root
         return target.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);

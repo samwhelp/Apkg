@@ -84,12 +84,12 @@
 |------|------|------|
 | `PackageName` | ✅ | deb 包名，正则 `^[a-z0-9][a-z0-9\-+.]*$`（小写字母、数字、`-`、`+`、`.`，首字符须为字母或数字） |
 | `PackageVersion` | ✅ | 版本号，遵循 Debian 版本规范（如 `1.0.0`） |
-| `PackageAuthors` | ✅ | 默认 Maintainer，可被 `Maintainer` 字段覆盖 |
 | `PackageDescription` | ✅ | 包的单行简介 |
-| `TargetDistro` | ✅ | 发行版标识，与 Apkg 服务器上的仓库 `Distro` 字段一致（如 `anduinos`、`ubuntu`） |
 | `TargetSuites` | ✅ | 空格分隔的 suite 列表（如 `resolute questing`），每个 suite 产出一个 `.deb` |
-| `TargetArchitectures` | ✅ | 空格分隔的架构列表（如 `amd64 arm64`），或 `all` 表示架构无关 |
-| `Component` | ✅ | APT 组件，通常为 `main` |
+| `PackageAuthors` | ⚠️ | 默认 Maintainer，可被 `Maintainer` 字段覆盖。lint Warning 但 `Maintainer` 可替代 |
+| `TargetDistro` | ⚠️ | 发行版标识（如 `anduinos`、`ubuntu`）。lint Warning，`--all` 模式硬依赖，单次 build 默认 `"ubuntu"` |
+| `TargetArchitectures` | ⚠️ | 空格分隔的架构列表（如 `amd64 arm64`），或 `all` 表示架构无关。lint Warning，`--all` 模式硬依赖 |
+| `Component` | — | APT 组件，默认为 `main` |
 | `PackageHomepage` | — | 项目主页 URL |
 | `RepositoryUrl` | — | 源码仓库 URL |
 | `LicenseType` | — | SPDX 标识符，如 `MIT`、`GPL-2.0` |
@@ -102,7 +102,7 @@
 
 ### `apkg lint` 检查规则
 
-`apkg lint` 在 `apkg build` 之前自动运行，也可单独执行。以下是它检查的全部规则：
+`apkg lint` 可单独执行，也由 `apkg build` 在构建前自动调用。Error 级别问题会中止构建，Warning 仅打印提示。以下是它检查的全部规则：
 
 | 规则 | 级别 |
 |------|------|

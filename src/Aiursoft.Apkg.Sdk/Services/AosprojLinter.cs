@@ -27,6 +27,12 @@ public class AosprojLinter
         RequireField(issues, project.PackageDescription, "PackageDescription");
         RequireField(issues, project.TargetSuites, "TargetSuites");
 
+        // Strongly recommended fields (--all build mode requires them)
+        if (string.IsNullOrWhiteSpace(project.TargetDistro))
+            issues.Add(new LintIssue(Severity.Warning, "<TargetDistro> is not set. Required when using --all. Falling back to 'ubuntu'."));
+        if (string.IsNullOrWhiteSpace(project.TargetArchitectures))
+            issues.Add(new LintIssue(Severity.Warning, "<TargetArchitectures> is not set. Required when using --all."));
+
         // Maintainer or Authors
         if (string.IsNullOrWhiteSpace(project.Maintainer) && string.IsNullOrWhiteSpace(project.PackageAuthors))
             issues.Add(new LintIssue(Severity.Warning, "Neither <Maintainer> nor <PackageAuthors> is set."));

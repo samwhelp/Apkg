@@ -119,7 +119,7 @@ AptBucket
 
 | 不变量 | 实现方式 |
 |--------|---------|
-| SHA256 从不在代码中重新计算 | 上传时客户端计算存入 LocalPackage.SHA256；上游拉取时直接复制上游声明值 |
+| SHA256 计算一次后不再重复 | 上传时由服务端从 .deb 文件计算并存入 LocalPackage.SHA256；镜像拉取时直接复制上游声明值。计算后即视为权威值 |
 | LocalPackage → AptPackage 字段原封不动 | RepositorySyncJob 直接赋值 SHA256，IsVirtual=false，RemoteUrl=null |
 | 替换精确到 (Package, Architecture) | `WHERE Package = lp.Package AND Architecture = lp.Architecture`，不影响其他架构 |
 | CAS 文件名 = SHA256 | .deb 以 SHA256 命名；GC 删文件时对比所有引用，只删无引用文件 |
@@ -319,7 +319,7 @@ Pin-Priority: 100
 - **SHA256 冲突检测**：相同 SHA256 的 .deb 已存在则拒绝。
 - ** (Package, Version, Arch, Component) 槽位冲突**：已有同槽位包则拒绝，除非使用覆盖模式。
 - **DEBIAN/control 解析**：从已上传 .deb 内部提取包名、版本、架构、维护者、依赖项等 APT 元数据字段，存入数据库。
-- **AptRepository 匹配**：包的 Distro/Suite/Component/Arch 必须匹配目标 Repository 配置。可使用 `--force` 跳过（仅匹配的部分生效）。
+- **AptRepository 匹配**：包的 Distro/Suite/Component/Arch 必须匹配目标 Repository 配置。可使用 `--skip-duplicate` 在上传已存在包时跳过而非报错。
 
 ## 12. 后台任务补充
 
@@ -353,6 +353,8 @@ Pin-Priority: 100
 ### 15.1 为什么 Apkg 不做仓库安装
 
 `apkg install --file pkg.apkg` 使用 `dpkg -i` 从本地 `.apkg` 文件安装包（自动检测当前系统的 Distro/Suite/Architecture 选择匹配的 .deb）。但它不做仓库级别的安装 — 不从 APT 仓库解析依赖并自动下载。那是 `apt install` 的职责。Apkg 专注于构建 + 仓库服务，不替代 APT 客户端功能。
+
+> 注意：`apkg install` 目前只兼容旧版 `apkg pack` 生成的 v1 格式 `.apkg`（根元素 `<Manifest>`，target 级 `<Suites>`）。`apkg publish` 生成的 v2 格式（根元素 `<ApkgPackage>`，entry 级 `<Suite>`）无法被 install 读取。install 已标记为 legacy，建议直接使用 `apt install`。
 
 ### 15.2 为什么支持多 Suite
 

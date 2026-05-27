@@ -88,6 +88,24 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
         var projectFile = AosprojSerializer.FindProjectFile(projectDir);
         var project = await aosprojSerializer.DeserializeFromFileAsync(projectFile);
 
+        // Run lint before build — errors abort, warnings are printed
+        var conditionEvaluator = services.GetRequiredService<ConditionEvaluator>();
+        var linter = new AosprojLinter(conditionEvaluator);
+        var issues = linter.Lint(project, projectDir);
+        foreach (var issue in issues)
+        {
+            if (issue.Level == AosprojLinter.Severity.Error)
+            {
+                logger.LogError("[Lint/{Level}] {Message}", issue.Level, issue.Message);
+            }
+            else
+            {
+                logger.LogWarning("[Lint/{Level}] {Message}", issue.Level, issue.Message);
+            }
+        }
+        if (issues.Any(i => i.Level == AosprojLinter.Severity.Error))
+            throw new InvalidOperationException("Lint found errors. Fix them before building.");
+
         var outputDir = string.IsNullOrWhiteSpace(outputArg)
             ? Path.Combine(projectDir, "bin")
             : Path.GetFullPath(outputArg);
