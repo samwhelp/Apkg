@@ -90,9 +90,10 @@ public class DebBuilder
             var dest = Path.Combine(stagingRoot, NormalizeTargetPath(item.Target));
             EnsureParentDirectory(dest);
             File.Copy(src, dest, overwrite: true);
-            confFiles.Add(item.Target.TrimStart('.'));
-            if (!confFiles[^1].StartsWith('/'))
-                confFiles[^1] = "/" + confFiles[^1];
+            var confPath = item.Target;
+            if (confPath.StartsWith("./", StringComparison.Ordinal)) confPath = confPath[1..];
+            if (!confPath.StartsWith('/')) confPath = "/" + confPath;
+            confFiles.Add(confPath);
             _logger.LogDebug("  + {Target} [conffile]", item.Target);
         }
 
@@ -100,6 +101,19 @@ public class DebBuilder
             await File.WriteAllTextAsync(
                 Path.Combine(debianDir, "conffiles"),
                 string.Join('\n', confFiles) + "\n");
+
+        // ── Copy SystemdUnit files ────────────────────────────────────────────
+        var activeUnits = project.SystemdUnits.Where(u => Include(u.Condition)).ToList();
+        var autoEnableUnits = activeUnits.Where(u => u.AutoEnable).ToList();
+        foreach (var unit in activeUnits)
+        {
+            var src = Path.GetFullPath(Path.Combine(projectDir, unit.Source));
+            var unitName = Path.GetFileName(unit.Source);
+            var unitDest = Path.Combine(stagingRoot, "lib", "systemd", "system", unitName);
+            EnsureParentDirectory(unitDest);
+            File.Copy(src, unitDest, overwrite: true);
+            _logger.LogDebug("  + /lib/systemd/system/{Unit}", unitName);
+        }
 
         // ── PostInstallScript → DEBIAN/postinst ───────────────────────────────
         var postinstLines = new StringBuilder("#!/bin/sh\nset -e\n");
@@ -112,22 +126,26 @@ public class DebBuilder
             hasPostinst = true;
         }
 
-        // systemd units in postinst
-        foreach (var unit in project.SystemdUnits.Where(u => Include(u.Condition)))
+        // Systemd postinst: enable+start on fresh install, try-restart on upgrade
+        if (autoEnableUnits.Count > 0)
         {
-            var src = Path.GetFullPath(Path.Combine(projectDir, unit.Source));
-            var unitName = Path.GetFileName(unit.Source);
-            var unitDest = Path.Combine(stagingRoot, "lib", "systemd", "system", unitName);
-            EnsureParentDirectory(unitDest);
-            File.Copy(src, unitDest, overwrite: true);
-            _logger.LogDebug("  + /lib/systemd/system/{Unit}", unitName);
-
-            if (unit.AutoEnable)
+            postinstLines.AppendLine("case \"$1\" in");
+            postinstLines.AppendLine("    configure)");
+            postinstLines.AppendLine("        systemctl daemon-reload");
+            postinstLines.AppendLine("        if [ -z \"$2\" ]; then");
+            foreach (var unit in autoEnableUnits)
             {
-                postinstLines.AppendLine($"systemctl daemon-reload");
-                postinstLines.AppendLine($"systemctl enable --now {unitName}");
-                hasPostinst = true;
+                var un = Path.GetFileName(unit.Source);
+                postinstLines.AppendLine($"            systemctl enable {un}");
+                postinstLines.AppendLine($"            systemctl start {un} || true");
             }
+            postinstLines.AppendLine("        else");
+            foreach (var unit in autoEnableUnits)
+                postinstLines.AppendLine($"            systemctl try-restart {Path.GetFileName(unit.Source)} || true");
+            postinstLines.AppendLine("        fi");
+            postinstLines.AppendLine("    ;;");
+            postinstLines.AppendLine("esac");
+            hasPostinst = true;
         }
 
         if (hasPostinst)
@@ -148,11 +166,15 @@ public class DebBuilder
             hasPrerm = true;
         }
 
-        // systemd unit disable in prerm
-        foreach (var unit in project.SystemdUnits.Where(u => Include(u.Condition) && u.AutoEnable))
+        // Systemd prerm: stop only on remove, skip on upgrade (postinst will try-restart)
+        if (autoEnableUnits.Count > 0)
         {
-            var unitName = Path.GetFileName(unit.Source);
-            prermLines.AppendLine($"systemctl disable --now {unitName} || true");
+            prermLines.AppendLine("case \"$1\" in");
+            prermLines.AppendLine("    remove|deconfigure)");
+            foreach (var unit in autoEnableUnits)
+                prermLines.AppendLine($"        systemctl stop {Path.GetFileName(unit.Source)} || true");
+            prermLines.AppendLine("    ;;");
+            prermLines.AppendLine("esac");
             hasPrerm = true;
         }
 
@@ -161,6 +183,22 @@ public class DebBuilder
             var prermPath = Path.Combine(debianDir, "prerm");
             await File.WriteAllTextAsync(prermPath, prermLines.ToString());
             MakeExecutable(prermPath);
+        }
+
+        // ── DEBIAN/postrm (disable + daemon-reload on remove/purge) ───────────
+        if (autoEnableUnits.Count > 0)
+        {
+            var postrmLines = new StringBuilder("#!/bin/sh\nset -e\n");
+            postrmLines.AppendLine("case \"$1\" in");
+            postrmLines.AppendLine("    remove|purge)");
+            foreach (var unit in autoEnableUnits)
+                postrmLines.AppendLine($"        systemctl disable {Path.GetFileName(unit.Source)} || true");
+            postrmLines.AppendLine("        systemctl daemon-reload || true");
+            postrmLines.AppendLine("    ;;");
+            postrmLines.AppendLine("esac");
+            var postrmPath = Path.Combine(debianDir, "postrm");
+            await File.WriteAllTextAsync(postrmPath, postrmLines.ToString());
+            MakeExecutable(postrmPath);
         }
 
         // ── Compute installed-size (kibibytes) ────────────────────────────────
