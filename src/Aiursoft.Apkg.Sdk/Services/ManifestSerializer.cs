@@ -7,7 +7,8 @@ namespace Aiursoft.Apkg.Sdk.Services;
 
 public class ManifestSerializer
 {
-    private static readonly XmlSerializer Serializer = new(typeof(ApkgManifest));
+    private static readonly XmlSerializer LegacySerializer = new(typeof(ApkgManifest));
+    private static readonly XmlSerializer PackageSerializer = new(typeof(ApkgPackageManifest));
 
     public string Serialize(ApkgManifest manifest)
     {
@@ -20,7 +21,7 @@ public class ManifestSerializer
 
         using var ms = new MemoryStream();
         using (var writer = XmlWriter.Create(ms, settings))
-            Serializer.Serialize(writer, manifest);
+            LegacySerializer.Serialize(writer, manifest);
 
         return new UTF8Encoding(false).GetString(ms.ToArray());
     }
@@ -28,7 +29,7 @@ public class ManifestSerializer
     public ApkgManifest Deserialize(string xml)
     {
         using var reader = new StringReader(xml);
-        return (ApkgManifest)Serializer.Deserialize(reader)!;
+        return (ApkgManifest)LegacySerializer.Deserialize(reader)!;
     }
 
     public async Task<ApkgManifest> DeserializeFromFileAsync(string path)
@@ -41,5 +42,17 @@ public class ManifestSerializer
     {
         var xml = Serialize(manifest);
         await File.WriteAllTextAsync(path, xml, Encoding.UTF8);
+    }
+
+    public ApkgPackageManifest DeserializePackageManifest(string xml)
+    {
+        using var reader = new StringReader(xml);
+        return (ApkgPackageManifest)PackageSerializer.Deserialize(reader)!;
+    }
+
+    public async Task<ApkgPackageManifest> DeserializePackageManifestFromFileAsync(string path)
+    {
+        var xml = await File.ReadAllTextAsync(path);
+        return DeserializePackageManifest(xml);
     }
 }

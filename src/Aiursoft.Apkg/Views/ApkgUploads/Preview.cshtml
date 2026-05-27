@@ -42,7 +42,7 @@ else if (Model.HasWarnings)
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label text-muted">Package</label>
-                <div><strong>@Model.Manifest.Package</strong></div>
+                <div><strong>@Model.Manifest.Name</strong></div>
             </div>
             <div class="col-md-4">
                 <label class="form-label text-muted">Version</label>
@@ -50,7 +50,7 @@ else if (Model.HasWarnings)
             </div>
             <div class="col-md-4">
                 <label class="form-label text-muted">Component</label>
-                <div><span class="badge bg-dark">@Model.Manifest.Component</span></div>
+                <div><span class="badge bg-dark">@(Model.Targets.FirstOrDefault()?.Entry.Component ?? "—")</span></div>
             </div>
             <div class="col-md-6">
                 <label class="form-label text-muted">Maintainer</label>
@@ -100,10 +100,10 @@ else if (Model.HasWarnings)
                     @foreach (var item in Model.Targets)
                     {
                         <tr>
-                            <td><code>@item.Target.DebFile</code></td>
-                            <td>@item.Target.Distro</td>
-                            <td>@item.Target.Suites</td>
-                            <td><span class="badge bg-dark">@item.Target.Architecture</span></td>
+                            <td><code>@item.Entry.DebFile</code></td>
+                            <td>@item.Entry.Distro</td>
+                            <td>@item.Entry.Suite</td>
+                            <td><span class="badge bg-dark">@item.Entry.Architecture</span></td>
                             <td>
                                 @if (item.HasMatch)
                                 {

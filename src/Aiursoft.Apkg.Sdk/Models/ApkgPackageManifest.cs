@@ -50,4 +50,7 @@ public class ApkgPackageEntry
 
     [System.Xml.Serialization.XmlElement("Component")]
     public string Component { get; set; } = "main";
+
+    [System.Xml.Serialization.XmlElement("Architecture")]
+    public string Architecture { get; set; } = "amd64";
 }

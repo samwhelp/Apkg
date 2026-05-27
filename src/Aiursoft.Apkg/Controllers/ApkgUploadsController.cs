@@ -87,7 +87,7 @@ public class ApkgUploadsController(
             return this.StackView(model);
         }
 
-        ApkgManifest manifest;
+        ApkgPackageManifest manifest;
         try
         {
             manifest = await ReadManifestAsync(physicalPath)
@@ -99,12 +99,12 @@ public class ApkgUploadsController(
             return this.StackView(model);
         }
 
-        var component = manifest.Component.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(component))
-            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: <Component> is required.");
+        if (manifest.Entries.Count == 0)
+            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: at least one <Entry> is required.");
 
-        if (manifest.Targets.Count == 0)
-            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: at least one <Target> is required.");
+        var component = manifest.Entries.FirstOrDefault()?.Component.Trim().ToLowerInvariant() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(component))
+            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: <Component> is required in at least one entry.");
 
         if (!ModelState.IsValid)
             return this.StackView(model);
@@ -124,7 +124,7 @@ public class ApkgUploadsController(
             {
                 UploadedByUserId = userId,
                 FileName = fileName,
-                Package = manifest.Package,
+                Package = manifest.Name,
                 Version = manifest.Version,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
@@ -139,7 +139,7 @@ public class ApkgUploadsController(
         else
         {
             pendingUpload.FileName = fileName;
-            pendingUpload.Package = manifest.Package;
+            pendingUpload.Package = manifest.Name;
             pendingUpload.Version = manifest.Version;
             pendingUpload.Component = component;
             pendingUpload.Description = NullIfEmpty(manifest.Description);
@@ -172,7 +172,7 @@ public class ApkgUploadsController(
         if (!System.IO.File.Exists(physicalPath))
             return NotFound();
 
-        ApkgManifest manifest;
+        ApkgPackageManifest manifest;
         try
         {
             manifest = await ReadManifestAsync(physicalPath)
@@ -224,7 +224,7 @@ public class ApkgUploadsController(
             return NotFound();
 
         var extractedEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        ApkgManifest manifest;
+        ApkgPackageManifest manifest;
         try
         {
             manifest = await ExtractApkgAsync(physicalPath, extractedEntries)
@@ -236,8 +236,8 @@ public class ApkgUploadsController(
             return BadRequest();
         }
 
-        var component = manifest.Component.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(component) || manifest.Targets.Count == 0)
+        var component = manifest.Entries.FirstOrDefault()?.Component.Trim().ToLowerInvariant() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(component) || manifest.Entries.Count == 0)
             return BadRequest();
 
         var userId = userManager.GetUserId(User)!;
@@ -253,7 +253,7 @@ public class ApkgUploadsController(
             {
                 UploadedByUserId = userId,
                 FileName = fileName,
-                Package = manifest.Package,
+                Package = manifest.Name,
                 Version = manifest.Version,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
@@ -272,37 +272,37 @@ public class ApkgUploadsController(
 
         try
         {
-            foreach (var target in manifest.Targets)
+            foreach (var entry in manifest.Entries)
             {
-                var archiveDebPath = NormalizeArchiveEntryName(target.DebFile);
+                var entryComponent = entry.Component.Trim().ToLowerInvariant();
+                var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
                 if (!extractedEntries.TryGetValue(archiveDebPath, out var extractedDebSource))
                 {
-                    ModelState.AddModelError(string.Empty, $"Archive entry '{target.DebFile}' was not found for target {target.Distro} {target.Suites} {target.Architecture}.");
+                    ModelState.AddModelError(string.Empty, $"Archive entry '{entry.DebFile}' was not found for target {entry.Distro} {entry.Suite} {entry.Architecture}.");
                     var previewModel = await BuildPreviewModelAsync(manifest, vaultPath, fileName);
                     return this.StackView(previewModel, "Preview");
                 }
 
-                var suites = target.SuiteList;
                 var candidateRepositories = await db.AptRepositories
-                    .Where(r => r.Distro == target.Distro
-                                && suites.Contains(r.Suite)
-                                && r.Architecture == target.Architecture)
+                    .Where(r => r.Distro == entry.Distro
+                                && r.Suite == entry.Suite
+                                && r.Architecture == entry.Architecture)
                     .ToListAsync();
 
                 var matchingRepositories = candidateRepositories
                     .Where(r => r.Components
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Contains(component, StringComparer.OrdinalIgnoreCase))
+                        .Contains(entryComponent, StringComparer.OrdinalIgnoreCase))
                     .ToList();
 
                 if (matchingRepositories.Count == 0)
                 {
                     logger.LogWarning(
-                        "No repository found for {Distro} {Suites} {Architecture} with component {Component}.",
-                        target.Distro,
-                        target.Suites,
-                        target.Architecture,
-                        component);
+                        "No repository found for {Distro} {Suite} {Architecture} with component {Component}.",
+                        entry.Distro,
+                        entry.Suite,
+                        entry.Architecture,
+                        entryComponent);
                     continue;
                 }
 
@@ -324,7 +324,7 @@ public class ApkgUploadsController(
                         await using (var destination = System.IO.File.Create(uploadTempPath))
                             await source.CopyToAsync(destination);
 
-                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, uploadTempPath, userId, upload.Id);
+                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, entryComponent, uploadTempPath, userId, upload.Id);
                         if (result.Package != null)
                             continue;
 
@@ -342,7 +342,7 @@ public class ApkgUploadsController(
             DeleteIfExists(physicalPath);
 
             upload.FileName = fileName;
-            upload.Package = manifest.Package;
+            upload.Package = manifest.Name;
             upload.Version = manifest.Version;
             upload.Component = component;
             upload.Description = NullIfEmpty(manifest.Description);
@@ -466,7 +466,7 @@ public class ApkgUploadsController(
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<ApkgUploadsPreviewViewModel> BuildPreviewModelAsync(ApkgManifest manifest, string vaultPath, string fileName)
+    private async Task<ApkgUploadsPreviewViewModel> BuildPreviewModelAsync(ApkgPackageManifest manifest, string vaultPath, string fileName)
     {
         var targets = await BuildTargetInfosAsync(manifest);
         return new ApkgUploadsPreviewViewModel
@@ -478,28 +478,27 @@ public class ApkgUploadsController(
         };
     }
 
-    private async Task<List<ApkgPreviewTargetInfo>> BuildTargetInfosAsync(ApkgManifest manifest)
+    private async Task<List<ApkgPreviewTargetInfo>> BuildTargetInfosAsync(ApkgPackageManifest manifest)
     {
-        var component = manifest.Component.Trim();
         var targets = new List<ApkgPreviewTargetInfo>();
-        foreach (var target in manifest.Targets)
+        foreach (var entry in manifest.Entries)
         {
-            var suites = target.SuiteList;
+            var entryComponent = entry.Component.Trim();
             var matchingRepos = await db.AptRepositories
-                .Where(r => r.Distro == target.Distro
-                            && suites.Contains(r.Suite)
-                            && r.Architecture == target.Architecture)
+                .Where(r => r.Distro == entry.Distro
+                            && r.Suite == entry.Suite
+                            && r.Architecture == entry.Architecture)
                 .ToListAsync();
 
             matchingRepos = matchingRepos
                 .Where(r => r.Components
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Contains(component, StringComparer.OrdinalIgnoreCase))
+                    .Contains(entryComponent, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
             targets.Add(new ApkgPreviewTargetInfo
             {
-                Target = target,
+                Entry = entry,
                 MatchingRepositories = matchingRepos
             });
         }
@@ -512,7 +511,7 @@ public class ApkgUploadsController(
         return repo.AllowAnyoneToUpload || isAdmin || canUploadRestricted;
     }
 
-    private async Task<ApkgManifest?> ReadManifestAsync(string apkgPath)
+    private async Task<ApkgPackageManifest?> ReadManifestAsync(string apkgPath)
     {
         await using var fileStream = new FileStream(apkgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         await using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
@@ -530,19 +529,19 @@ public class ApkgUploadsController(
 
             using var reader = new StreamReader(entry.DataStream);
             var manifestXml = await reader.ReadToEndAsync();
-            return manifestSerializer.Deserialize(manifestXml);
+            return manifestSerializer.DeserializePackageManifest(manifestXml);
         }
 
         return null;
     }
 
-    private async Task<ApkgManifest?> ExtractApkgAsync(string apkgPath, Dictionary<string, string> extractedEntries)
+    private async Task<ApkgPackageManifest?> ExtractApkgAsync(string apkgPath, Dictionary<string, string> extractedEntries)
     {
         await using var fileStream = new FileStream(apkgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         await using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
         using var tarReader = new TarReader(gzipStream);
 
-        ApkgManifest? manifest = null;
+        ApkgPackageManifest? manifest = null;
         TarEntry? entry;
         while ((entry = await tarReader.GetNextEntryAsync()) != null)
         {
@@ -565,7 +564,7 @@ public class ApkgUploadsController(
             if (string.Equals(entryName, "manifest.xml", StringComparison.OrdinalIgnoreCase))
             {
                 var manifestXml = await System.IO.File.ReadAllTextAsync(tempEntryPath);
-                manifest = manifestSerializer.Deserialize(manifestXml);
+                manifest = manifestSerializer.DeserializePackageManifest(manifestXml);
             }
         }
 

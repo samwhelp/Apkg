@@ -12,7 +12,7 @@ public class ApkgUploadsPreviewViewModel : UiStackLayoutViewModel
 
     public required string VaultPath { get; set; }
     public required string FileName { get; set; }
-    public required ApkgManifest Manifest { get; init; }
+    public required ApkgPackageManifest Manifest { get; init; }
     public required List<ApkgPreviewTargetInfo> Targets { get; init; }
     public bool HasWarnings => Targets.Any(t => !t.HasMatch);
     public bool AllTargetsUnmatched => Targets.All(t => !t.HasMatch);

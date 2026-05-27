@@ -102,7 +102,7 @@ public class ApiPackagesController(
             await using (var fs = System.IO.File.Create(apkgTempPath))
                 await apkg.CopyToAsync(fs);
 
-            ApkgManifest manifest;
+            ApkgPackageManifest manifest;
             try
             {
                 manifest = await ExtractApkgAsync(apkgTempPath, extractedEntries)
@@ -114,16 +114,16 @@ public class ApiPackagesController(
                 return BadRequest(summary);
             }
 
-            var component = manifest.Component.Trim().ToLowerInvariant();
+            var component = manifest.Entries.FirstOrDefault()?.Component.Trim().ToLowerInvariant() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(component))
             {
-                summary.Errors.Add("manifest.xml: <Component> is required.");
+                summary.Errors.Add("manifest.xml: <Component> is required in at least one entry.");
                 return BadRequest(summary);
             }
 
-            if (manifest.Targets.Count == 0)
+            if (manifest.Entries.Count == 0)
             {
-                summary.Errors.Add("manifest.xml: at least one <Target> is required.");
+                summary.Errors.Add("manifest.xml: at least one <Entry> is required.");
                 return BadRequest(summary);
             }
 
@@ -131,7 +131,7 @@ public class ApiPackagesController(
             {
                 UploadedByUserId = userId,
                 FileName = Path.GetFileName(apkg.FileName),
-                Package = manifest.Package,
+                Package = manifest.Name,
                 Version = manifest.Version,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
@@ -148,31 +148,31 @@ public class ApiPackagesController(
             var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
             var canUploadRestricted = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanUploadToRestrictedRepositories);
 
-            foreach (var target in manifest.Targets)
+            foreach (var entry in manifest.Entries)
             {
-                var archiveDebPath = NormalizeArchiveEntryName(target.DebFile);
+                var entryComponent = entry.Component.Trim().ToLowerInvariant();
+                var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
                 if (!extractedEntries.TryGetValue(archiveDebPath, out var extractedDebSource))
                 {
-                    summary.Errors.Add($"Archive entry '{target.DebFile}' was not found for target {target.Distro} {target.Suites} {target.Architecture}.");
+                    summary.Errors.Add($"Archive entry '{entry.DebFile}' was not found for target {entry.Distro} {entry.Suite} {entry.Architecture}.");
                     return BadRequest(summary);
                 }
 
-                var suites = target.SuiteList;
                 var candidateRepositories = await db.AptRepositories
-                    .Where(r => r.Distro == target.Distro
-                                && suites.Contains(r.Suite)
-                                && r.Architecture == target.Architecture)
+                    .Where(r => r.Distro == entry.Distro
+                                && r.Suite == entry.Suite
+                                && r.Architecture == entry.Architecture)
                     .ToListAsync();
 
                 var matchingRepositories = candidateRepositories
                     .Where(r => r.Components
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Contains(component, StringComparer.OrdinalIgnoreCase))
+                        .Contains(entryComponent, StringComparer.OrdinalIgnoreCase))
                     .ToList();
 
                 if (matchingRepositories.Count == 0)
                 {
-                    var warning = $"No repository found for {target.Distro} {target.Suites} {target.Architecture} with component '{component}'.";
+                    var warning = $"No repository found for {entry.Distro} {entry.Suite} {entry.Architecture} with component '{entryComponent}'.";
                     logger.LogWarning("{Warning}", warning);
                     summary.Warnings.Add(warning);
                     continue;
@@ -195,7 +195,7 @@ public class ApiPackagesController(
                         await using (var destination = System.IO.File.Create(uploadTempPath))
                             await source.CopyToAsync(destination);
 
-                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, uploadTempPath, userId, uploadRecord.Id);
+                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, entryComponent, uploadTempPath, userId, uploadRecord.Id);
                         if (result.Package != null)
                         {
                             summary.Uploaded.Add(new UploadedPackageSummary
@@ -249,13 +249,13 @@ public class ApiPackagesController(
         }
     }
 
-    private async Task<ApkgManifest?> ExtractApkgAsync(string apkgPath, Dictionary<string, string> extractedEntries)
+    private async Task<ApkgPackageManifest?> ExtractApkgAsync(string apkgPath, Dictionary<string, string> extractedEntries)
     {
         await using var fileStream = new FileStream(apkgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         await using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
         using var tarReader = new TarReader(gzipStream);
 
-        ApkgManifest? manifest = null;
+        ApkgPackageManifest? manifest = null;
         TarEntry? entry;
         while ((entry = await tarReader.GetNextEntryAsync()) != null)
         {
@@ -278,7 +278,7 @@ public class ApiPackagesController(
             if (string.Equals(entryName, "manifest.xml", StringComparison.OrdinalIgnoreCase))
             {
                 var manifestXml = await System.IO.File.ReadAllTextAsync(tempEntryPath);
-                manifest = manifestSerializer.Deserialize(manifestXml);
+                manifest = manifestSerializer.DeserializePackageManifest(manifestXml);
             }
         }
 

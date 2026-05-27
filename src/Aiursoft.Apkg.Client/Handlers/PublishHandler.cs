@@ -100,7 +100,8 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
                 DebFile = debFileName,
                 Distro = distro,
                 Suite = suite,
-                Component = project.Component
+                Component = project.Component,
+                Architecture = arch
             });
 
             logger.LogInformation("  + {File} → {Distro}/{Suite}", debFileName, distro, suite);
