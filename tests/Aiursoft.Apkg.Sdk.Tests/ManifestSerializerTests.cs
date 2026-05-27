@@ -159,42 +159,6 @@ public class ManifestSerializerTests
     }
 
     [TestMethod]
-    public async Task V1_DeserializeFromFile_Works()
-    {
-        var original = new ApkgManifest
-        {
-            Package = "fromfile",
-            Version = "1.0.0",
-            Component = "main",
-            Targets =
-            {
-                new ManifestTarget
-                {
-                    Distro = "ubuntu",
-                    Suites = "jammy",
-                    Architecture = "amd64",
-                    DebFile = "debs/pkg.deb"
-                }
-            }
-        };
-
-        var xml = _serializer.Serialize(original);
-        var path = Path.GetTempFileName();
-        try
-        {
-            await File.WriteAllTextAsync(path, xml);
-            var result = await _serializer.DeserializeFromFileAsync(path);
-
-            Assert.AreEqual(original.Package, result.Package);
-            Assert.AreEqual(original.Version, result.Version);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [TestMethod]
     public void DeserializePackageManifest_FormatVersionIsV2()
     {
         var manifest = new ApkgPackageManifest
@@ -338,64 +302,6 @@ public class ManifestSerializerTests
 
         Assert.AreEqual("universe", result.Entries[0].Component);
         Assert.AreEqual("restricted", result.Entries[1].Component);
-    }
-
-    // ── v1 (ApkgManifest) legacy compat ───────────────────────────────────────
-
-    [TestMethod]
-    public void V1_LegacyRoundTrip()
-    {
-        var original = new ApkgManifest
-        {
-            Package = "legacy-pkg",
-            Version = "1.0.0",
-            Maintainer = "Old <old@example.com>",
-            Description = "Legacy package",
-            Homepage = "https://legacy.example.com",
-            License = "GPL-3.0",
-            Component = "main",
-            Targets =
-            {
-                new ManifestTarget
-                {
-                    Distro = "ubuntu",
-                    Suites = "jammy jammy-updates",
-                    Architecture = "amd64",
-                    DebFile = "debs/legacy_1.0.0_amd64.deb"
-                }
-            }
-        };
-
-        var xml = _serializer.Serialize(original);
-        var roundTripped = _serializer.Deserialize(xml);
-
-        Assert.AreEqual(original.Package, roundTripped.Package);
-        Assert.AreEqual(original.Version, roundTripped.Version);
-        Assert.AreEqual(original.Component, roundTripped.Component);
-        Assert.AreEqual(1, roundTripped.Targets.Count);
-        Assert.AreEqual("ubuntu", roundTripped.Targets[0].Distro);
-        Assert.AreEqual("jammy jammy-updates", roundTripped.Targets[0].Suites);
-        Assert.AreEqual("amd64", roundTripped.Targets[0].Architecture);
-    }
-
-    [TestMethod]
-    public void V1_SuiteListProperty()
-    {
-        var manifest = new ApkgManifest
-        {
-            Package = "test",
-            Targets =
-            {
-                new ManifestTarget { Suites = "jammy jammy-updates jammy-security" }
-            }
-        };
-
-        var target = manifest.Targets[0];
-        var suites = target.SuiteList;
-        Assert.AreEqual(3, suites.Length);
-        Assert.AreEqual("jammy", suites[0]);
-        Assert.AreEqual("jammy-updates", suites[1]);
-        Assert.AreEqual("jammy-security", suites[2]);
     }
 
     // ── Helper: serialize v2 via XmlSerializer ────────────────────────────────

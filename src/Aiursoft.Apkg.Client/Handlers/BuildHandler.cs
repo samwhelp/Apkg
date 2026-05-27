@@ -37,14 +37,14 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
     private static readonly Option<string> SuiteOption =
         new(name: "--suite")
         {
-            Description = "Target suite/codename (e.g. jammy). Required unless --all is specified.",
+            Description = "Target suite/codename (e.g. jammy). Defaults to all suites declared in the project.",
             DefaultValueFactory = _ => string.Empty
         };
 
     private static readonly Option<string> ArchOption =
         new(name: "--arch")
         {
-            Description = "Target CPU architecture (e.g. amd64, arm64). Required unless --all is specified.",
+            Description = "Target CPU architecture (e.g. amd64, arm64). Defaults to all architectures declared in the project.",
             DefaultValueFactory = _ => string.Empty
         };
 
@@ -113,14 +113,14 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
         // Resolve build targets
         List<(string distro, string suite, string arch)> targets;
 
-        if (buildAll)
+        if (buildAll || (string.IsNullOrWhiteSpace(suiteArg) && string.IsNullOrWhiteSpace(archArg)))
         {
             if (string.IsNullOrWhiteSpace(project.TargetDistro))
-                throw new InvalidOperationException("Project has no <TargetDistro> declared. Cannot use --all.");
+                throw new InvalidOperationException("Project has no <TargetDistro> declared.");
             if (project.SuiteList.Length == 0)
-                throw new InvalidOperationException("Project has no <TargetSuites> declared. Cannot use --all.");
+                throw new InvalidOperationException("Project has no <TargetSuites> declared.");
             if (project.ArchList.Length == 0)
-                throw new InvalidOperationException("Project has no <TargetArchitectures> declared. Cannot use --all.");
+                throw new InvalidOperationException("Project has no <TargetArchitectures> declared.");
 
             targets = (
                 from suite in project.SuiteList
@@ -131,9 +131,9 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
         else
         {
             if (string.IsNullOrWhiteSpace(suiteArg))
-                throw new InvalidOperationException("Specify --suite (e.g. --suite jammy) or use --all.");
+                throw new InvalidOperationException("Specify --suite (e.g. --suite jammy).");
             if (string.IsNullOrWhiteSpace(archArg))
-                throw new InvalidOperationException("Specify --arch (e.g. --arch amd64) or use --all.");
+                throw new InvalidOperationException("Specify --arch (e.g. --arch amd64).");
 
             var distro = string.IsNullOrWhiteSpace(distroArg)
                 ? (string.IsNullOrWhiteSpace(project.TargetDistro) ? "ubuntu" : project.TargetDistro)

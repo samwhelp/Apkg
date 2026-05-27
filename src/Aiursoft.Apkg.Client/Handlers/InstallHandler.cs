@@ -57,28 +57,29 @@ public class InstallHandler : ExecutableCommandHandlerBuilder
         logger.LogInformation("Detected system: {Distro} {Suite} ({Architecture})", distro, suite, architecture);
 
         var manifestContent = await ReadManifestAsync(apkgPath);
-        var manifest = serializer.Deserialize(manifestContent);
+        var manifest = serializer.DeserializePackageManifest(manifestContent);
 
-        var target = manifest.Targets.FirstOrDefault(target =>
-            string.Equals(target.Distro, distro, StringComparison.OrdinalIgnoreCase) &&
-            target.SuiteList.Any(targetSuite => string.Equals(targetSuite, suite, StringComparison.OrdinalIgnoreCase)) &&
-            (string.Equals(target.Architecture, architecture, StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(target.Architecture, "all", StringComparison.OrdinalIgnoreCase)));
+        var entry = manifest.Entries.FirstOrDefault(e =>
+            string.Equals(e.Distro, distro, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.Suite, suite, StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(e.Architecture, architecture, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(e.Architecture, "all", StringComparison.OrdinalIgnoreCase)));
 
-        if (target == null)
+        if (entry == null)
         {
-            var availableTargets = string.Join(Environment.NewLine, manifest.Targets.Select(FormatTarget));
-            var message = $"No matching target found in {apkgPath} for {distro} {suite} ({architecture}).{Environment.NewLine}Available targets:{Environment.NewLine}{availableTargets}";
+            var available = string.Join(Environment.NewLine, manifest.Entries.Select(e =>
+                $"- {e.Distro} {e.Suite} ({e.Architecture}) => {e.DebFile}"));
+            var message = $"No matching entry found in {apkgPath} for {distro} {suite} ({architecture}).{Environment.NewLine}Available entries:{Environment.NewLine}{available}";
             logger.LogError(message);
             throw new InvalidOperationException(message);
         }
 
-        logger.LogInformation("Found matching target: {DebFile} for {Distro} {Suites} ({Architecture})", target.DebFile, distro, target.Suites, architecture);
+        logger.LogInformation("Found matching entry: {DebFile} for {Distro} {Suite} ({Architecture})", entry.DebFile, distro, entry.Suite, architecture);
 
         var tempDebPath = CreateTempDebPath();
         try
         {
-            await ExtractEntryToFileAsync(apkgPath, target.DebFile, tempDebPath);
+            await ExtractEntryToFileAsync(apkgPath, entry.DebFile, tempDebPath);
             logger.LogInformation("Running dpkg -i {DebFile}", tempDebPath);
             await InstallDebAsync(tempDebPath);
             logger.LogInformation("Package installed successfully.");
@@ -170,11 +171,6 @@ public class InstallHandler : ExecutableCommandHandlerBuilder
         var tempFilePath = Path.GetTempFileName();
         File.Delete(tempFilePath);
         return $"{tempFilePath}.deb";
-    }
-
-    private static string FormatTarget(ManifestTarget target)
-    {
-        return $"- {target.Distro} {target.Suites} ({target.Architecture}) => {target.DebFile}";
     }
 
     private static string NormalizeEntryName(string entryName)

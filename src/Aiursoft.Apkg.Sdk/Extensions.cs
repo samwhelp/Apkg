@@ -17,7 +17,6 @@ public static class Extensions
     public static IServiceCollection AddApkgLocalTools(this IServiceCollection services)
     {
         services.AddSingleton<ManifestSerializer>();
-        services.AddSingleton<DebPackageValidator>();
         services.AddSingleton<SystemInfoProvider>();
         services.AddSingleton<AosprojSerializer>();
         services.AddSingleton<ConditionEvaluator>();

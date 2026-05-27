@@ -228,113 +228,6 @@ public class IntegrationTests
     }
 
     [TestMethod]
-    public async Task DebPackageValidator_AcceptsMatchingDeb()
-    {
-        var tempDir = CreateTestDirectory();
-        try
-        {
-            await EnsureDpkgDebAvailableAsync();
-
-            const string pkg = "testpkg";
-            const string ver = "4.2.0";
-            const string arch = "amd64";
-            var debPath = Path.Combine(tempDir, $"{pkg}_{ver}_{arch}.deb");
-            await CreateMinimalDebAsync(debPath, pkg, ver, arch);
-
-            var manifest = new ApkgManifest { Package = pkg, Version = ver, Component = "main" };
-            var target = new ManifestTarget { Distro = "ubuntu", Suites = "noble", Architecture = arch, DebFile = debPath };
-
-            var validator = new DebPackageValidator();
-            // Should not throw
-            await validator.ValidateAsync(debPath, debPath, target, manifest);
-        }
-        finally
-        {
-            Directory.Delete(tempDir, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task DebPackageValidator_FailsOnPackageMismatch()
-    {
-        var tempDir = CreateTestDirectory();
-        try
-        {
-            await EnsureDpkgDebAvailableAsync();
-
-            var debPath = Path.Combine(tempDir, "actual-pkg_1.0.0_amd64.deb");
-            await CreateMinimalDebAsync(debPath, "actual-pkg", "1.0.0", "amd64");
-
-            var manifest = new ApkgManifest { Package = "expected-pkg", Version = "1.0.0", Component = "main" };
-            var target = new ManifestTarget { Distro = "ubuntu", Suites = "noble", Architecture = "amd64", DebFile = debPath };
-
-            var validator = new DebPackageValidator();
-            try
-            {
-                await validator.ValidateAsync(debPath, debPath, target, manifest);
-                Assert.Fail("Expected InvalidOperationException was not thrown.");
-            }
-            catch (InvalidOperationException) { /* expected */ }
-        }
-        finally
-        {
-            Directory.Delete(tempDir, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task DebPackageValidator_FailsOnVersionMismatch()
-    {
-        var tempDir = CreateTestDirectory();
-        try
-        {
-            await EnsureDpkgDebAvailableAsync();
-
-            var debPath = Path.Combine(tempDir, "mypkg_2.0.0_amd64.deb");
-            await CreateMinimalDebAsync(debPath, "mypkg", "2.0.0", "amd64");
-
-            var manifest = new ApkgManifest { Package = "mypkg", Version = "1.0.0", Component = "main" };
-            var target = new ManifestTarget { Distro = "ubuntu", Suites = "noble", Architecture = "amd64", DebFile = debPath };
-
-            var validator = new DebPackageValidator();
-            try
-            {
-                await validator.ValidateAsync(debPath, debPath, target, manifest);
-                Assert.Fail("Expected InvalidOperationException was not thrown.");
-            }
-            catch (InvalidOperationException) { /* expected */ }
-        }
-        finally
-        {
-            Directory.Delete(tempDir, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public async Task DebPackageValidator_AcceptsArchAll()
-    {
-        var tempDir = CreateTestDirectory();
-        try
-        {
-            await EnsureDpkgDebAvailableAsync();
-
-            var debPath = Path.Combine(tempDir, "scripts_1.0.0_all.deb");
-            await CreateMinimalDebAsync(debPath, "scripts", "1.0.0", "all");
-
-            var manifest = new ApkgManifest { Package = "scripts", Version = "1.0.0", Component = "main" };
-            // manifest says amd64, deb says all — should be accepted
-            var target = new ManifestTarget { Distro = "ubuntu", Suites = "noble", Architecture = "amd64", DebFile = debPath };
-
-            var validator = new DebPackageValidator();
-            await validator.ValidateAsync(debPath, debPath, target, manifest);
-        }
-        finally
-        {
-            Directory.Delete(tempDir, recursive: true);
-        }
-    }
-
-    [TestMethod]
     public async Task InvokeNew_CreatesProjectStructure()
     {
         var tempDir = CreateTestDirectory();
@@ -379,30 +272,31 @@ public class IntegrationTests
 
     private static async Task<string> CreateApkgDirectlyAsync(
         string outputDir, string packageName, string version, string component,
-        List<(string distro, string suites, string arch, string debPath)> targets)
+        List<(string distro, string suite, string arch, string debPath)> targets)
     {
         Directory.CreateDirectory(outputDir);
 
-        var manifest = new ApkgManifest
+        var manifest = new ApkgPackageManifest
         {
-            Package = packageName,
+            Name = packageName,
             Version = version,
             Maintainer = "Test <test@example.com>",
             Description = "Test package",
             License = "MIT",
-            Component = component,
-            Targets = targets.Select(t => new ManifestTarget
+            Entries = targets.Select(t => new ApkgPackageEntry
             {
                 Distro = t.distro,
-                Suites = t.suites,
+                Suite = t.suite,
                 Architecture = t.arch,
+                Component = component,
                 DebFile = t.debPath
             }).ToList()
         };
 
-        var serializer = new ManifestSerializer();
-        var manifestXml = serializer.Serialize(manifest);
-        var manifestBytes = System.Text.Encoding.UTF8.GetBytes(manifestXml);
+        var serializer = new System.Xml.Serialization.XmlSerializer(typeof(ApkgPackageManifest));
+        using var sw = new StringWriter();
+        serializer.Serialize(sw, manifest);
+        var manifestBytes = System.Text.Encoding.UTF8.GetBytes(sw.ToString());
 
         var apkgFileName = $"{packageName}.{version}.apkg";
         var apkgPath = Path.Combine(outputDir, apkgFileName);
@@ -424,52 +318,6 @@ public class IntegrationTests
         }
 
         return apkgPath;
-    }
-
-    [TestMethod]
-    public void ManifestSerializer_RoundTrip()
-    {
-        var serializer = new ManifestSerializer();
-        var original = new ApkgManifest
-        {
-            Package = "vim",
-            Version = "9.1.0",
-            Maintainer = "Anduin <anduin@example.com>",
-            Description = "Vi IMproved",
-            Homepage = "https://vim.org",
-            License = "GPL-2.0",
-            Component = "universe",
-            Targets =
-            [
-                new ManifestTarget
-                {
-                    Distro = "ubuntu",
-                    Suites = "plucky plucky-updates",
-                    Architecture = "amd64",
-                    DebFile = "debs/vim_9.1.0_amd64.deb"
-                },
-                new ManifestTarget
-                {
-                    Distro = "ubuntu",
-                    Suites = "jammy",
-                    Architecture = "arm64",
-                    DebFile = "debs/vim_9.1.0_arm64.deb"
-                }
-            ]
-        };
-
-        var xml = serializer.Serialize(original);
-        var roundTripped = serializer.Deserialize(xml);
-
-        Assert.AreEqual(original.Package, roundTripped.Package);
-        Assert.AreEqual(original.Version, roundTripped.Version);
-        Assert.AreEqual(original.Component, roundTripped.Component);
-        Assert.AreEqual(2, roundTripped.Targets.Count);
-        Assert.AreEqual("plucky plucky-updates", roundTripped.Targets[0].Suites);
-        CollectionAssert.AreEqual(
-            new[] { "plucky", "plucky-updates" },
-            roundTripped.Targets[0].SuiteList);
-        Assert.AreEqual("arm64", roundTripped.Targets[1].Architecture);
     }
 
     private static string CreateTestDirectory()

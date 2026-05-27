@@ -15,7 +15,6 @@ public class ExtensionsTests
         var provider = services.BuildServiceProvider();
 
         Assert.IsNotNull(provider.GetService<Services.ManifestSerializer>());
-        Assert.IsNotNull(provider.GetService<Services.DebPackageValidator>());
         Assert.IsNotNull(provider.GetService<Services.SystemInfoProvider>());
         Assert.IsNotNull(provider.GetService<Services.AosprojSerializer>());
         Assert.IsNotNull(provider.GetService<Services.ConditionEvaluator>());

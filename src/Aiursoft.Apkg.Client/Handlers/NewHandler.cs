@@ -83,9 +83,9 @@ public class NewHandler : ExecutableCommandHandlerBuilder
 
         logger.LogInformation("Created {File}", projectFilePath);
         logger.LogInformation("Next steps:");
-        logger.LogInformation("  1. Edit {File} to fill in metadata, TargetSuites, TargetArchitectures.", projectFilePath);
+        logger.LogInformation("  1. Edit {File} to adjust metadata as needed.", projectFilePath);
         logger.LogInformation("  2. Add source files:  apkg add ./myfile --target /usr/lib/myfile");
-        logger.LogInformation("  3. Build debs:        apkg build --all");
+        logger.LogInformation("  3. Build debs:        apkg build");
         logger.LogInformation("  4. Pack for upload:   apkg publish");
     }
 }

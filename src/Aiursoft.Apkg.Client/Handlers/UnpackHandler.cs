@@ -89,21 +89,22 @@ public class UnpackHandler : ExecutableCommandHandlerBuilder
         logger.LogInformation("Selecting targets for {Distro} {Suite} ({Architecture})", currentDistro, currentSuite, currentArch);
 
         var manifest = await ReadManifestAsync(filePath, serializer);
-        var matchingDebFiles = manifest.Targets
-            .Where(target =>
-                string.Equals(target.Distro, currentDistro, StringComparison.OrdinalIgnoreCase) &&
-                target.SuiteList.Any(targetSuite => string.Equals(targetSuite, currentSuite, StringComparison.OrdinalIgnoreCase)) &&
-                (string.Equals(target.Architecture, currentArch, StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(target.Architecture, "all", StringComparison.OrdinalIgnoreCase)))
-            .Select(target => NormalizeEntryName(target.DebFile))
+        var matchingDebFiles = manifest.Entries
+            .Where(e =>
+                string.Equals(e.Distro, currentDistro, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(e.Suite, currentSuite, StringComparison.OrdinalIgnoreCase) &&
+                (string.Equals(e.Architecture, currentArch, StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(e.Architecture, "all", StringComparison.OrdinalIgnoreCase)))
+            .Select(e => NormalizeEntryName(e.DebFile))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (matchingDebFiles.Count == 0)
         {
-            var availableTargets = string.Join(Environment.NewLine, manifest.Targets.Select(FormatTarget));
+            var available = string.Join(Environment.NewLine, manifest.Entries.Select(e =>
+                $"- {e.Distro} {e.Suite} ({e.Architecture}) => {e.DebFile}"));
             throw new InvalidOperationException(
-                $"No matching target found in {filePath} for {currentDistro} {currentSuite} ({currentArch}).{Environment.NewLine}Available targets:{Environment.NewLine}{availableTargets}");
+                $"No matching entry found in {filePath} for {currentDistro} {currentSuite} ({currentArch}).{Environment.NewLine}Available entries:{Environment.NewLine}{available}");
         }
 
         if (dryRun)
@@ -129,7 +130,7 @@ public class UnpackHandler : ExecutableCommandHandlerBuilder
         }
     }
 
-    private static async Task<ApkgManifest> ReadManifestAsync(string apkgPath, ManifestSerializer serializer)
+    private static async Task<ApkgPackageManifest> ReadManifestAsync(string apkgPath, ManifestSerializer serializer)
     {
         await using var fileStream = new FileStream(apkgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         await using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
@@ -146,7 +147,7 @@ public class UnpackHandler : ExecutableCommandHandlerBuilder
 
             using var reader = new StreamReader(entry.DataStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
             var manifestXml = await reader.ReadToEndAsync();
-            return serializer.Deserialize(manifestXml);
+            return serializer.DeserializePackageManifest(manifestXml);
         }
 
         throw new InvalidOperationException($"manifest.xml not found in {apkgPath}");
@@ -191,11 +192,6 @@ public class UnpackHandler : ExecutableCommandHandlerBuilder
         }
 
         return extractedCount;
-    }
-
-    private static string FormatTarget(ManifestTarget target)
-    {
-        return $"- {target.Distro} {target.Suites} ({target.Architecture}) => {target.DebFile}";
     }
 
     private static string NormalizeEntryName(string entryName)

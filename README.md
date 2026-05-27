@@ -29,11 +29,11 @@ After installing, verify with `apkg --help`.
 # 1. Create a new package
 apkg new --name my-package
 
-# 2. Add .deb files to my-package/debs/, then pack
-apkg pack --path ./my-package
+# 2. Build and publish (creates .apkg in bin/)
+apkg publish --path ./my-package
 
 # 3. Push to server
-apkg push --file ./my-package.1.0.0.apkg --source https://apkg.example.com --api-key <your-key>
+apkg push --file ./my-package/bin/my-package.1.0.0.apkg --source https://apkg.example.com --api-key <your-key>
 
 # 4. Add a repository as an APT source on a client machine (requires sudo)
 sudo apkg add-source https://apkg.example.com/api/sources/1

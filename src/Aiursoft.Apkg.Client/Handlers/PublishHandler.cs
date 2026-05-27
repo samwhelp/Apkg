@@ -34,21 +34,21 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
     private static readonly Option<string> DistroOption =
         new(name: "--distro")
         {
-            Description = "Target Linux distribution (e.g. ubuntu). Required unless --all is specified.",
+            Description = "Target Linux distribution (e.g. ubuntu). Defaults to the project TargetDistro.",
             DefaultValueFactory = _ => string.Empty
         };
 
     private static readonly Option<string> SuiteOption =
         new(name: "--suite")
         {
-            Description = "Target suite/codename (e.g. jammy). Required unless --all is specified.",
+            Description = "Target suite/codename (e.g. jammy). Defaults to all suites declared in the project.",
             DefaultValueFactory = _ => string.Empty
         };
 
     private static readonly Option<string> ArchOption =
         new(name: "--arch")
         {
-            Description = "Target CPU architecture (e.g. amd64). Required unless --all is specified.",
+            Description = "Target CPU architecture (e.g. amd64). Defaults to all architectures declared in the project.",
             DefaultValueFactory = _ => string.Empty
         };
 
@@ -213,14 +213,14 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
     private static List<(string distro, string suite, string arch)> ResolveBuildTargets(
         AosprojProject project, bool buildAll, string distroArg, string suiteArg, string archArg)
     {
-        if (buildAll)
+        if (buildAll || (string.IsNullOrWhiteSpace(suiteArg) && string.IsNullOrWhiteSpace(archArg)))
         {
             if (string.IsNullOrWhiteSpace(project.TargetDistro))
-                throw new InvalidOperationException("Project has no <TargetDistro> declared. Cannot use --all.");
+                throw new InvalidOperationException("Project has no <TargetDistro> declared.");
             if (project.SuiteList.Length == 0)
-                throw new InvalidOperationException("Project has no <TargetSuites> declared. Cannot use --all.");
+                throw new InvalidOperationException("Project has no <TargetSuites> declared.");
             if (project.ArchList.Length == 0)
-                throw new InvalidOperationException("Project has no <TargetArchitectures> declared. Cannot use --all.");
+                throw new InvalidOperationException("Project has no <TargetArchitectures> declared.");
 
             return (
                 from suite in project.SuiteList
@@ -230,9 +230,9 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         }
 
         if (string.IsNullOrWhiteSpace(suiteArg))
-            throw new InvalidOperationException("Specify --suite (e.g. --suite jammy) or use --all.");
+            throw new InvalidOperationException("Specify --suite (e.g. --suite jammy).");
         if (string.IsNullOrWhiteSpace(archArg))
-            throw new InvalidOperationException("Specify --arch (e.g. --arch amd64) or use --all.");
+            throw new InvalidOperationException("Specify --arch (e.g. --arch amd64).");
 
         var distro = string.IsNullOrWhiteSpace(distroArg)
             ? (string.IsNullOrWhiteSpace(project.TargetDistro) ? "ubuntu" : project.TargetDistro)

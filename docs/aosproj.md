@@ -87,8 +87,8 @@
 | `PackageDescription` | ✅ | 包的单行简介 |
 | `TargetSuites` | ✅ | 空格分隔的 suite 列表（如 `resolute questing`），每个 suite 产出一个 `.deb` |
 | `PackageAuthors` | ⚠️ | 默认 Maintainer，可被 `Maintainer` 字段覆盖。lint Warning 但 `Maintainer` 可替代 |
-| `TargetDistro` | ⚠️ | 发行版标识（如 `anduinos`、`ubuntu`）。lint Warning，`--all` 模式硬依赖，单次 build 默认 `"ubuntu"` |
-| `TargetArchitectures` | ⚠️ | 空格分隔的架构列表（如 `amd64 arm64`），或 `all` 表示架构无关。lint Warning，`--all` 模式硬依赖 |
+| `TargetDistro` | ⚠️ | 发行版标识（如 `anduinos`、`ubuntu`）。lint Warning，构建全部 target 时硬依赖，单次 build 默认 `"ubuntu"` |
+| `TargetArchitectures` | ⚠️ | 空格分隔的架构列表（如 `amd64 arm64`），或 `all` 表示架构无关。lint Warning，构建全部 target 时硬依赖 |
 | `Component` | — | APT 组件，默认为 `main` |
 | `PackageHomepage` | — | 项目主页 URL |
 | `RepositoryUrl` | — | 源码仓库 URL |
@@ -168,8 +168,8 @@
 | `UpstreamPackage` 设置时必须同时设置 `UpstreamUrl`、`UpstreamDistro`、`UpstreamSuite` | **Error** |
 | `UpstreamPackage` 设置时 `UpstreamComponent` 未填（默认 `main`） | Warning |
 | `UpstreamPackage` 设置时 `UpstreamArch` 未填（默认 `all`） | Warning |
-| `TargetDistro` 未设（`--all` 模式必须，默认回退 `ubuntu`） | Warning |
-| `TargetArchitectures` 未设（`--all` 模式必须） | Warning |
+| `TargetDistro` 未设（构建全部 target 时必须，默认回退 `ubuntu`） | Warning |
+| `TargetArchitectures` 未设（构建全部 target 时必须） | Warning |
 | 所有 `Include=` 指向的源文件/目录在磁盘上实际存在 | Warning |
 | 至少声明一个文件条目（`IncludeFile`/`IncludeScript`/`IncludeFolder`/`ConfFile`），否则包为空 | Warning |
 
@@ -519,8 +519,8 @@ gnome-shell (>= 42), gir1.2-glib-2.0, libssl3t64
 apkg new       → 创建 .aosproj 骨架
 apkg add       → 往 .aosproj 追加文件条目
 apkg lint      → 验证 .aosproj 语法和文件存在性（见上方规则表）
-apkg build     → 编译出 bin/<name>_<ver>_<suite>_<arch>.deb
-apkg publish   → 把 bin/ 下所有 .deb 打包成 bin/<name>.<ver>.apkg
+apkg build     → 默认构建全部 TargetSuites × TargetArchitectures；--suite/--arch 限定单个目标
+apkg publish   → 自动 lint + build（默认全部 target）+ 打包为 bin/<name>.<ver>.apkg；--no-build 跳过构建
 apkg push      → 上传 .apkg 到 Apkg 服务器
 ```
 
@@ -529,7 +529,6 @@ apkg push      → 上传 .apkg 到 Apkg 服务器
 ```
 apkg install    → 从本地 .apkg 解出 .deb 并执行 dpkg -i
 apkg add-source → 在当前机器添加 Apkg APT 源到 /etc/apt/sources.list.d/
-apkg pack       → 旧版打包方式（手写 manifest.xml），已被 publish 替代
 apkg unpack     → 解包 .apkg 归档
 ```
 
@@ -550,7 +549,7 @@ TargetArchitectures: amd64 arm64
 
 构建时会在 `obj/<suite>_<arch>/` 下生成临时暂存目录（含 `DEBIAN/` 控制文件和所有已复制的载荷文件），然后调用 `dpkg-deb --build`。构建失败时可在此目录检查生成内容，正常完成后可安全删除。
 
-使用 `--suite` / `--arch` 只构建单个目标；使用 `--all` 构建完整矩阵。
+不带参数默认构建完整矩阵（等同于 `--all`）；使用 `--suite` / `--arch` 限定单个目标。
 
 ### `apkg push` 参数
 
