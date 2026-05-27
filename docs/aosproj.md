@@ -18,7 +18,9 @@
   <PropertyGroup>
     <!--
       PackageName   → deb 的包名，同时也是将来 apt install <name> 的名字。
-                      只允许小写字母、数字和连字符，不允许下划线或大写。
+                      只允许小写字母、数字、连字符（-）、加号（+）和点（.），
+                      首字符必须为字母或数字，不允许下划线或大写。
+                      正则：^[a-z0-9][a-z0-9\-+.]*$
     -->
     <PackageName>anduinos-logo</PackageName>
 
@@ -80,7 +82,7 @@
 
 | 字段 | 必填 | 说明 |
 |------|------|------|
-| `PackageName` | ✅ | deb 包名，只允许小写字母、数字和连字符 |
+| `PackageName` | ✅ | deb 包名，正则 `^[a-z0-9][a-z0-9\-+.]*$`（小写字母、数字、`-`、`+`、`.`，首字符须为字母或数字） |
 | `PackageVersion` | ✅ | 版本号，遵循 Debian 版本规范（如 `1.0.0`） |
 | `PackageAuthors` | ✅ | 默认 Maintainer，可被 `Maintainer` 字段覆盖 |
 | `PackageDescription` | ✅ | 包的单行简介 |
@@ -97,6 +99,22 @@
 | `Provides` | — | deb `Provides` 字段，声明此包提供哪些虚包 |
 | `Conflicts` | — | deb `Conflicts` 字段，声明与哪些包冲突 |
 | `Replaces` | — | deb `Replaces` 字段，声明此包替换哪些旧包 |
+
+### `apkg lint` 检查规则
+
+`apkg lint` 在 `apkg build` 之前自动运行，也可单独执行。以下是它检查的全部规则：
+
+| 规则 | 级别 |
+|------|------|
+| `PackageName`、`PackageVersion`、`PackageDescription`、`TargetSuites` 必须设置 | **Error** |
+| `PackageName` 必须匹配 `^[a-z0-9][a-z0-9\-+.]*$` | **Error** |
+| 所有条目的 `Target=` 不能为空 | **Error** |
+| `Condition` 表达式必须能被解析 | **Error** |
+| `Maintainer` 与 `PackageAuthors` 至少填一个 | Warning |
+| 所有 `Include=` 指向的源文件/目录在磁盘上实际存在 | Warning |
+| 至少声明一个文件条目（`IncludeFile`/`IncludeScript`/`IncludeFolder`/`ConfFile`），否则包为空 | Warning |
+
+Error 级别问题会中止构建；Warning 级别问题会打印提示但不中止。
 
 ### ItemGroup 条目类型
 
@@ -426,17 +444,31 @@ gnome-shell (>= 42), gir1.2-glib-2.0, libssl3t64
 
 服务器根据 `Distro + Suite + Architecture + Component` 四元组定位目标仓库。若找不到匹配仓库，该 `Entry` 会被跳过并记录警告。
 
+> ⚠️ **静默跳过陷阱**：如果 `TargetDistro`、`TargetSuites` 或 `Component` 与服务器上配置的仓库不完全匹配，`apkg push` 会成功返回，但那个 `.deb` 不会出现在任何 APT 仓库里。打包者不会收到任何错误——包是静默丢失的。
+> 排查方法：检查服务器日志，或在目标机器上执行 `apt-cache show <pkgname>` 确认包是否可见。
+
 ---
 
 ## 三、CLI 工作流
 
+### 主工作流（aosproj 模式）
+
 ```
 apkg new       → 创建 .aosproj 骨架
 apkg add       → 往 .aosproj 追加文件条目
-apkg lint      → 验证 .aosproj 语法和文件存在性
+apkg lint      → 验证 .aosproj 语法和文件存在性（见上方规则表）
 apkg build     → 编译出 bin/<name>_<ver>_<suite>_<arch>.deb
 apkg publish   → 把 bin/ 下所有 .deb 打包成 bin/<name>.<ver>.apkg
 apkg push      → 上传 .apkg 到 Apkg 服务器
+```
+
+### 旧命令（legacy，未来可能废弃）
+
+```
+apkg install    → 从本地 .apkg 解出 .deb 并执行 dpkg -i
+apkg add-source → 在当前机器添加 Apkg APT 源到 /etc/apt/sources.list.d/
+apkg pack       → 旧版打包方式（手写 manifest.xml），已被 publish 替代
+apkg unpack     → 解包 .apkg 归档
 ```
 
 ### `apkg build` 构建矩阵
@@ -454,6 +486,8 @@ TargetArchitectures: amd64 arm64
   bin/pkg_1.0.0_questing_arm64.deb
 ```
 
+构建时会在 `obj/<suite>_<arch>/` 下生成临时暂存目录（含 `DEBIAN/` 控制文件和所有已复制的载荷文件），然后调用 `dpkg-deb --build`。构建失败时可在此目录检查生成内容，正常完成后可安全删除。
+
 使用 `--suite` / `--arch` 只构建单个目标；使用 `--all` 构建完整矩阵。
 
 ### `apkg push` 参数
@@ -464,3 +498,19 @@ apkg push \
   --source https://apkg-dev.aiursoft.com \
   --api-key <你的 API Key>
 ```
+
+---
+
+## 四、向后兼容说明
+
+早期版本的 `.aosproj` 使用不同的 XML 元素名，当前工具链在反序列化时仍能识别这些旧名称（只读，序列化时统一写出新格式）：
+
+| 旧名称（可读取） | 新名称（写出）| 位置 |
+|-----------------|--------------|------|
+| `<SupportedSuites>` | `<TargetSuites>` | PropertyGroup |
+| `<SupportedArch>` | `<TargetArchitectures>` | PropertyGroup |
+| `<DependencyList>` (元素文本) | `<Dependency Include="...">` | ItemGroup |
+| `<IncludeConfigFile>` | `<ConfFile>` | ItemGroup |
+| `Source="..."` 属性 | `Include="..."` 属性 | 所有 ItemGroup 条目 |
+
+如果你在网上看到使用旧格式的 `.aosproj` 文件，它仍然可以被正确解析。建议迁移到新格式。
