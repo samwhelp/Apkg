@@ -37,7 +37,7 @@ public class AddSourceHandler : ExecutableCommandHandlerBuilder
         var url = context.GetValue(UrlOption)!;
 
         if (!IsRunningAsRoot())
-            throw new InvalidOperationException($"This command requires root privileges. Try: sudo apkg add-source {url}");
+            throw new InvalidOperationException($"This command requires root privileges. Try: sudo env \"PATH=$PATH\" apkg add-source {url}");
 
         var services = ServiceBuilder
             .CreateCommandHostBuilder<Startup>(verbose)
