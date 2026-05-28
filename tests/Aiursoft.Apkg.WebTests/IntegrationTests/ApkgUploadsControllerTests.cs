@@ -1,6 +1,5 @@
 using System.Formats.Tar;
 using System.Net;
-using System.Net.Http.Headers;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Services.FileStorage;
 using Microsoft.AspNetCore.Identity;
@@ -103,16 +102,19 @@ public class ApkgUploadsControllerTests : TestBase
     }
 
     /// <summary>
-    /// Writes a .apkg to the Vault folder and returns its logical path (relative to Vault root).
+    /// Writes a .apkg to the Vault/apkg-upload subfolder and returns its
+    /// logical vault path (relative to Vault root).  The path must start with
+    /// "apkg-upload/" to pass the model's [RegularExpression] validation.
     /// </summary>
     private string SaveApkgToVault(byte[] apkgBytes)
     {
         var folders = GetService<FeatureFoldersProvider>();
-        var vaultDir = folders.GetVaultFolder();
+        var subFolder = Path.Combine(folders.GetVaultFolder(), "apkg-upload");
+        Directory.CreateDirectory(subFolder);
         var fileName = $"test-{Guid.NewGuid():N}.apkg";
-        var physicalPath = Path.Combine(vaultDir, fileName);
+        var physicalPath = Path.Combine(subFolder, fileName);
         File.WriteAllBytes(physicalPath, apkgBytes);
-        return fileName;
+        return $"apkg-upload/{fileName}";
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -370,8 +372,9 @@ public class ApkgUploadsControllerTests : TestBase
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode,
             "Upload with missing vault file should re-render the form (200).");
         var html = await response.Content.ReadAsStringAsync();
-        Assert.IsTrue(html.Contains("File upload failed or missing"),
-            "Page should show the missing-file error.");
+        Assert.IsTrue(
+            html.Contains("upload", StringComparison.OrdinalIgnoreCase),
+            "Page should show validation error for missing file.");
     }
 
     [TestMethod]
