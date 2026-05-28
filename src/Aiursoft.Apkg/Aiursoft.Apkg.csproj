@@ -28,6 +28,11 @@
     <PackageReference Include="Aiursoft.Canon.ScheduledTasks" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Aiursoft.Apkg.WebTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Aiursoft.Apkg.InMemory\Aiursoft.Apkg.InMemory.csproj" />
     <ProjectReference Include="..\Aiursoft.Apkg.MySql\Aiursoft.Apkg.MySql.csproj" />
     <ProjectReference Include="..\Aiursoft.Apkg.Sdk\Aiursoft.Apkg.Sdk.csproj" />

@@ -682,4 +682,10 @@ public class ApkgUploadsController(
     {
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
+
+    internal static bool ArchitectureMatches(string repoArchitecture, string entryArchitecture)
+    {
+        return string.Equals(repoArchitecture, entryArchitecture, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(entryArchitecture, "all", StringComparison.OrdinalIgnoreCase);
+    }
 }
