@@ -1,6 +1,7 @@
 using Aiursoft.DbTools;
 using Aiursoft.DbTools.InMemory;
 using Aiursoft.Apkg.Entities;
+// ReSharper disable once RedundantUsingDirective — required for UseInMemoryDatabase
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
