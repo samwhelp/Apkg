@@ -24,7 +24,7 @@
 </div>
 
 <div class="row">
-    <div class="col-md-8 col-xl-7">
+    <div class="col-md-8 col-xl-6">
         <div class="card">
             <div class="card-header"><h5 class="card-title mb-0">@Localizer["Metadata"]</h5></div>
             <div class="card-body">
@@ -189,6 +189,22 @@ sudo apt update</code></pre>
         }
 
         <div class="card">
+            <div class="card-body d-grid gap-2">
+                <a href="/artifacts/@pkg.Filename" class="btn btn-primary">
+                    <i class="align-middle me-1" data-lucide="download"></i> @Localizer["Download .deb"]
+                </a>
+                @if (!string.IsNullOrWhiteSpace(pkg.RemoteUrl))
+                {
+                    <a href="@pkg.RemoteUrl" target="_blank" class="btn btn-outline-secondary">
+                        <i class="align-middle me-1" data-lucide="external-link"></i> @Localizer["Upstream URL"]
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="d-none d-xl-block col-xl-3">
+        <div class="card mb-3">
             <div class="card-header"><h5 class="card-title mb-0">@Localizer["Status & Files"]</h5></div>
             <div class="card-body">
                 <p>
@@ -220,22 +236,6 @@ sudo apt update</code></pre>
             </div>
         </div>
 
-        <div class="card mt-3">
-            <div class="card-body d-grid gap-2">
-                <a href="/artifacts/@pkg.Filename" class="btn btn-primary">
-                    <i class="align-middle me-1" data-lucide="download"></i> @Localizer["Download .deb"]
-                </a>
-                @if (!string.IsNullOrWhiteSpace(pkg.RemoteUrl))
-                {
-                    <a href="@pkg.RemoteUrl" target="_blank" class="btn btn-outline-secondary">
-                        <i class="align-middle me-1" data-lucide="external-link"></i> @Localizer["Upstream URL"]
-                    </a>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="d-none d-xl-block col-xl-2">
         <div class="card mb-3 border-primary">
             <div class="card-body">
                 <div class="text-center mb-3">
