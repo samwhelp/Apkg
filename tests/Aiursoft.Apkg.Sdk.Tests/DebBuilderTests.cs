@@ -1213,6 +1213,75 @@ public class DebBuilderTests
         Assert.AreEqual(0, result.Count);
     }
 
+    // ── ResolveVariables ─────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void ResolveVariables_ReplacesSuite()
+    {
+        var result = DebBuilder.ResolveVariables("$(Suite)", new(), "", "jammy", "");
+        Assert.AreEqual("jammy", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_ReplacesDistro()
+    {
+        var result = DebBuilder.ResolveVariables("$(Distro)", new(), "ubuntu", "", "");
+        Assert.AreEqual("ubuntu", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_ReplacesArch()
+    {
+        var result = DebBuilder.ResolveVariables("$(Arch)", new(), "", "", "amd64");
+        Assert.AreEqual("amd64", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_ArchitectureAlias()
+    {
+        var result = DebBuilder.ResolveVariables("$(Architecture)", new(), "", "", "arm64");
+        Assert.AreEqual("arm64", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_ReplacesComponent()
+    {
+        var project = new AosprojProject { Component = "addon" };
+        var result = DebBuilder.ResolveVariables("$(Component)", project, "", "", "");
+        Assert.AreEqual("addon", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_MultipleVariables()
+    {
+        var project = new AosprojProject { Component = "addon" };
+        var result = DebBuilder.ResolveVariables(
+            "$(Distro)/dists/$(Suite)/$(Component)/binary-$(Arch)",
+            project, "anduinos", "questing", "amd64");
+        Assert.AreEqual("anduinos/dists/questing/addon/binary-amd64", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_NoVariables_Unchanged()
+    {
+        var result = DebBuilder.ResolveVariables("plain text", new(), "", "", "");
+        Assert.AreEqual("plain text", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_EmptyInput_ReturnsEmpty()
+    {
+        var result = DebBuilder.ResolveVariables("", new(), "", "", "");
+        Assert.AreEqual("", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_UnknownVariable_Preserved()
+    {
+        var result = DebBuilder.ResolveVariables("$(Unknown)", new(), "", "", "");
+        Assert.AreEqual("$(Unknown)", result);
+    }
+
     private static string CreateTestDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "deb-builder-tests", Guid.NewGuid().ToString("N"));
