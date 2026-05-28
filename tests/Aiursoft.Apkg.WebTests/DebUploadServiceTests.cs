@@ -5,9 +5,6 @@ using Aiursoft.Apkg.Services;
 using Aiursoft.Apkg.Services.FileStorage;
 using Aiursoft.Apkg.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Aiursoft.Apkg.WebTests;
 
@@ -169,7 +166,7 @@ public class DebUploadServiceTests
 
         // LocalPackage.UploadedByUserId is a FK to the Users table — seed a minimal user.
         var userId = Guid.NewGuid().ToString();
-        db.Users.Add(new Aiursoft.Apkg.Entities.User
+        db.Users.Add(new User
         {
             Id = userId,
             UserName = "test-user",
@@ -254,7 +251,7 @@ public class DebUploadServiceTests
         db.AptRepositories.Add(repo);
 
         var userId = Guid.NewGuid().ToString();
-        db.Users.Add(new Aiursoft.Apkg.Entities.User
+        db.Users.Add(new User
         {
             Id = userId,
             UserName = "test-user-2",
