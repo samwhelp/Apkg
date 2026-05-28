@@ -213,7 +213,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         logger.LogInformation("Done! Created {ApkgPath}", apkgPath);
     }
 
-    private static List<(string distro, string suite, string arch)> ResolveBuildTargets(
+    internal static List<(string distro, string suite, string arch)> ResolveBuildTargets(
         AosprojProject project, bool buildAll, string distroArg, string suiteArg, string archArg)
     {
         if (buildAll || (string.IsNullOrWhiteSpace(suiteArg) && string.IsNullOrWhiteSpace(archArg)))
@@ -244,7 +244,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         return [(distro, suiteArg, archArg)];
     }
 
-    private static string DeriveVersionFromDeb(string debPath, string packageName)
+    internal static string DeriveVersionFromDeb(string debPath, string packageName)
     {
         var fileName = Path.GetFileNameWithoutExtension(debPath);
         // Format: {name}_{version}_{suite}_{arch} — version is between name and the last two _
@@ -256,17 +256,19 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         return middle[..secondLastUnderscore];
     }
 
-    private static (string suite, string arch) ParseDebFileName(string fileName)
+    internal static (string suite, string arch) ParseDebFileName(string fileName)
     {
         // Format: {name}_{version}_{suite}_{arch}.deb — parse from the right
-        var withoutExt = Path.GetFileNameWithoutExtension(fileName);
-        var lastUnderscore = withoutExt.LastIndexOf('_');
+        var name = Path.GetFileName(fileName);
+        if (name.EndsWith(".deb", StringComparison.OrdinalIgnoreCase))
+            name = name[..^4];
+        var lastUnderscore = name.LastIndexOf('_');
         if (lastUnderscore < 0)
             throw new InvalidOperationException(
                 $"Cannot parse suite/arch from deb filename '{fileName}'. Expected format: <name>_<version>_<suite>_<arch>.deb");
 
-        var arch = withoutExt[(lastUnderscore + 1)..];
-        var rest = withoutExt[..lastUnderscore];
+        var arch = name[(lastUnderscore + 1)..];
+        var rest = name[..lastUnderscore];
         var secondLastUnderscore = rest.LastIndexOf('_');
         if (secondLastUnderscore < 0)
             throw new InvalidOperationException(
