@@ -93,11 +93,11 @@ public class Startup : IWebStartup
             period: TimeSpan.FromHours(6),
             startDelay: TimeSpan.FromMinutes(10));
 
-        // Repository Sync Job runs every 4 hours, delay 20 minutes.
+        // Repository Sync Job runs every 15 minutes, delay 1 minute.
         services.RegisterScheduledTask(
             registration: repositorySyncJob,
-            period: TimeSpan.FromHours(4),
-            startDelay: TimeSpan.FromMinutes(20));
+            period: TimeSpan.FromMinutes(15),
+            startDelay: TimeSpan.FromMinutes(1));
 
         // Repository Sign Job runs every 5 minutes (signs and promotes any pending buckets after sync).
         services.RegisterScheduledTask(
@@ -113,11 +113,10 @@ public class Startup : IWebStartup
 
         // So an idea run steps are:
         // 1. At 00:00, Mirror Sync Job runs
-        // 2. At 00:15, Garbage Collection Job runs
-        // 3. At 00:20, Repository Sync Job runs
-        // 4. At 04:20, Repository Sync Job runs again
-        // 5. At 06:00, Mirror Sync Job runs again
-        // 6. At 08:20, Repository Sync Job runs again
+        // 2. At 00:01, Repository Sync Job runs (then every 15 min)
+        // 3. At 00:10, APKG Temp Cleanup Job runs (every 10 min)
+        // 4. At 00:15, Garbage Collection Job runs
+        // 5. At 00:25, Repository Sign Job runs (every 5 min, signs any pending bucket)
 
         // Controllers and localization
         services.AddControllersWithViews()
