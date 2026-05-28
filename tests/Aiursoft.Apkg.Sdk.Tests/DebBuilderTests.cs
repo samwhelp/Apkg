@@ -1422,6 +1422,132 @@ public class DebBuilderTests
         }
     }
 
+    [TestMethod]
+    public async Task BuildAsync_PackageVersion_SubstitutesSuiteVariable()
+    {
+        // Arrange: PackageVersion contains $(Suite) — should expand to the actual suite name.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir  = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            Directory.CreateDirectory(outputDir);
+
+            var project = new AosprojProject
+            {
+                PackageName        = "my-ext",
+                PackageVersion     = "1.0.0+$(Suite)1",   // $(Suite) should be substituted
+                PackageDescription = "Suite-specific extension",
+                Maintainer         = "Test <test@example.com>",
+                TargetDistro       = "ubuntu",
+                TargetSuites       = "questing-addon",
+            };
+
+            // Act
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "questing-addon", "all", outputDir);
+
+            // Assert: $(Suite) expanded to "questing-addon" in the produced .deb filename and control
+            var expectedDeb = Path.Combine(outputDir, "my-ext_1.0.0+questing-addon1_questing-addon_all.deb");
+            Assert.IsTrue(File.Exists(expectedDeb),
+                $"Expected .deb with suite-substituted version to exist at: {expectedDeb}");
+
+            var staging     = Path.Combine(projectDir, "obj", "questing-addon_all");
+            var controlText = await File.ReadAllTextAsync(Path.Combine(staging, "DEBIAN", "control"));
+            Assert.IsTrue(controlText.Contains("Version: 1.0.0+questing-addon1"),
+                $"DEBIAN/control should contain substituted version. Actual control:\n{controlText}");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_PackageVersion_SubstitutesSuiteShortNameVariable()
+    {
+        // Arrange: PackageVersion contains $(SuiteShortName) — should expand to the short name
+        // from DependencyCheckSuiteMap (e.g. "questing-addon" → "questing").
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir  = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            Directory.CreateDirectory(outputDir);
+
+            var project = new AosprojProject
+            {
+                PackageName             = "my-ext",
+                PackageVersion          = "1.0.0+$(SuiteShortName)1",  // $(SuiteShortName) → "questing"
+                PackageDescription      = "Suite-specific extension",
+                Maintainer              = "Test <test@example.com>",
+                TargetDistro            = "ubuntu",
+                TargetSuites            = "questing-addon",
+                DependencyCheckSuiteMap = "noble-addon=noble questing-addon=questing resolute-addon=resolute",
+            };
+
+            // Act
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "questing-addon", "all", outputDir);
+
+            // Assert: $(SuiteShortName) expanded to "questing" (not "questing-addon")
+            var expectedDeb = Path.Combine(outputDir, "my-ext_1.0.0+questing1_questing-addon_all.deb");
+            Assert.IsTrue(File.Exists(expectedDeb),
+                $"Expected .deb with short-name-substituted version to exist at: {expectedDeb}");
+
+            var staging     = Path.Combine(projectDir, "obj", "questing-addon_all");
+            var controlText = await File.ReadAllTextAsync(Path.Combine(staging, "DEBIAN", "control"));
+            Assert.IsTrue(controlText.Contains("Version: 1.0.0+questing1"),
+                $"DEBIAN/control should contain short-name version. Actual control:\n{controlText}");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_PackageVersion_SuiteShortNameFallsBackToSuiteWhenNotInMap()
+    {
+        // Arrange: $(SuiteShortName) with no DependencyCheckSuiteMap entry → falls back to suite name.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir  = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            Directory.CreateDirectory(outputDir);
+
+            var project = new AosprojProject
+            {
+                PackageName             = "my-ext",
+                PackageVersion          = "2.0+$(SuiteShortName)1",
+                PackageDescription      = "Suite-specific extension",
+                Maintainer              = "Test <test@example.com>",
+                TargetDistro            = "ubuntu",
+                TargetSuites            = "jammy",
+                DependencyCheckSuiteMap = "",  // no map → fall back to suite name
+            };
+
+            // Act
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "all", outputDir);
+
+            // Assert: $(SuiteShortName) fell back to "jammy"
+            var expectedDeb = Path.Combine(outputDir, "my-ext_2.0+jammy1_jammy_all.deb");
+            Assert.IsTrue(File.Exists(expectedDeb),
+                $"Expected .deb with fallback suite name in version: {expectedDeb}");
+
+            var staging     = Path.Combine(projectDir, "obj", "jammy_all");
+            var controlText = await File.ReadAllTextAsync(Path.Combine(staging, "DEBIAN", "control"));
+            Assert.IsTrue(controlText.Contains("Version: 2.0+jammy1"),
+                $"DEBIAN/control should contain fallback version. Actual control:\n{controlText}");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
     private static string CreateTestDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "deb-builder-tests", Guid.NewGuid().ToString("N"));

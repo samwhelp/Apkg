@@ -66,6 +66,17 @@ public class DebBuilder
         string? upstreamPostrm = null;
         var resolvedVersion = project.PackageVersion;
 
+        // Resolve $(Suite) and $(SuiteShortName) early so downstream code (including
+        // upstream-version derivation) always works with a concrete version string.
+        // $(SuiteShortName) uses DependencyCheckSuiteMap (e.g. "noble-addon=noble"), falling
+        // back to the raw suite name when no mapping is found.
+        var suiteShortName = project.GetDependencyCheckSuiteMap().TryGetValue(suite, out var mappedShortName)
+            ? mappedShortName
+            : suite;
+        resolvedVersion = resolvedVersion
+            .Replace("$(Suite)", suite)
+            .Replace("$(SuiteShortName)", suiteShortName);
+
         if (project.HasUpstreamSource)
         {
             var upstreamDebPath = await DownloadUpstreamDebAsync(
