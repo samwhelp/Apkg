@@ -184,4 +184,122 @@ SHA512: cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c
         var gzPath = packagesFilePath + ".gz";
         Assert.IsTrue(File.Exists(gzPath), "Gzipped packages file should be generated!");
     }
+
+    /// <summary>
+    /// Regression test: RepositorySyncJob must write suite-scoped Filenames into each
+    /// suite's Packages index.
+    ///
+    /// Root cause of the production bug: When different Ubuntu releases (noble / questing /
+    /// resolute) package the *same* GNOME extension, each suite downloads a different
+    /// extension zip (matching its GNOME Shell version) and therefore produces a .deb with
+    /// a different SHA256.  All three records share the conventional pool path
+    /// "pool/main/g/…/pkg_ver_all.deb".  GetLocalPoolPath, called without suite context,
+    /// picks the record from the highest BucketId — which may belong to a different suite
+    /// than the one the APT client indexed, causing "File has unexpected size" errors.
+    ///
+    /// The fix: RepositorySyncJob rewrites the Filename field in each suite's Packages file
+    /// to "{suite}/pool/main/g/…/pkg_ver_all.deb".  The controller exposes a matching route
+    /// artifacts/{distro}/{suite}/pool/{**path} that passes repoName=suite to
+    /// GetLocalPoolPath, scoping the CAS lookup to that suite's primary bucket only.
+    /// </summary>
+    [TestMethod]
+    public async Task RepositorySyncJob_WhenBuildingPackagesIndex_WritesSuiteScopedFilenames()
+    {
+        var dbName = $"DataSource=file:{Guid.NewGuid()}?mode=memory&cache=shared";
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection(dbName);
+        connection.Open();
+
+        var upstreamPackages = @"Package: gnome-shell-extension-tiling-assistant
+Architecture: all
+Version: 1.0.56
+Maintainer: Test <test@example.com>
+Description: Tiling assistant
+Description-md5: abc
+Section: utils
+Priority: optional
+Filename: pool/main/g/gnome-shell-extension-tiling-assistant/gnome-shell-extension-tiling-assistant_1.0.56_all.deb
+Size: 116054
+MD5sum: d41d8cd98f00b204e9800998ecf8427e
+SHA1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+SHA256: 0c1d898c8f970f6a03dd7eaef660d32b0edfadc2ec6c6b724f68555be62edba7
+SHA512: cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e
+
+";
+        var packagesHash = BitConverter.ToString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(upstreamPackages))).Replace("-", "").ToLower();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMemoryCache();
+        services.AddDbContext<Aiursoft.Apkg.Entities.ApkgDbContext, Aiursoft.Apkg.Sqlite.SqliteContext>(options => options.UseSqlite(dbName));
+
+        var storagePath = Path.Combine(Path.GetTempPath(), "apkg-test-suitefn-" + Guid.NewGuid());
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string> { ["Storage:Path"] = storagePath }!)
+            .Build();
+        services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(config);
+        services.AddSingleton<Aiursoft.Apkg.Services.FileStorage.StorageRootPathProvider>();
+        services.AddSingleton<Aiursoft.Apkg.Services.FileStorage.FeatureFoldersProvider>();
+        services.AddSingleton<Aiursoft.Apkg.Services.FileStorage.FileLockProvider>();
+        services.AddTransient<Aiursoft.Apkg.Services.AptMetadataService>();
+        services.AddSingleton<Aiursoft.Apkg.Services.Authentication.IGpgSigningService, FakeGpgSigningService>();
+        services.AddTransient<Aiursoft.Apkg.Services.BackgroundJobs.MirrorSyncJob>();
+        services.AddTransient<Aiursoft.Apkg.Services.BackgroundJobs.RepositorySyncJob>();
+        services.AddTransient<Aiursoft.Apkg.Services.BackgroundJobs.RepositorySignJob>();
+        services.AddHttpClient(Microsoft.Extensions.Options.Options.DefaultName)
+            .ConfigurePrimaryHttpMessageHandler(() => new FakeHttpMessageHandler(upstreamPackages, packagesHash));
+
+        var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<Aiursoft.Apkg.Entities.ApkgDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        var mirror = new Aiursoft.Apkg.Entities.AptMirror
+        {
+            BaseUrl = "http://upstream.mirror/",
+            Distro = "anduinos",
+            Suite = "questing",
+            Components = "main",
+            Architecture = "amd64",
+            SignedBy = null,
+            AllowInsecure = true
+        };
+        db.AptMirrors.Add(mirror);
+
+        var repo = new Aiursoft.Apkg.Entities.AptRepository
+        {
+            Name = "anduinos-addon",
+            Distro = "anduinos",
+            Suite = "questing-addon",
+            Components = "main",
+            Architecture = "amd64",
+            Mirror = mirror
+        };
+        db.AptRepositories.Add(repo);
+        await db.SaveChangesAsync();
+
+        var mirrorJob = scope.ServiceProvider.GetRequiredService<Aiursoft.Apkg.Services.BackgroundJobs.MirrorSyncJob>();
+        await mirrorJob.ExecuteAsync();
+        var repoJob = scope.ServiceProvider.GetRequiredService<Aiursoft.Apkg.Services.BackgroundJobs.RepositorySyncJob>();
+        await repoJob.ExecuteAsync();
+        var signJob = scope.ServiceProvider.GetRequiredService<Aiursoft.Apkg.Services.BackgroundJobs.RepositorySignJob>();
+        await signJob.ExecuteAsync();
+
+        var folders = scope.ServiceProvider.GetRequiredService<Aiursoft.Apkg.Services.FileStorage.FeatureFoldersProvider>();
+        var updatedRepo = await db.AptRepositories.Include(r => r.PrimaryBucket).FirstAsync(r => r.Id == repo.Id);
+        var bucketId = updatedRepo.PrimaryBucketId!.Value;
+
+        var packagesFilePath = Path.Combine(folders.GetBucketsFolder(), bucketId.ToString(), "main/binary-amd64/Packages");
+        var packagesContent = await File.ReadAllTextAsync(packagesFilePath);
+
+        // The Filename in the Packages index MUST be suite-scoped so that APT constructs
+        // a URL that carries the suite name, allowing the server to scope the pool lookup.
+        const string expectedFilename = "Filename: questing-addon/pool/main/g/gnome-shell-extension-tiling-assistant/gnome-shell-extension-tiling-assistant_1.0.56_all.deb";
+        Assert.IsTrue(packagesContent.Contains(expectedFilename),
+            $"Packages file should contain a suite-scoped Filename.\nExpected to find: {expectedFilename}\nActual content:\n{packagesContent}");
+
+        // The old non-scoped filename must NOT appear (or APT will construct wrong URL)
+        const string wrongFilename = "Filename: pool/main/g/gnome-shell-extension-tiling-assistant/gnome-shell-extension-tiling-assistant_1.0.56_all.deb";
+        Assert.IsFalse(packagesContent.Contains(wrongFilename),
+            $"Packages file must NOT contain the non-suite-scoped Filename.\nFound: {wrongFilename}");
+    }
 }

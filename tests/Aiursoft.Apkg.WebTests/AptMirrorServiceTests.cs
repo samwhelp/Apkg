@@ -457,6 +457,109 @@ public class AptMirrorServiceTests
             $"Must NOT return the oldest (noble) suite's stale file ({nobleSha}).");
     }
 
+    /// <summary>
+    /// Regression test: when multiple suites under the same distro have *different* .deb
+    /// content for the same arch=all package (e.g. different GNOME Shell zip per suite),
+    /// GetLocalPoolPath scoped to a *specific* suite must return THAT suite's SHA256, even
+    /// when another suite has a higher BucketId.
+    ///
+    /// Production scenario:
+    ///   noble-addon   → BucketId=377 (highest), SHA256=noble_sha   (97 032 B)
+    ///   questing-addon → BucketId=376 (lower),  SHA256=questing_sha (116 054 B)
+    ///   resolute-addon → BucketId=375 (lowest),  SHA256=resolute_sha
+    ///
+    ///   A questing-addon client fetches the Packages index (bucket 376) and records
+    ///   questing_sha for tiling-assistant_1.0.56_all.deb.  When it then downloads the
+    ///   pool file, the server MUST return questing_sha — not noble_sha (highest bucket).
+    ///
+    ///   The fix: use suite-scoped pool URLs ({suite}/pool/…) so GetLocalPoolPath is
+    ///   called with repoName=suite and scopes the CAS lookup to that suite's bucket only.
+    /// </summary>
+    [TestMethod]
+    public async Task GetLocalPoolPath_WhenScopedToSpecificSuite_ReturnsThatSuitesSha256_NotHighestBucket()
+    {
+        // --- Arrange ---
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMemoryCache();
+
+        var storagePath = Path.Combine(Path.GetTempPath(), "apkg-test-suite-scope-" + Guid.NewGuid());
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string> { ["Storage:Path"] = storagePath }!)
+            .Build();
+        services.AddSingleton<IConfiguration>(config);
+
+        var dbName = $"DataSource=file:{Guid.NewGuid()}?mode=memory&cache=shared";
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection(dbName);
+        connection.Open();
+
+        services.AddDbContext<ApkgDbContext, SqliteContext>(options => options.UseSqlite(dbName));
+        services.AddSingleton<StorageRootPathProvider>();
+        services.AddSingleton<FeatureFoldersProvider>();
+        services.AddSingleton<FileLockProvider>();
+        services.AddHttpClient();
+        services.AddTransient<AptMirrorService>();
+
+        var provider = services.BuildServiceProvider();
+        var db = provider.GetRequiredService<ApkgDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        var folders = provider.GetRequiredService<FeatureFoldersProvider>();
+        var objectsRoot = folders.GetObjectsFolder();
+
+        // Three suites produce three different .deb files for the same arch=all package version
+        // (e.g. different GNOME Shell zip bundles per Ubuntu release)
+        var resoluteContent = "resolute-content"u8.ToArray();
+        var questingContent = "questing-content"u8.ToArray();
+        var nobleContent    = "noble-content"u8.ToArray();
+        var resoluteSha = BitConverter.ToString(SHA256.HashData(resoluteContent)).Replace("-", "").ToLowerInvariant();
+        var questingSha = BitConverter.ToString(SHA256.HashData(questingContent)).Replace("-", "").ToLowerInvariant();
+        var nobleSha    = BitConverter.ToString(SHA256.HashData(nobleContent)).Replace("-", "").ToLowerInvariant();
+
+        foreach (var (sha, bytes) in new[] { (resoluteSha, resoluteContent), (questingSha, questingContent), (nobleSha, nobleContent) })
+        {
+            var casPath = Path.Combine(objectsRoot, sha[..2], $"{sha}.deb");
+            Directory.CreateDirectory(Path.GetDirectoryName(casPath)!);
+            await File.WriteAllBytesAsync(casPath, bytes);
+        }
+
+        const string filename = "pool/main/g/gnome-shell-extension-tiling-assistant/gnome-shell-extension-tiling-assistant_1.0.56_all.deb";
+        const string distro   = "anduinos";
+
+        // BucketId order: resolute < questing < noble  (noble has the HIGHEST BucketId)
+        var resoluteBucket = new AptBucket { CreatedAt = DateTime.UtcNow.AddHours(-2) };
+        var questingBucket = new AptBucket { CreatedAt = DateTime.UtcNow.AddHours(-1) };
+        var nobleBucket    = new AptBucket { CreatedAt = DateTime.UtcNow };
+        db.AptBuckets.AddRange(resoluteBucket, questingBucket, nobleBucket);
+        await db.SaveChangesAsync();
+
+        db.AptPackages.Add(MakePackage(resoluteBucket.Id, filename, resoluteSha, resoluteContent.Length));
+        db.AptPackages.Add(MakePackage(questingBucket.Id, filename, questingSha, questingContent.Length));
+        db.AptPackages.Add(MakePackage(nobleBucket.Id,    filename, nobleSha,    nobleContent.Length));
+        await db.SaveChangesAsync();
+
+        db.AptRepositories.AddRange(
+            new AptRepository { Distro = distro, Name = "anduinos-addon", Suite = "resolute-addon", Components = "main", Architecture = "amd64", PrimaryBucketId = resoluteBucket.Id },
+            new AptRepository { Distro = distro, Name = "anduinos-addon", Suite = "questing-addon", Components = "main", Architecture = "amd64", PrimaryBucketId = questingBucket.Id },
+            new AptRepository { Distro = distro, Name = "anduinos-addon", Suite = "noble-addon",    Components = "main", Architecture = "amd64", PrimaryBucketId = nobleBucket.Id }
+        );
+        await db.SaveChangesAsync();
+
+        // --- Act: questing-addon client requests the pool file ---
+        using var scope = provider.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<AptMirrorService>();
+        var result = await service.GetLocalPoolPath(filename, distro: distro, repoName: "questing-addon");
+
+        // --- Assert ---
+        // Must return the questing-addon CAS file (questingSha), NOT noble's (nobleSha)
+        // even though noble has the highest BucketId.
+        Assert.IsNotNull(result, "Should find the package when scoped to questing-addon.");
+        Assert.IsTrue(result.Contains(questingSha),
+            $"Should return questing-addon's SHA256 ({questingSha}). Got: {result}");
+        Assert.IsFalse(result.Contains(nobleSha),
+            $"Must NOT return noble's file ({nobleSha}) — it has higher BucketId but belongs to a different suite.");
+    }
+
     [TestMethod]
     [Timeout(5000)] // ABSOLUTE LIMIT: If this test takes longer than 5 seconds, MSTest will violently abort it!
     public async Task TestConcurrentVirtualToPhysicalConversion()

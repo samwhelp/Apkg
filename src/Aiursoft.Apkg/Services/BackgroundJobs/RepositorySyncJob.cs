@@ -253,8 +253,9 @@ public class RepositorySyncJob(
 
                             await foreach (var pkg in query)
                             {
-                                await metadataService.WritePackageEntryAsync(rawWriter, pkg);
-                                await metadataService.WritePackageEntryAsync(gzWriter, pkg);
+                                var suitedFilename = RewritePoolFilenameForSuite(pkg.Filename, repo.Suite);
+                                await metadataService.WritePackageEntryAsync(rawWriter, pkg, filenameOverride: suitedFilename);
+                                await metadataService.WritePackageEntryAsync(gzWriter, pkg, filenameOverride: suitedFilename);
                             }
 
                             await rawWriter.FlushAsync();
@@ -286,6 +287,24 @@ public class RepositorySyncJob(
         // RepositorySignJob will detect ReleaseContent != null and promote it.
         db.ChangeTracker.Clear();
         logger.LogInformation("Repository {RepoName} bucket {BucketId} is staged and awaiting signing.", repo.Name, newBucketId);
+    }
+    /// <summary>
+    /// Rewrites a conventional pool path to include the suite name as a leading path segment,
+    /// e.g. "pool/main/g/pkg/pkg_1.0_all.deb" → "questing-addon/pool/main/g/pkg/pkg_1.0_all.deb".
+    ///
+    /// This makes every Filename reference in a suite's Packages index unique to that suite.
+    /// The APT client constructs the download URL as {base}/{Filename}, so the resulting URL
+    /// becomes ".../artifacts/{distro}/questing-addon/pool/main/g/…".  A matching controller
+    /// route (artifacts/{distro}/{suite}/pool/{**path}) passes the suite name to
+    /// GetLocalPoolPath as repoName, scoping the CAS lookup to that suite's primary bucket
+    /// and avoiding cross-suite hash mismatches for packages with suite-specific content.
+    /// </summary>
+    private static string RewritePoolFilenameForSuite(string filename, string suite)
+    {
+        const string prefix = "pool/";
+        if (!string.IsNullOrWhiteSpace(filename) && filename.StartsWith(prefix))
+            return $"{suite}/{filename}";
+        return filename;
     }
 }
 

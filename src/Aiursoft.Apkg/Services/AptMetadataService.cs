@@ -12,7 +12,7 @@ public class AptMetadataService : ITransientDependency
         await writer.WriteLineAsync($"{key}: {formatted}");
     }
 
-    public async Task WritePackageEntryAsync(StreamWriter writer, AptPackage pkg)
+    public async Task WritePackageEntryAsync(StreamWriter writer, AptPackage pkg, string? filenameOverride = null)
     {
         await WriteField(writer, "Package", pkg.Package);
         await WriteField(writer, "Architecture", pkg.Architecture);
@@ -33,7 +33,7 @@ public class AptMetadataService : ITransientDependency
         await WriteField(writer, "Provides", pkg.Provides);
         await WriteField(writer, "Source", pkg.Source);
         await WriteField(writer, "Homepage", pkg.Homepage);
-        await WriteField(writer, "Filename", pkg.Filename);
+        await WriteField(writer, "Filename", filenameOverride ?? pkg.Filename);
         await WriteField(writer, "Size", pkg.Size);
         await WriteField(writer, "MD5sum", pkg.MD5sum);
         await WriteField(writer, "SHA1", pkg.SHA1);
