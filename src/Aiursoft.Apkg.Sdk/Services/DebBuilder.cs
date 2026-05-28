@@ -410,6 +410,17 @@ public class DebBuilder
             sb.AppendLine($"Depends: {string.Join(", ", depends)}");
 
         // Local fields override upstream; fall back to upstream when local is empty
+        var recommends = !string.IsNullOrWhiteSpace(p.Recommends) ? p.Recommends
+            : upstreamControl?.GetValueOrDefault("Recommends") ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(recommends))
+            sb.AppendLine($"Recommends: {recommends}");
+
+        var suggests = !string.IsNullOrWhiteSpace(p.Suggests) ? p.Suggests
+            : upstreamControl?.GetValueOrDefault("Suggests") ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(suggests))
+            sb.AppendLine($"Suggests: {suggests}");
+
+        // Local fields override upstream; fall back to upstream when local is empty
         var provides = !string.IsNullOrWhiteSpace(p.Provides) ? p.Provides
             : upstreamControl?.GetValueOrDefault("Provides") ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(provides))

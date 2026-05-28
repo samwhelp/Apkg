@@ -26,6 +26,8 @@ public class AosprojProject
     public string Provides { get; set; } = string.Empty;
     public string Conflicts { get; set; } = string.Empty;
     public string Replaces { get; set; } = string.Empty;
+    public string Recommends { get; set; } = string.Empty;
+    public string Suggests { get; set; } = string.Empty;
     public string Component { get; set; } = "main";
 
     // ── Build targets ────────────────────────────────────────────────────────

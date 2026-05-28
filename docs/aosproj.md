@@ -99,6 +99,8 @@
 | `Provides` | — | deb `Provides` 字段，声明此包提供哪些虚包 |
 | `Conflicts` | — | deb `Conflicts` 字段，声明与哪些包冲突 |
 | `Replaces` | — | deb `Replaces` 字段，声明此包替换哪些旧包 |
+| `Recommends` | — | deb `Recommends` 字段，声明强烈推荐但非必须的软件包（`apt install` 默认安装，`apt remove` 时不会破坏依赖） |
+| `Suggests` | — | deb `Suggests` 字段，声明可选的锦上添花软件包（`apt` 不自动安装，仅作提示） |
 | `UpstreamUrl` | ⚠️ | 上游 APT 仓库的 base URL（如 `http://archive.ubuntu.com/ubuntu`）。设置 `UpstreamPackage` 时必填 |
 | `UpstreamDistro` | ⚠️ | 上游仓库的发行版标识（如 `ubuntu`）。设置 `UpstreamPackage` 时必填 |
 | `UpstreamPackage` | — | 上游 .deb 的包名（如 `base-files`）。一旦设置，触发上游派生模式 |
@@ -118,7 +120,7 @@
 5. **合并 control 字段**：
    - **Version**：若 `PackageVersion` 包含 `$(UpstreamVersion)`，则替换为上游的实际版本号（如 `13.1ubuntu1`）。这使得派生包的版本自动跟随上游
    - `Depends`：上游依赖在前，本地 `Dependency` 附录在后。以基础包名去重（如上游有 `libc6 (>= 2.34)` 而本地声明 `libc6`，保留上游版本）
-   - `Provides`、`Conflicts`、`Replaces`：本地优先，未填时回退到上游值
+   - `Provides`、`Conflicts`、`Replaces`、`Recommends`、`Suggests`：本地优先，未填时回退到上游值
    - `Homepage`：本地优先，未填时回退到上游值
    - `Section`、`Priority`：始终从上继承
 6. **链式 maintainer scripts**：上游 `postinst`/`prerm`/`postrm`（去除 shebang）→ 本地脚本 → systemd 自动脚本，按序追加
@@ -270,6 +272,30 @@
 <Dependency Include="libssl3"    Condition="'$(Suite)' == 'resolute'" />
 <Dependency Include="libssl3t64" Condition="'$(Suite)' == 'questing'" />
 ```
+
+#### Recommends 与 Suggests — 推荐/可选依赖
+
+`Recommends` 和 `Suggests` 直接作为 `<PropertyGroup>` 里的字符串填写，格式与 `Depends` 相同（逗号分隔，支持版本约束）。
+
+```xml
+<!--
+  Recommends：强烈推荐，但非必须。
+    - apt install 默认一并安装（除非用 --no-install-recommends）
+    - apt remove 单独卸载推荐包时不会破坏当前包的依赖
+    - 典型用途：元包（meta-package）列出它所代表的所有组件
+-->
+<Recommends>gnome-shell-extension-blur-my-shell, gnome-shell-extension-arcmenu</Recommends>
+
+<!--
+  Suggests：可选的锦上添花。
+    - apt 不自动安装，仅作文字提示
+    - 典型用途：列出可以增强此包功能但完全独立的工具
+-->
+<Suggests>gnome-tweaks</Suggests>
+```
+
+> **元包模式**：创建一个没有任何 `IncludeFile`/`IncludeFolder` 的包，全部内容只有 `Recommends`，
+> 即可实现类似 `ubuntu-desktop` 的元包语义——安装它会拉入一组软件，但可以单独卸载其中任意一个而不报依赖错误。
 
 #### SystemdUnit — systemd 服务单元
 
