@@ -68,6 +68,22 @@ public class AosprojProject
     /// <summary>Architecture of the upstream package, e.g. "all", "amd64".</summary>
     public string UpstreamArch { get; set; } = "all";
 
+    // ── Dependency check ─────────────────────────────────────────────────────
+    /// <summary>
+    /// Base URL of the apt server used to validate declared dependencies during lint.
+    /// Defaults to the canonical Ubuntu archive. Set to empty to disable dependency validation.
+    /// e.g. "http://archive.ubuntu.com/ubuntu"
+    /// </summary>
+    public string DependencyCheckUrl { get; set; } = "http://archive.ubuntu.com/ubuntu";
+
+    /// <summary>
+    /// Maps target suite names to the suite names used on <see cref="DependencyCheckUrl"/>.
+    /// Same format as <see cref="UpstreamSuiteMapping"/>: space/comma-separated "target=check" pairs.
+    /// Required when TargetSuites use custom suffixes (e.g. "noble-addon=noble questing-addon=questing").
+    /// If empty, suite names are used as-is.
+    /// </summary>
+    public string DependencyCheckSuiteMap { get; set; } = string.Empty;
+
     // ── Items ────────────────────────────────────────────────────────────────
     public List<PrebuildCommandItem> PrebuildCommands { get; set; } = [];
     public List<IncludeFileItem> IncludeFiles { get; set; } = [];
@@ -84,19 +100,20 @@ public class AosprojProject
     /// <summary>True when this project derives from an upstream .deb (base-files pattern).</summary>
     public bool HasUpstreamSource => !string.IsNullOrWhiteSpace(UpstreamPackage);
 
+    public Dictionary<string, string> GetUpstreamSuiteMap() => ParseSuiteMap(UpstreamSuiteMapping);
+
     /// <summary>
-    /// Parses <see cref="UpstreamSuiteMapping"/> into a dictionary: output suite → upstream suite.
+    /// Parses <see cref="DependencyCheckSuiteMap"/> into a dictionary: target suite → check suite.
     /// </summary>
-    public Dictionary<string, string> GetUpstreamSuiteMap()
+    public Dictionary<string, string> GetDependencyCheckSuiteMap() => ParseSuiteMap(DependencyCheckSuiteMap);
+
+    private static Dictionary<string, string> ParseSuiteMap(string raw)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (string.IsNullOrWhiteSpace(UpstreamSuiteMapping))
+        if (string.IsNullOrWhiteSpace(raw))
             return map;
 
-        // Collapse spaces around '=' so "a = b" → "a=b" before splitting
-        var normalized = System.Text.RegularExpressions.Regex.Replace(
-            UpstreamSuiteMapping, @"\s*=\s*", "=");
-
+        var normalized = System.Text.RegularExpressions.Regex.Replace(raw, @"\s*=\s*", "=");
         foreach (var pair in Split(normalized))
         {
             var eqIdx = pair.IndexOf('=');

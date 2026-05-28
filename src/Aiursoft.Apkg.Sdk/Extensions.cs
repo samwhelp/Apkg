@@ -22,6 +22,8 @@ public static class Extensions
         services.AddSingleton<ConditionEvaluator>();
         services.AddSingleton<DebBuilder>();
         services.AddSingleton<AosprojLinter>();
+        services.AddSingleton<AosprojDependencyValidator>();
+        services.AddHttpClient<AptPackageIndexClient>();
         return services;
     }
 

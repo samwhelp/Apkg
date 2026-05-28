@@ -34,6 +34,7 @@ public class LintHandler : ExecutableCommandHandlerBuilder
 
         var aosprojSerializer = services.GetRequiredService<AosprojSerializer>();
         var linter = services.GetRequiredService<AosprojLinter>();
+        var depValidator = services.GetRequiredService<AosprojDependencyValidator>();
         var logger = services.GetRequiredService<ILogger<LintHandler>>();
 
         var projectDir = Path.GetFullPath(pathArg);
@@ -41,7 +42,16 @@ public class LintHandler : ExecutableCommandHandlerBuilder
         logger.LogInformation("Linting {File}", projectFile);
 
         var project = await aosprojSerializer.DeserializeFromFileAsync(projectFile);
-        var issues = linter.Lint(project, projectDir);
+        var staticIssues = linter.Lint(project, projectDir);
+
+        if (!string.IsNullOrWhiteSpace(project.DependencyCheckUrl))
+            logger.LogInformation("Validating dependencies against {Url}...", project.DependencyCheckUrl);
+        var depIssues = await depValidator.ValidateAsync(project);
+
+        var issues = staticIssues
+            .Select(i => (Level: (object)i.Level, i.Message, IsDepIssue: false))
+            .Concat(depIssues.Select(i => (Level: (object)i.Level, i.Message, IsDepIssue: true)))
+            .ToList();
 
         if (issues.Count == 0)
         {
@@ -50,21 +60,21 @@ public class LintHandler : ExecutableCommandHandlerBuilder
         }
 
         var hasErrors = false;
-        foreach (var issue in issues)
+        foreach (var (level, message, _) in issues)
         {
-            if (issue.Level == AosprojLinter.Severity.Error)
+            if (level is AosprojLinter.Severity.Error)
             {
-                logger.LogError("  ✗ {Message}", issue.Message);
+                logger.LogError("  ✗ {Message}", message);
                 hasErrors = true;
             }
             else
             {
-                logger.LogWarning("  ⚠ {Message}", issue.Message);
+                logger.LogWarning("  ⚠ {Message}", message);
             }
         }
 
         if (hasErrors)
-            throw new InvalidOperationException($"Linting failed with {issues.Count(i => i.Level == AosprojLinter.Severity.Error)} error(s).");
+            throw new InvalidOperationException($"Linting failed with {issues.Count(i => i.Level is AosprojLinter.Severity.Error)} error(s).");
 
         logger.LogWarning("Lint complete with {Count} warning(s).", issues.Count);
     }
