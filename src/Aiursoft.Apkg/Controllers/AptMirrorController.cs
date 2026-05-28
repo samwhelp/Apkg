@@ -1,3 +1,4 @@
+using System.Text;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Services;
 using Aiursoft.Apkg.Services.FileStorage;
@@ -69,7 +70,8 @@ public class AptMirrorController(
             .FirstOrDefaultAsync(c => c.Name == name);
 
         if (cert == null) return NotFound();
-        return Content(cert.PublicKey, "application/pgp-keys");
+        var fileName = $"{cert.Name}.asc";
+        return File(Encoding.UTF8.GetBytes(cert.PublicKey), "application/pgp-keys", fileName);
     }
 
     [HttpGet]
