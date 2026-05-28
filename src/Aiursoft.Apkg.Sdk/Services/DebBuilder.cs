@@ -132,7 +132,25 @@ public class DebBuilder
 
         var mergedDepends = MergeDepends(localDepends, upstreamControl);
 
-        var control = BuildControl(project, resolvedVersion, arch, mergedDepends, upstreamControl);
+        var localRecommends = project.Recommends
+            .Where(r => Include(r.Condition))
+            .Select(r => r.Value.Trim())
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .ToList();
+        var resolvedRecommends = localRecommends.Count > 0
+            ? string.Join(", ", localRecommends)
+            : upstreamControl?.GetValueOrDefault("Recommends") ?? string.Empty;
+
+        var localSuggests = project.Suggests
+            .Where(s => Include(s.Condition))
+            .Select(s => s.Value.Trim())
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .ToList();
+        var resolvedSuggests = localSuggests.Count > 0
+            ? string.Join(", ", localSuggests)
+            : upstreamControl?.GetValueOrDefault("Suggests") ?? string.Empty;
+
+        var control = BuildControl(project, resolvedVersion, arch, mergedDepends, resolvedRecommends, resolvedSuggests, upstreamControl);
         await File.WriteAllTextAsync(Path.Combine(debianDir, "control"), control);
         _logger.LogDebug("Wrote DEBIAN/control");
 
@@ -398,6 +416,7 @@ public class DebBuilder
 
     internal static string BuildControl(
         AosprojProject p, string resolvedVersion, string arch, List<string> depends,
+        string recommends, string suggests,
         Dictionary<string, string>? upstreamControl = null)
     {
         var sb = new StringBuilder();
@@ -410,15 +429,15 @@ public class DebBuilder
             sb.AppendLine($"Depends: {string.Join(", ", depends)}");
 
         // Local fields override upstream; fall back to upstream when local is empty
-        var recommends = !string.IsNullOrWhiteSpace(p.Recommends) ? p.Recommends
+        var effectiveRecommends = !string.IsNullOrWhiteSpace(recommends) ? recommends
             : upstreamControl?.GetValueOrDefault("Recommends") ?? string.Empty;
-        if (!string.IsNullOrWhiteSpace(recommends))
-            sb.AppendLine($"Recommends: {recommends}");
+        if (!string.IsNullOrWhiteSpace(effectiveRecommends))
+            sb.AppendLine($"Recommends: {effectiveRecommends}");
 
-        var suggests = !string.IsNullOrWhiteSpace(p.Suggests) ? p.Suggests
+        var effectiveSuggests = !string.IsNullOrWhiteSpace(suggests) ? suggests
             : upstreamControl?.GetValueOrDefault("Suggests") ?? string.Empty;
-        if (!string.IsNullOrWhiteSpace(suggests))
-            sb.AppendLine($"Suggests: {suggests}");
+        if (!string.IsNullOrWhiteSpace(effectiveSuggests))
+            sb.AppendLine($"Suggests: {effectiveSuggests}");
 
         // Local fields override upstream; fall back to upstream when local is empty
         var provides = !string.IsNullOrWhiteSpace(p.Provides) ? p.Provides

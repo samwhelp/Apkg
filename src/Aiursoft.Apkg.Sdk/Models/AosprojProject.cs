@@ -26,8 +26,18 @@ public class AosprojProject
     public string Provides { get; set; } = string.Empty;
     public string Conflicts { get; set; } = string.Empty;
     public string Replaces { get; set; } = string.Empty;
-    public string Recommends { get; set; } = string.Empty;
-    public string Suggests { get; set; } = string.Empty;
+    /// <summary>
+    /// One or more Recommends strings, each optionally scoped to a Suite via Condition.
+    /// Corresponds to the deb control <c>Recommends:</c> field.
+    /// apt installs these by default but they can be removed independently.
+    /// </summary>
+    public List<ConditionalValue> Recommends { get; set; } = [];
+    /// <summary>
+    /// One or more Suggests strings, each optionally scoped to a Suite via Condition.
+    /// Corresponds to the deb control <c>Suggests:</c> field.
+    /// apt does not install these automatically; they are informational only.
+    /// </summary>
+    public List<ConditionalValue> Suggests { get; set; } = [];
     public string Component { get; set; } = "main";
 
     // ── Build targets ────────────────────────────────────────────────────────

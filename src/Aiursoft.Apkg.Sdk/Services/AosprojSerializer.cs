@@ -52,8 +52,6 @@ public class AosprojSerializer
                 case "Provides":           project.Provides = el.Value; break;
                 case "Conflicts":          project.Conflicts = el.Value; break;
                 case "Replaces":           project.Replaces = el.Value; break;
-                case "Recommends":         project.Recommends = el.Value; break;
-                case "Suggests":           project.Suggests = el.Value; break;
                 case "Component":          project.Component = el.Value; break;
                 case "TargetDistro":       project.TargetDistro = el.Value; break;
                 case "TargetSuites":       project.TargetSuites = el.Value; break;
@@ -123,6 +121,22 @@ public class AosprojSerializer
                         Value = depValue
                     });
                     break;
+                case "Recommend":
+                    var recValue = (string?)el.Attribute("Include") ?? el.Value;
+                    project.Recommends.Add(new ConditionalValue
+                    {
+                        Condition = condition,
+                        Value = recValue
+                    });
+                    break;
+                case "Suggest":
+                    var sugValue = (string?)el.Attribute("Include") ?? el.Value;
+                    project.Suggests.Add(new ConditionalValue
+                    {
+                        Condition = condition,
+                        Value = sugValue
+                    });
+                    break;
                 case "PostInstallScript":
                     project.PostInstallScripts.Add(new PostInstallScriptItem
                     {
@@ -175,8 +189,6 @@ public class AosprojSerializer
             Elem("Provides", project.Provides),
             Elem("Conflicts", project.Conflicts),
             Elem("Replaces", project.Replaces),
-            Elem("Recommends", project.Recommends),
-            Elem("Suggests", project.Suggests),
             Elem("Component", project.Component),
             Elem("TargetDistro", project.TargetDistro),
             Elem("TargetSuites", project.TargetSuites),
@@ -225,6 +237,18 @@ public class AosprojSerializer
                 new XAttribute("Include", d.Value)));
         if (project.Dependencies.Count > 0)
             itemGroups.Add(new XElement("ItemGroup", depItems));
+
+        var recItems = project.Recommends.Select(r =>
+            (object)ItemElem("Recommend", r.Condition,
+                new XAttribute("Include", r.Value)));
+        if (project.Recommends.Count > 0)
+            itemGroups.Add(new XElement("ItemGroup", recItems));
+
+        var sugItems = project.Suggests.Select(s =>
+            (object)ItemElem("Suggest", s.Condition,
+                new XAttribute("Include", s.Value)));
+        if (project.Suggests.Count > 0)
+            itemGroups.Add(new XElement("ItemGroup", sugItems));
 
         var scriptItems = new List<object>();
         scriptItems.AddRange(project.PostInstallScripts.Select(s =>
