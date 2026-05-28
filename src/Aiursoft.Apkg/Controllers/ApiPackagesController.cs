@@ -127,6 +127,17 @@ public class ApiPackagesController(
                 return BadRequest(summary);
             }
 
+            // ── Pre-flight: validate all entries exist before creating any record ──
+            foreach (var entry in manifest.Entries)
+            {
+                var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
+                if (!extractedEntries.ContainsKey(archiveDebPath))
+                {
+                    summary.Errors.Add($"Archive entry '{entry.DebFile}' was not found for target {entry.Distro} {entry.Suite} {entry.Architecture}.");
+                    return BadRequest(summary);
+                }
+            }
+
             var uploadRecord = new ApkgUpload
             {
                 UploadedByUserId = userId,
@@ -152,11 +163,7 @@ public class ApiPackagesController(
             {
                 var entryComponent = entry.Component.Trim().ToLowerInvariant();
                 var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
-                if (!extractedEntries.TryGetValue(archiveDebPath, out var extractedDebSource))
-                {
-                    summary.Errors.Add($"Archive entry '{entry.DebFile}' was not found for target {entry.Distro} {entry.Suite} {entry.Architecture}.");
-                    return BadRequest(summary);
-                }
+                var extractedDebSource = extractedEntries[archiveDebPath];
 
                 // KEEP IN SYNC with ArchitectureMatches helper below and ApkgUploadsController lines 290/492
                 var candidateRepositories = await db.AptRepositories
@@ -239,7 +246,15 @@ public class ApiPackagesController(
             if (summary.Errors.Count > 0 && !skipDuplicate)
                 return Conflict(summary);
 
-            uploadRecord.IsPublished = true;
+            if (summary.Uploaded.Count > 0)
+            {
+                uploadRecord.IsPublished = true;
+                await db.SaveChangesAsync();
+                return Ok(summary);
+            }
+
+            // Nothing was uploaded — clean up the record
+            db.ApkgUploads.Remove(uploadRecord);
             await db.SaveChangesAsync();
             return Ok(summary);
         }

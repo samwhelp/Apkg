@@ -140,8 +140,177 @@ public class ApiPackagesApkgUploadTests : TestBase
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // Record lifecycle tests
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task ApkgUpload_NoMatchingRepo_RecordDeleted()
+    {
+        var rawKey = await CreateApiKeyAsync(withManageRepos: true);
+
+        var manifestXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <ApkgPackage>
+              <Name>test-pkg</Name>
+              <Version>1.0.0</Version>
+              <Entries>
+                <Entry>
+                  <DebFile>test-pkg_1.0.0_noble_amd64.deb</DebFile>
+                  <Distro>anduinos</Distro>
+                  <Suite>noble-addon</Suite>
+                  <Component>main</Component>
+                  <Architecture>all</Architecture>
+                </Entry>
+              </Entries>
+            </ApkgPackage>
+            """;
+
+        // No matching repo for anduinos/noble-addon → record should be cleaned up
+        var apkgBytes = CreateApkgArchive(manifestXml,
+            ("test-pkg_1.0.0_noble_amd64.deb", new byte[64]));
+
+        using var apkgContent = CreateOctetStreamContent(apkgBytes);
+        using var form = new MultipartFormDataContent();
+        form.Add(apkgContent, "apkg", "test-pkg.apkg");
+        using var request = CreateAuthedUploadRequest(rawKey, form);
+
+        var response = await Http.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode,
+            "Upload with no matching repo should return OK (warnings only).");
+
+        var uploadCount = _db.ApkgUploads.Count();
+        Assert.AreEqual(0, uploadCount,
+            "Upload record should be deleted when nothing was uploaded.");
+    }
+
+    [TestMethod]
+    public async Task ApkgUpload_PreflightMissingEntry_Returns400_BeforeRecordCreated()
+    {
+        var rawKey = await CreateApiKeyAsync(withManageRepos: true);
+
+        // manifest references a deb that's NOT in the archive
+        var manifestXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <ApkgPackage>
+              <Name>test-pkg</Name>
+              <Version>1.0.0</Version>
+              <Entries>
+                <Entry>
+                  <DebFile>missing.deb</DebFile>
+                  <Distro>anduinos</Distro>
+                  <Suite>noble</Suite>
+                  <Component>main</Component>
+                  <Architecture>amd64</Architecture>
+                </Entry>
+              </Entries>
+            </ApkgPackage>
+            """;
+
+        // Include a different file — NOT the one the manifest references
+        var apkgBytes = CreateApkgArchive(manifestXml,
+            ("wrong-name.deb", new byte[64]));
+
+        using var apkgContent = CreateOctetStreamContent(apkgBytes);
+        using var form = new MultipartFormDataContent();
+        form.Add(apkgContent, "apkg", "test.apkg");
+        using var request = CreateAuthedUploadRequest(rawKey, form);
+
+        var response = await Http.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode,
+            "Pre-flight should reject missing entries before creating a record.");
+
+        var uploadCount = _db.ApkgUploads.Count();
+        Assert.AreEqual(0, uploadCount,
+            "No upload record should exist when pre-flight validation fails.");
+    }
+
+    [TestMethod]
+    public async Task ApkgUpload_ArchAll_MatchesAnyArchitectureRepo()
+    {
+        var rawKey = await CreateApiKeyAsync(withManageRepos: true);
+
+        // Set up a repo with amd64 architecture — arch:all entries should match it
+        var repo = new AptRepository
+        {
+            Name = "test-repo",
+            Distro = "anduinos",
+            Suite = "noble",
+            Components = "main",
+            Architecture = "amd64"
+        };
+        _db.AptRepositories.Add(repo);
+        await _db.SaveChangesAsync();
+
+        var manifestXml = $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <ApkgPackage>
+              <Name>test-pkg</Name>
+              <Version>1.0.0</Version>
+              <Entries>
+                <Entry>
+                  <DebFile>test-pkg_1.0.0_noble_all.deb</DebFile>
+                  <Distro>anduinos</Distro>
+                  <Suite>noble</Suite>
+                  <Component>main</Component>
+                  <Architecture>all</Architecture>
+                </Entry>
+              </Entries>
+            </ApkgPackage>
+            """;
+
+        var apkgBytes = CreateApkgArchive(manifestXml,
+            ("test-pkg_1.0.0_noble_all.deb", new byte[64]));
+
+        using var apkgContent = CreateOctetStreamContent(apkgBytes);
+        using var form = new MultipartFormDataContent();
+        form.Add(apkgContent, "apkg", "test-pkg.apkg");
+        using var request = CreateAuthedUploadRequest(rawKey, form);
+
+        var response = await Http.SendAsync(request);
+
+        // The deb upload will fail (not a real .deb), but we're verifying
+        // the arch:all matching → repo IS found (no "No repository found" warning)
+        var responseJson = await response.Content.ReadAsStringAsync();
+        Assert.IsFalse(responseJson.Contains("No repository found"),
+            "arch:all entry should match an amd64 repo — no warning about missing repo.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────────────────────────────
+
+    private static byte[] CreateApkgArchive(string manifestXml,
+        params (string fileName, byte[] content)[] files)
+    {
+        using var ms = new MemoryStream();
+        using (var gz = new System.IO.Compression.GZipStream(ms,
+                   System.IO.Compression.CompressionMode.Compress, leaveOpen: true))
+        {
+            using var tar = new System.Formats.Tar.TarWriter(gz,
+                System.Formats.Tar.TarEntryFormat.Pax, leaveOpen: true);
+
+            var manifestBytes = System.Text.Encoding.UTF8.GetBytes(manifestXml);
+            var manifestEntry = new System.Formats.Tar.PaxTarEntry(
+                System.Formats.Tar.TarEntryType.RegularFile, "manifest.xml")
+            {
+                DataStream = new MemoryStream(manifestBytes)
+            };
+            tar.WriteEntryAsync(manifestEntry).GetAwaiter().GetResult();
+
+            foreach (var (name, data) in files)
+            {
+                var entry = new System.Formats.Tar.PaxTarEntry(
+                    System.Formats.Tar.TarEntryType.RegularFile, name)
+                {
+                    DataStream = new MemoryStream(data)
+                };
+                tar.WriteEntryAsync(entry).GetAwaiter().GetResult();
+            }
+        }
+        return ms.ToArray();
+    }
 
     /// <summary>
     /// Creates a minimal gzip-compressed tar archive that contains no entries
