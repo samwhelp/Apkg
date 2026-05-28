@@ -34,10 +34,8 @@ public class ApkgUpload
     [MaxLength(128)]
     public required string Component { get; set; }
 
-    [MaxLength(256)]
     public string? Description { get; set; }
 
-    [MaxLength(256)]
     public string? Maintainer { get; set; }
 
     [MaxLength(512)]
