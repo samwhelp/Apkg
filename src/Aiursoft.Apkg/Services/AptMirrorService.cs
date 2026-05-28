@@ -47,17 +47,27 @@ public class AptMirrorService(
 
             if (primaryBucketIds.Count > 0)
             {
+                // Order by BucketId DESC so that when multiple suites under the same distro
+                // contain the same pool path (arch=all packages), we consistently pick the
+                // record from the most recently generated bucket.  Without an ORDER BY the
+                // database can return any of the duplicate rows, which may disagree with the
+                // SHA-256 recorded in the Packages index that apt already fetched, causing
+                // "File has unexpected size" download failures.
                 package = await dbContext.AptPackages
                     .AsNoTracking()
-                    .Where(p => primaryBucketIds.Contains(p.BucketId))
-                    .FirstOrDefaultAsync(p => p.Filename == path || p.Filename == "/" + path);
+                    .Where(p => primaryBucketIds.Contains(p.BucketId) &&
+                                (p.Filename == path || p.Filename == "/" + path))
+                    .OrderByDescending(p => p.BucketId)
+                    .FirstOrDefaultAsync();
             }
         }
 
         // Fallback: no distro/repo provided, or distro has no primary bucket yet — search globally.
         package ??= await dbContext.AptPackages
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Filename == path || p.Filename == "/" + path);
+            .Where(p => p.Filename == path || p.Filename == "/" + path)
+            .OrderByDescending(p => p.BucketId)
+            .FirstOrDefaultAsync();
 
         if (package == null)
         {

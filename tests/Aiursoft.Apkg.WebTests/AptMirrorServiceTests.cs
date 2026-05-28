@@ -328,6 +328,135 @@ public class AptMirrorServiceTests
         Extras = []
     };
 
+    /// <summary>
+    /// Regression test for the multi-suite hash-mismatch bug.
+    ///
+    /// Scenario (the production bug):
+    ///   A distro "anduinos" has THREE active repositories, each a different suite
+    ///   (noble-addon, questing-addon, resolute-addon), all with PrimaryBucketId set.
+    ///   An arch=all package (e.g. gnome-shell-extension-arcmenu) is published to all
+    ///   three suites. Because builds were non-deterministic (no SOURCE_DATE_EPOCH=0),
+    ///   every suite's build produced a different .deb file and therefore a different
+    ///   SHA256 / file size.
+    ///
+    ///   When apt requests the pool .deb with distro=anduinos, GetLocalPoolPath collects
+    ///   all three primary bucket IDs and calls FirstOrDefaultAsync WITHOUT an ORDER BY.
+    ///   MySQL (and SQLite without deterministic ordering) may return any of the three
+    ///   records.  If it picks noble's record but the Packages index was generated from
+    ///   questing's bucket, apt sees "File has unexpected size" — identical to the
+    ///   orphan-bucket scenario but with live (non-orphaned) buckets.
+    ///
+    ///   FIX: OrderByDescending(p => p.BucketId) ensures the most recently published
+    ///   bucket wins, making the pool-path lookup deterministic and consistent with the
+    ///   most-recently-generated Packages index.
+    /// </summary>
+    [TestMethod]
+    public async Task GetLocalPoolPath_WhenMultipleSuitesUnderSameDistroHaveDifferentSHA256_ReturnsMostRecentBucket()
+    {
+        // --- Arrange ---
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMemoryCache();
+
+        var storagePath = Path.Combine(Path.GetTempPath(), "apkg-test-multisuite-" + Guid.NewGuid());
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string> { ["Storage:Path"] = storagePath }!)
+            .Build();
+        services.AddSingleton<IConfiguration>(config);
+
+        var dbName = $"DataSource=file:{Guid.NewGuid()}?mode=memory&cache=shared";
+        var connection = new Microsoft.Data.Sqlite.SqliteConnection(dbName);
+        connection.Open();
+
+        services.AddDbContext<ApkgDbContext, SqliteContext>(options => options.UseSqlite(dbName));
+        services.AddSingleton<StorageRootPathProvider>();
+        services.AddSingleton<FeatureFoldersProvider>();
+        services.AddSingleton<FileLockProvider>();
+        services.AddHttpClient();
+        services.AddTransient<AptMirrorService>();
+
+        var provider = services.BuildServiceProvider();
+        var db = provider.GetRequiredService<ApkgDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        var folders = provider.GetRequiredService<FeatureFoldersProvider>();
+        var objectsRoot = folders.GetObjectsFolder();
+
+        // Simulate three non-identical builds of the same package version
+        // (what happens without SOURCE_DATE_EPOCH=0: each suite build embeds a different mtime)
+        var nobleContent = "noble-build-bytes"u8.ToArray();
+        var questingContent = "questing-build-bytes"u8.ToArray();
+        var resoluteContent = "resolute-build-bytes"u8.ToArray();
+        var nobleSha = BitConverter.ToString(SHA256.HashData(nobleContent)).Replace("-", "").ToLowerInvariant();
+        var questingSha = BitConverter.ToString(SHA256.HashData(questingContent)).Replace("-", "").ToLowerInvariant();
+        var resoluteSha = BitConverter.ToString(SHA256.HashData(resoluteContent)).Replace("-", "").ToLowerInvariant();
+
+        foreach (var (sha, bytes) in new[] { (nobleSha, nobleContent), (questingSha, questingContent), (resoluteSha, resoluteContent) })
+        {
+            var casPath = Path.Combine(objectsRoot, sha[..2], $"{sha}.deb");
+            Directory.CreateDirectory(Path.GetDirectoryName(casPath)!);
+            await File.WriteAllBytesAsync(casPath, bytes);
+        }
+
+        const string filename = "pool/main/g/gnome-shell-extension-arcmenu/gnome-shell-extension-arcmenu_69.0_all.deb";
+        const string distro = "anduinos";
+
+        // Insert three buckets in chronological order — noble first (lowest Id), resolute last (highest Id)
+        var nobleBucket = new AptBucket { CreatedAt = DateTime.UtcNow.AddHours(-2) };
+        var questingBucket = new AptBucket { CreatedAt = DateTime.UtcNow.AddHours(-1) };
+        var resoluteBucket = new AptBucket { CreatedAt = DateTime.UtcNow };
+        db.AptBuckets.AddRange(nobleBucket, questingBucket, resoluteBucket);
+        await db.SaveChangesAsync();
+
+        db.AptPackages.Add(MakePackage(nobleBucket.Id, filename, nobleSha, nobleContent.Length));
+        db.AptPackages.Add(MakePackage(questingBucket.Id, filename, questingSha, questingContent.Length));
+        db.AptPackages.Add(MakePackage(resoluteBucket.Id, filename, resoluteSha, resoluteContent.Length));
+        await db.SaveChangesAsync();
+
+        // All three suites are ACTIVE primary buckets under the same distro
+        db.AptRepositories.Add(new AptRepository
+        {
+            Distro = distro, Name = "anduinos-noble", Suite = "noble-addon",
+            Components = "main", Architecture = "amd64",
+            PrimaryBucketId = nobleBucket.Id
+        });
+        db.AptRepositories.Add(new AptRepository
+        {
+            Distro = distro, Name = "anduinos-questing", Suite = "questing-addon",
+            Components = "main", Architecture = "amd64",
+            PrimaryBucketId = questingBucket.Id
+        });
+        db.AptRepositories.Add(new AptRepository
+        {
+            Distro = distro, Name = "anduinos-resolute", Suite = "resolute-addon",
+            Components = "main", Architecture = "amd64",
+            PrimaryBucketId = resoluteBucket.Id
+        });
+        await db.SaveChangesAsync();
+
+        // Sanity check: naive FirstOrDefault without ORDER BY returns the earliest (noble) record
+        var naivePkg = await db.AptPackages.AsNoTracking()
+            .Where(p => new[] { nobleBucket.Id, questingBucket.Id, resoluteBucket.Id }.Contains(p.BucketId)
+                        && p.Filename == filename)
+            .FirstOrDefaultAsync();
+        Assert.AreEqual(nobleSha, naivePkg!.SHA256,
+            "Sanity check: unordered FirstOrDefault returns the oldest (noble) record — the bug precondition.");
+
+        // --- Act ---
+        using var scope = provider.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<AptMirrorService>();
+        var result = await service.GetLocalPoolPath(filename, distro: distro);
+
+        // --- Assert ---
+        // The Packages index for the most recently published suite (resolute, highest BucketId)
+        // is what apt has cached. GetLocalPoolPath must return the same SHA256.
+        Assert.IsNotNull(result, "Should find the package.");
+        Assert.IsTrue(result.Contains(resoluteSha),
+            $"Should return the MOST RECENT bucket's SHA256 ({resoluteSha}). Got: {result}");
+        Assert.IsFalse(result.Contains(nobleSha),
+            $"Must NOT return the oldest (noble) suite's stale file ({nobleSha}).");
+    }
+
     [TestMethod]
     [Timeout(5000)] // ABSOLUTE LIMIT: If this test takes longer than 5 seconds, MSTest will violently abort it!
     public async Task TestConcurrentVirtualToPhysicalConversion()

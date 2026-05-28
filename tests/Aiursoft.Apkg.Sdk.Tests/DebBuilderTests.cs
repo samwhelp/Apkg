@@ -1347,6 +1347,81 @@ public class DebBuilderTests
         Assert.AreEqual("$(Unknown)", result);
     }
 
+    /// <summary>
+    /// Regression test for non-deterministic .deb builds.
+    ///
+    /// Without SOURCE_DATE_EPOCH=0, dpkg-deb embeds the current wall-clock time in the
+    /// ar/tar archive headers.  This means two successive builds of identical source
+    /// produce .deb files that differ byte-for-byte (and therefore have different SHA256
+    /// hashes).  In a multi-suite setup (noble-addon, questing-addon, resolute-addon) each
+    /// CI target rebuilds the same package → three different SHA256 values end up in the
+    /// AptPackages table for the same Filename.  Because GetLocalPoolPath uses
+    /// FirstOrDefaultAsync without ORDER BY, it can return any of those rows, while apt's
+    /// Packages index was generated from a different one → "File has unexpected size".
+    ///
+    /// FIX: RunCommandAsync now sets Environment["SOURCE_DATE_EPOCH"] = "0" so that
+    /// dpkg-deb always produces byte-for-byte identical output for the same source.
+    /// </summary>
+    [TestMethod]
+    public async Task BuildAsync_RepeatBuildsProduceIdenticalDeb()
+    {
+        var tempDir1 = CreateTestDirectory();
+        var tempDir2 = CreateTestDirectory();
+        try
+        {
+            // Build the same package twice from identical source trees
+            // but with DIFFERENT file mtimes — simulating two separate CI downloads.
+            // Without SOURCE_DATE_EPOCH=0, dpkg-deb embeds file timestamps in the
+            // ar/tar headers, so the resulting .deb differs byte-for-byte.
+            var baseMtime = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            foreach (var (tempDir, mtime) in new[] {
+                (tempDir1, baseMtime),
+                (tempDir2, baseMtime.AddSeconds(60))  // simulate a later download
+            })
+            {
+                var projectDir = Path.Combine(tempDir, "project");
+                var outputDir = Path.Combine(tempDir, "output");
+                Directory.CreateDirectory(projectDir);
+                var srcFile = Path.Combine(projectDir, "hello.txt");
+                await File.WriteAllTextAsync(srcFile, "hello world\n");
+                File.SetLastWriteTimeUtc(srcFile, mtime); // different mtime per build!
+
+                var project = new AosprojProject
+                {
+                    PackageName = "repro-pkg",
+                    PackageVersion = "1.0.0",
+                    PackageDescription = "Reproducible build test",
+                    Maintainer = "Test <test@example.com>",
+                    TargetSuites = "jammy",
+                    IncludeFiles =
+                    {
+                        new IncludeFileItem { Source = "hello.txt", Target = "/usr/share/repro-pkg/hello.txt" }
+                    }
+                };
+
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+            }
+
+            var deb1 = Path.Combine(tempDir1, "output", "repro-pkg_1.0.0_jammy_amd64.deb");
+            var deb2 = Path.Combine(tempDir2, "output", "repro-pkg_1.0.0_jammy_amd64.deb");
+
+            Assert.IsTrue(File.Exists(deb1), "First build output must exist.");
+            Assert.IsTrue(File.Exists(deb2), "Second build output must exist.");
+
+            var hash1 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(deb1))).ToLowerInvariant();
+            var hash2 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(deb2))).ToLowerInvariant();
+
+            Assert.AreEqual(hash1, hash2,
+                "Both builds must produce the exact same .deb (SOURCE_DATE_EPOCH=0 must be set). " +
+                $"Build 1: {hash1}, Build 2: {hash2}");
+        }
+        finally
+        {
+            Directory.Delete(tempDir1, recursive: true);
+            Directory.Delete(tempDir2, recursive: true);
+        }
+    }
+
     private static string CreateTestDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "deb-builder-tests", Guid.NewGuid().ToString("N"));

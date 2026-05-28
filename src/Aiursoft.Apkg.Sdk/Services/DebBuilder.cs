@@ -638,6 +638,11 @@ public class DebBuilder
             UseShellExecute = false,
             CreateNoWindow = true
         };
+        // Reproducible builds: fix the timestamp used by dpkg-deb so that
+        // rebuilding the same source always produces byte-for-byte identical
+        // output.  Without this every CI run embeds a different mtime in the
+        // ar/tar archives, yielding a different SHA-256 for the same content.
+        process.StartInfo.Environment["SOURCE_DATE_EPOCH"] = "0";
         foreach (var arg in args)
             process.StartInfo.ArgumentList.Add(arg);
 
