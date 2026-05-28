@@ -253,7 +253,8 @@ public class ApiPackagesController(
                 return Ok(summary);
             }
 
-            // Nothing was uploaded — clean up the record
+            // Nothing was uploaded — clean up the record and any associated packages
+            db.LocalPackages.RemoveRange(uploadRecord.Packages);
             db.ApkgUploads.Remove(uploadRecord);
             await db.SaveChangesAsync();
 
