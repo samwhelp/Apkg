@@ -51,6 +51,13 @@ public class AptPackageIndexClient
     {
         var url = $"{aptServerUrl.TrimEnd('/')}/dists/{suite}/{component}/{binArch}/Packages.gz";
         var response = await _http.GetAsync(url, ct);
+
+        // 404 means this arch/component combination simply doesn't exist on this mirror
+        // (e.g. some mirrors omit binary-all since arch=all packages are already in binary-amd64).
+        // Treat as empty rather than an error.
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return new HashSet<string>();
+
         response.EnsureSuccessStatusCode();
         var bytes = await response.Content.ReadAsByteArrayAsync(ct);
         return ParsePackagesGz(bytes);
