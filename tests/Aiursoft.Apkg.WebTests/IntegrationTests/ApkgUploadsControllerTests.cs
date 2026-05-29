@@ -155,6 +155,175 @@ public class ApkgUploadsControllerTests : TestBase
             "Index should list the admin's own packages.");
     }
 
+    [TestMethod]
+    public async Task Index_GroupedByPackage_ShowsLatestOnly()
+    {
+        var pkgName = $"grouped-pkg-{Guid.NewGuid():N}";
+        var oldVer = $"old-{Guid.NewGuid():N}"[..16];
+        var midVer = $"mid-{Guid.NewGuid():N}"[..16];
+        var newVer = $"new-{Guid.NewGuid():N}"[..16];
+        // Add 3 versions of the same package at different times
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg",
+            Package = pkgName,
+            Version = oldVer,
+            Component = "main",
+            IsPublished = true,
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-3)
+        });
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg",
+            Package = pkgName,
+            Version = midVer,
+            Component = "main",
+            IsPublished = true,
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        });
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId,
+            FileName = "v3.apkg",
+            Package = pkgName,
+            Version = newVer,
+            Component = "main",
+            IsPublished = true,
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        });
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync("/ApkgUploads");
+        var html = await response.Content.ReadAsStringAsync();
+
+        // Latest version must appear, older versions must not
+        Assert.IsTrue(html.Contains(newVer), "Index should show the latest version.");
+        Assert.IsFalse(html.Contains(midVer), "Index should not show older versions.");
+        Assert.IsFalse(html.Contains(oldVer), "Index should not show older versions.");
+    }
+
+    [TestMethod]
+    public async Task Index_GroupedByPackage_DifferentPackagesBothShown()
+    {
+        var pkg1 = $"pkg-alpha-{Guid.NewGuid():N}";
+        var pkg2 = $"pkg-beta-{Guid.NewGuid():N}";
+        var pkg1Old = $"old-{Guid.NewGuid():N}"[..16];
+        var pkg1New = $"new-{Guid.NewGuid():N}"[..16];
+        var pkg2Ver = $"ver-{Guid.NewGuid():N}"[..16];
+
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId, FileName = "a1.apkg",
+            Package = pkg1, Version = pkg1Old, Component = "main",
+            IsPublished = true, IsListed = true
+        });
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId, FileName = "a2.apkg",
+            Package = pkg1, Version = pkg1New, Component = "main",
+            IsPublished = true, IsListed = true
+        });
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId, FileName = "b1.apkg",
+            Package = pkg2, Version = pkg2Ver, Component = "main",
+            IsPublished = true, IsListed = true
+        });
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync("/ApkgUploads");
+        var html = await response.Content.ReadAsStringAsync();
+
+        // Both packages latest versions should appear
+        Assert.IsTrue(html.Contains(pkg1New), "Latest version of first package should appear.");
+        Assert.IsTrue(html.Contains(pkg2Ver), "Second package version should appear.");
+        Assert.IsFalse(html.Contains(pkg1Old), "Older version of first package should not appear.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // PackageHistory
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task PackageHistory_Anonymous_RedirectsToLogin()
+    {
+        var response = await _anonHttp.GetAsync("/ApkgUploads/PackageHistory?name=some-pkg");
+        Assert.AreEqual(HttpStatusCode.Found, response.StatusCode,
+            "Anonymous access to PackageHistory must redirect to login.");
+    }
+
+    [TestMethod]
+    public async Task PackageHistory_MissingName_ReturnsBadRequest()
+    {
+        var response = await Http.GetAsync("/ApkgUploads/PackageHistory?name=");
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode,
+            "PackageHistory with empty name must return 400.");
+    }
+
+    [TestMethod]
+    public async Task PackageHistory_NonExistentPackage_ReturnsNotFound()
+    {
+        var response = await Http.GetAsync("/ApkgUploads/PackageHistory?name=nonexistent-pkg-xyz");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode,
+            "PackageHistory for a non-existent package must return 404.");
+    }
+
+    [TestMethod]
+    public async Task PackageHistory_ShowsAllVersions()
+    {
+        var pkgName = $"history-pkg-{Guid.NewGuid():N}";
+        var oldVer = $"old-{Guid.NewGuid():N}"[..16];
+        var newVer = $"new-{Guid.NewGuid():N}"[..16];
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId, FileName = "v1.apkg",
+            Package = pkgName, Version = oldVer, Component = "main",
+            IsPublished = true, IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        });
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId, FileName = "v2.apkg",
+            Package = pkgName, Version = newVer, Component = "main",
+            IsPublished = true, IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        });
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync($"/ApkgUploads/PackageHistory?name={Uri.EscapeDataString(pkgName)}");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(html.Contains(oldVer), "History should show all versions including the oldest.");
+        Assert.IsTrue(html.Contains(newVer), "History should show all versions including the latest.");
+        Assert.IsTrue(html.Contains(pkgName), "History should display the package name.");
+    }
+
+    [TestMethod]
+    public async Task PackageHistory_ShowsBackLink()
+    {
+        var pkgName = $"backlink-pkg-{Guid.NewGuid():N}";
+        var version = $"ver-{Guid.NewGuid():N}"[..16];
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = _adminUserId, FileName = "v1.apkg",
+            Package = pkgName, Version = version, Component = "main",
+            IsPublished = true, IsListed = true
+        });
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync($"/ApkgUploads/PackageHistory?name={Uri.EscapeDataString(pkgName)}");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.IsTrue(html.Contains("Back to Packages"),
+            "History page should have a back link to the package list.");
+    }
+
     // ──────────────────────────────────────────────────────────────────────
     // Upload (GET)
     // ──────────────────────────────────────────────────────────────────────

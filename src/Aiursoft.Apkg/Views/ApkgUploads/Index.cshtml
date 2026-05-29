@@ -48,7 +48,11 @@
                                 ? (upload.IsPublished ? "bg-success" : "bg-warning text-dark")
                                 : "bg-secondary";
                             <tr>
-                                <td><strong>@upload.Package</strong></td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@upload.Id" class="text-decoration-none">
+                                        <strong>@upload.Package</strong>
+                                    </a>
+                                </td>
                                 <td><span class="badge bg-info">@upload.Version</span></td>
                                 <td><span class="badge bg-dark">@upload.Component</span></td>
                                 <td><span class="badge @statusClass">@statusText</span></td>
@@ -59,6 +63,9 @@
                                 }
                                 <td class="text-end">
                                     <div class="btn-group">
+                                        <a asp-action="Details" asp-route-id="@upload.Id" asp-route-tab="versions" class="btn btn-sm btn-outline-info" title="Version History">
+                                            <i class="align-middle" data-lucide="history"></i>
+                                        </a>
                                         <a asp-action="Details" asp-route-id="@upload.Id" class="btn btn-sm btn-outline-info" title="Details">
                                             <i class="align-middle" data-lucide="eye"></i>
                                         </a>

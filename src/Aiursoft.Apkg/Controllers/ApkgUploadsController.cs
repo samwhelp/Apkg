@@ -47,12 +47,51 @@ public class ApkgUploadsController(
         if (!isAdmin)
             query = query.Where(u => u.UploadedByUserId == userId && u.IsListed);
 
+        var allUploads = await query
+            .OrderByDescending(u => u.UploadedAt)
+            .ToListAsync();
+
+        // Group by package name, show only the latest version per package
+        var latestUploads = allUploads
+            .GroupBy(u => u.Package)
+            .Select(g => g.OrderByDescending(u => u.UploadedAt).First())
+            .OrderByDescending(u => u.UploadedAt)
+            .ToList();
+
+        return this.StackView(new ApkgUploadsIndexViewModel
+        {
+            Uploads = latestUploads,
+            IsAdmin = isAdmin
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> PackageHistory(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest();
+
+        var userId = userManager.GetUserId(User)!;
+        var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
+
+        var query = db.ApkgUploads
+            .Include(u => u.UploadedByUser)
+            .Where(u => u.Package == name)
+            .AsQueryable();
+
+        if (!isAdmin)
+            query = query.Where(u => u.UploadedByUserId == userId && u.IsListed);
+
         var uploads = await query
             .OrderByDescending(u => u.UploadedAt)
             .ToListAsync();
 
-        return this.StackView(new ApkgUploadsIndexViewModel
+        if (uploads.Count == 0)
+            return NotFound();
+
+        return this.StackView(new ApkgUploadsPackageHistoryViewModel
         {
+            PackageName = name,
             Uploads = uploads,
             IsAdmin = isAdmin
         });
@@ -365,7 +404,7 @@ public class ApkgUploadsController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> Details(int id)
+    public async Task<IActionResult> Details(int id, string? tab = null)
     {
         var upload = await db.ApkgUploads
             .Include(u => u.UploadedByUser)
@@ -382,10 +421,27 @@ public class ApkgUploadsController(
             return Forbid();
 
         var packages = await BuildPackageStatusAsync(upload.Packages.ToList());
+
+        var historyQuery = db.ApkgUploads
+            .Include(u => u.UploadedByUser)
+            .Where(u => u.Package == upload.Package)
+            .AsQueryable();
+
+        if (!isAdmin)
+            historyQuery = historyQuery.Where(u => u.UploadedByUserId == userId && u.IsListed);
+
+        var versionHistory = await historyQuery
+            .OrderByDescending(u => u.UploadedAt)
+            .ToListAsync();
+
+        var activeTab = tab == "versions" ? "versions" : "overview";
+
         return this.StackView(new ApkgUploadsDetailsViewModel
         {
             Upload = upload,
             Packages = packages,
+            VersionHistory = versionHistory,
+            ActiveTab = activeTab,
             IsAdmin = isAdmin,
             IsOwner = isOwner
         });

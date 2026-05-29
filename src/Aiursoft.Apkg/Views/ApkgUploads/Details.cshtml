@@ -3,173 +3,309 @@
 
 <div class="row mb-2 mb-xl-3">
     <div class="col-auto">
-        <h3>APKG Upload Details</h3>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="align-middle me-1" data-lucide="arrow-left"></i>
+            Back to Packages
+        </a>
     </div>
-    <div class="col-auto ms-auto">
-        <a asp-action="Index" class="btn btn-secondary">Back</a>
+    <div class="col-auto">
+        <h3 class="mb-0">@Model.Upload.Package</h3>
+    </div>
+    <div class="col-auto">
+        @if (Model.Upload.IsListed)
+        {
+            <span class="badge bg-success">Listed</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary">Unlisted</span>
+        }
     </div>
 </div>
 
 <div class="row">
     <div class="col-xl-10">
-        <div class="card mb-3">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.ActiveTab == "overview" ? "active" : "")"
+                           asp-action="Details" asp-route-id="@Model.Upload.Id" asp-route-tab="overview">
+                            <i class="align-middle me-1" data-lucide="info"></i> Overview
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.ActiveTab == "versions" ? "active" : "")"
+                           asp-action="Details" asp-route-id="@Model.Upload.Id" asp-route-tab="versions">
+                            <i class="align-middle me-1" data-lucide="history"></i> Versions
+                            <span class="badge bg-secondary ms-1">@Model.VersionHistory.Count</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
-                    <div>
-                        <h4 class="mb-1">@Model.Upload.Package</h4>
-                        <div class="text-muted">@Model.Upload.FileName</div>
+                @if (Model.ActiveTab == "overview")
+                {
+                    @* ── Overview Tab ── *@
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted">Version</label>
+                            <div><span class="badge bg-info">@Model.Upload.Version</span></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted">Component</label>
+                            <div><span class="badge bg-dark">@Model.Upload.Component</span></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted">Uploaded At</label>
+                            <div>@Model.Upload.UploadedAt.ToString("yyyy/M/d HH:mm") UTC</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted">Uploader</label>
+                            <div>@(Model.Upload.UploadedByUser?.UserName ?? "—")</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Maintainer</label>
+                            <div>@(string.IsNullOrWhiteSpace(Model.Upload.Maintainer) ? "—" : Model.Upload.Maintainer)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Homepage</label>
+                            <div>
+                                @if (string.IsNullOrWhiteSpace(Model.Upload.Homepage))
+                                {
+                                    <span>—</span>
+                                }
+                                else
+                                {
+                                    <a href="@Model.Upload.Homepage" target="_blank" rel="noopener noreferrer">@Model.Upload.Homepage</a>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted">Description</label>
+                            <div>@(string.IsNullOrWhiteSpace(Model.Upload.Description) ? "—" : Model.Upload.Description)</div>
+                        </div>
                     </div>
-                    <div>
-                        @if (Model.Upload.IsListed)
-                        {
-                            <span class="badge bg-success">Listed</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Unlisted</span>
-                        }
-                    </div>
-                </div>
 
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label text-muted">Version</label>
-                <div><span class="badge bg-info">@Model.Upload.Version</span></div>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted">Component</label>
-                <div><span class="badge bg-dark">@Model.Upload.Component</span></div>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted">Uploaded At</label>
-                <div>@Model.Upload.UploadedAt.ToString("yyyy/M/d HH:mm") UTC</div>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label text-muted">Uploader</label>
-                <div>@(Model.Upload.UploadedByUser?.UserName ?? "—")</div>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label text-muted">Maintainer</label>
-                <div>@(string.IsNullOrWhiteSpace(Model.Upload.Maintainer) ? "—" : Model.Upload.Maintainer)</div>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label text-muted">Homepage</label>
-                <div>
-                    @if (string.IsNullOrWhiteSpace(Model.Upload.Homepage))
+                    <hr />
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @if (Model.Upload.IsListed && (Model.IsOwner || Model.IsAdmin))
+                        {
+                            <form method="post" asp-action="Unlist" asp-route-id="@Model.Upload.Id">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-warning">Unlist</button>
+                            </form>
+                        }
+                        else if (!Model.Upload.IsListed && Model.IsAdmin)
+                        {
+                            <form method="post" asp-action="Relist" asp-route-id="@Model.Upload.Id">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success">Relist</button>
+                            </form>
+                        }
+
+                        @if (Model.IsAdmin)
+                        {
+                            <form method="post" asp-action="Delete" asp-route-id="@Model.Upload.Id">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        }
+                    </div>
+
+                    <h6 class="mb-3">Generated LocalPackages</h6>
+                    @if (!Model.Packages.Any())
                     {
-                        <span>—</span>
+                        <p class="text-muted mb-0">No LocalPackages were generated for this upload.</p>
                     }
                     else
                     {
-                        <a href="@Model.Upload.Homepage" target="_blank" rel="noopener noreferrer">@Model.Upload.Homepage</a>
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Package</th>
+                                        <th>Version</th>
+                                        <th>Architecture</th>
+                                        <th>Repository</th>
+                                        <th>Sync Status</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var info in Model.Packages)
+                                    {
+                                        var pkg = info.Package;
+                                        <tr>
+                                            <td><strong>@pkg.Package</strong></td>
+                                            <td><span class="badge bg-info">@pkg.Version</span></td>
+                                            <td><span class="badge bg-dark">@pkg.Architecture</span></td>
+                                            <td><small>@(pkg.Repository?.Suite ?? "—")</small></td>
+                                            <td>
+                                                @switch (info.Status)
+                                                {
+                                                    case LocalPackageStatus.Live:
+                                                        <span class="badge bg-success" title="@info.StatusMessage">
+                                                            <i class="align-middle me-1" data-lucide="check-circle" style="width:12px; height:12px;"></i> Live
+                                                        </span>
+                                                        break;
+                                                    case LocalPackageStatus.StagedForSigning:
+                                                        <span class="badge bg-info" title="@info.StatusMessage">
+                                                            <i class="align-middle me-1" data-lucide="clock" style="width:12px; height:12px;"></i> Staged
+                                                        </span>
+                                                        break;
+                                                    case LocalPackageStatus.PendingSync:
+                                                        <span class="badge bg-warning text-dark" title="@info.StatusMessage">
+                                                            <i class="align-middle me-1" data-lucide="refresh-cw" style="width:12px; height:12px;"></i> Pending Sync
+                                                        </span>
+                                                        break;
+                                                    case LocalPackageStatus.Disabled:
+                                                        <span class="badge bg-secondary" title="@info.StatusMessage">
+                                                            <i class="align-middle me-1" data-lucide="slash" style="width:12px; height:12px;"></i> Disabled
+                                                        </span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                @if (info.Status == LocalPackageStatus.Live && info.LivePackageId.HasValue)
+                                                {
+                                                    <a asp-controller="Repositories" asp-action="PackageDetails" asp-route-id="@info.LivePackageId.Value" class="btn btn-sm btn-outline-info">
+                                                        <i class="align-middle" data-lucide="external-link"></i>
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
-                </div>
-            </div>
-            <div class="col-12">
-                <label class="form-label text-muted">Description</label>
-                <div>@(string.IsNullOrWhiteSpace(Model.Upload.Description) ? "—" : Model.Upload.Description)</div>
+                }
+                else
+                {
+                    @* ── Versions Tab ── *@
+                    @if (!Model.VersionHistory.Any())
+                    {
+                        <p class="text-muted mb-0">No versions found.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Version</th>
+                                        <th>Component</th>
+                                        <th>Status</th>
+                                        <th>Uploaded</th>
+                                        @if (Model.IsAdmin)
+                                        {
+                                            <th>Uploader</th>
+                                        }
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in Model.VersionHistory)
+                                    {
+                                        var rowStatus = v.IsListed
+                                            ? (v.IsPublished ? "Published" : "Pending")
+                                            : "Unlisted";
+                                        var rowClass = v.IsListed
+                                            ? (v.IsPublished ? "bg-success" : "bg-warning text-dark")
+                                            : "bg-secondary";
+                                        var isCurrent = v.Id == Model.Upload.Id;
+                                        <tr class="@(isCurrent ? "table-active" : "")">
+                                            <td>
+                                                <span class="badge bg-info">@v.Version</span>
+                                                @if (isCurrent)
+                                                {
+                                                    <small class="text-muted ms-1">(current view)</small>
+                                                }
+                                            </td>
+                                            <td><span class="badge bg-dark">@v.Component</span></td>
+                                            <td><span class="badge @rowClass">@rowStatus</span></td>
+                                            <td><small class="text-muted">@v.UploadedAt.ToString("yyyy/M/d HH:mm")</small></td>
+                                            @if (Model.IsAdmin)
+                                            {
+                                                <td><small>@(v.UploadedByUser?.UserName ?? "—")</small></td>
+                                            }
+                                            <td class="text-end">
+                                                <div class="btn-group">
+                                                    <a asp-action="Details" asp-route-id="@v.Id" class="btn btn-sm btn-outline-info" title="View Details">
+                                                        <i class="align-middle" data-lucide="eye"></i>
+                                                    </a>
+                                                    @if (v.IsListed && (Model.IsOwner || Model.IsAdmin))
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#unlistUpload-@v.Id" title="Unlist">
+                                                            <i class="align-middle" data-lucide="archive-x"></i>
+                                                        </button>
+                                                    }
+                                                    @if (Model.IsAdmin)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUpload-@v.Id" title="Delete">
+                                                            <i class="align-middle" data-lucide="trash-2"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+
+                                                @if (v.IsListed && (Model.IsOwner || Model.IsAdmin))
+                                                {
+                                                    <div class="modal fade" id="unlistUpload-@v.Id" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content text-start">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Confirm Unlist</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    Unlist <strong>@v.Package (@v.Version)</strong>? Generated packages will be disabled.
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <form method="post" asp-action="Unlist" asp-route-id="@v.Id">
+                                                                        @Html.AntiForgeryToken()
+                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                        <button type="submit" class="btn btn-warning">Unlist</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @if (Model.IsAdmin)
+                                                {
+                                                    <div class="modal fade" id="deleteUpload-@v.Id" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content text-start">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Confirm Delete</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    Permanently delete <strong>@v.Package (@v.Version)</strong> and all generated LocalPackages?
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <form method="post" asp-action="Delete" asp-route-id="@v.Id">
+                                                                        @Html.AntiForgeryToken()
+                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
             </div>
         </div>
-
-        <hr />
-        <div class="d-flex flex-wrap gap-2">
-            @if (Model.Upload.IsListed && (Model.IsOwner || Model.IsAdmin))
-            {
-                <form method="post" asp-action="Unlist" asp-route-id="@Model.Upload.Id">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-warning">Unlist</button>
-                </form>
-            }
-            else if (!Model.Upload.IsListed && Model.IsAdmin)
-            {
-                <form method="post" asp-action="Relist" asp-route-id="@Model.Upload.Id">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-success">Relist</button>
-                </form>
-            }
-
-            @if (Model.IsAdmin)
-            {
-                <form method="post" asp-action="Delete" asp-route-id="@Model.Upload.Id">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
-            }
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">Generated LocalPackages</div>
-    <div class="card-body">
-        @if (!Model.Packages.Any())
-        {
-            <p class="text-muted mb-0">No LocalPackages were generated for this upload.</p>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Package</th>
-                            <th>Version</th>
-                            <th>Architecture</th>
-                            <th>Repository</th>
-                            <th>Sync Status</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var info in Model.Packages)
-                        {
-                            var pkg = info.Package;
-                            <tr>
-                                <td><strong>@pkg.Package</strong></td>
-                                <td><span class="badge bg-info">@pkg.Version</span></td>
-                                <td><span class="badge bg-dark">@pkg.Architecture</span></td>
-                                <td><small>@(pkg.Repository?.Suite ?? "—")</small></td>
-                                <td>
-                                    @switch (info.Status)
-                                    {
-                                        case LocalPackageStatus.Live:
-                                            <span class="badge bg-success" title="@info.StatusMessage">
-                                                <i class="align-middle me-1" data-lucide="check-circle" style="width:12px; height:12px;"></i> Live
-                                            </span>
-                                            break;
-                                        case LocalPackageStatus.StagedForSigning:
-                                            <span class="badge bg-info" title="@info.StatusMessage">
-                                                <i class="align-middle me-1" data-lucide="clock" style="width:12px; height:12px;"></i> Staged
-                                            </span>
-                                            break;
-                                        case LocalPackageStatus.PendingSync:
-                                            <span class="badge bg-warning text-dark" title="@info.StatusMessage">
-                                                <i class="align-middle me-1" data-lucide="refresh-cw" style="width:12px; height:12px;"></i> Pending Sync
-                                            </span>
-                                            break;
-                                        case LocalPackageStatus.Disabled:
-                                            <span class="badge bg-secondary" title="@info.StatusMessage">
-                                                <i class="align-middle me-1" data-lucide="slash" style="width:12px; height:12px;"></i> Disabled
-                                            </span>
-                                            break;
-                                    }
-                                </td>
-                                <td class="text-end">
-                                    @if (info.Status == LocalPackageStatus.Live && info.LivePackageId.HasValue)
-                                    {
-                                        <a asp-controller="Repositories" asp-action="PackageDetails" asp-route-id="@info.LivePackageId.Value" class="btn btn-sm btn-outline-info">
-                                            <i class="align-middle" data-lucide="external-link"></i>
-                                        </a>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
-</div>
     </div>
     <div class="d-none d-xl-block col-xl-2">
         <div class="card mb-3 border-primary">
