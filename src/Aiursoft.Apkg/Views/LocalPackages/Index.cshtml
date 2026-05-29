@@ -75,6 +75,11 @@
                                             <i class="align-middle me-1" data-lucide="refresh-cw" style="width:12px; height:12px;"></i> @Localizer["Pending Sync"]
                                         </span>
                                         break;
+                                    case LocalPackageStatus.Superseded:
+                                        <span class="badge bg-secondary" title="@info.StatusMessage">
+                                            <i class="align-middle me-1" data-lucide="archive" style="width:12px; height:12px;"></i> @Localizer["Superseded"]
+                                        </span>
+                                        break;
                                     case LocalPackageStatus.Disabled:
                                         <span class="badge bg-secondary" title="@info.StatusMessage">
                                             <i class="align-middle me-1" data-lucide="slash" style="width:12px; height:12px;"></i> @Localizer["Disabled"]

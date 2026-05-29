@@ -62,24 +62,26 @@ public class LocalPackagesController(
             .Distinct()
             .ToList();
 
-        // Check which (BucketId, PackageName, Architecture) exist in AptPackages
-        // This is still a bit heavy if there are millions of packages, but we filter by BucketId.
+        // Check which (BucketId, PackageName, Version, Architecture) exist in AptPackages
         var existingInBuckets = await db.AptPackages
             .Where(ap => allRelevantBucketIds.Contains(ap.BucketId))
-            .Select(ap => new { ap.BucketId, ap.Package, ap.Architecture, ap.Id })
+            .Select(ap => new { ap.BucketId, ap.Package, ap.Version, ap.Architecture, ap.Id })
             .ToListAsync();
 
-        // A bucket may contain the same (Package, Architecture) in multiple components
-        // (e.g. mutter-common/all in both main and universe). We only need to know whether
-        // a given (Package, Architecture) pair is present in the bucket at all, so we take
-        // the first matching Id and ignore duplicates.
         var bucketLookup = existingInBuckets
             .GroupBy(x => x.BucketId)
             .ToDictionary(
                 g => g.Key,
-                g => g.GroupBy(x => (x.Package, x.Architecture))
+                g => g.GroupBy(x => (x.Package, x.Version, x.Architecture))
                        .ToDictionary(x => x.Key, x => x.First().Id)
             );
+
+        var anyVersionLookup = existingInBuckets
+            .GroupBy(x => x.BucketId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => (x.Package, x.Architecture))
+                    .ToHashSet());
 
         var repoLookup = repoBuckets.ToDictionary(r => r.Id, r => r);
 
@@ -101,7 +103,7 @@ public class LocalPackagesController(
                     ? bucketLookup.GetValueOrDefault(repoInfo.PrimaryBucketId.Value)
                     : null;
 
-                if (primaryBucketPackages?.TryGetValue((lp.Package, lp.Architecture), out var foundId) == true)
+                if (primaryBucketPackages?.TryGetValue((lp.Package, lp.Version, lp.Architecture), out var foundId) == true)
                 {
                     status = LocalPackageStatus.Live;
                     message = "Package is live and available for APT clients.";
@@ -113,10 +115,17 @@ public class LocalPackagesController(
                         ? bucketLookup.GetValueOrDefault(repoInfo.SecondaryBucketId.Value)
                         : null;
 
-                    if (secondaryBucketPackages?.ContainsKey((lp.Package, lp.Architecture)) == true)
+                    if (secondaryBucketPackages?.ContainsKey((lp.Package, lp.Version, lp.Architecture)) == true)
                     {
                         status = LocalPackageStatus.StagedForSigning;
                         message = "Included in a pending bucket. Waiting for signing (up to 5 minutes).";
+                    }
+                    else if (repoInfo?.PrimaryBucketId != null
+                             && anyVersionLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryByArch)
+                             && primaryByArch.Contains((lp.Package, lp.Architecture)))
+                    {
+                        status = LocalPackageStatus.Superseded;
+                        message = "A different version of this package is live. This version will not be synced.";
                     }
                 }
             }

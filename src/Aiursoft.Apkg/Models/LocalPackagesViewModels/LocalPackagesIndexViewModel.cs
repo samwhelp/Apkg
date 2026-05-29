@@ -25,7 +25,13 @@ public enum LocalPackageStatus
     /// <summary>
     /// Package is in the PrimaryBucket and available for APT clients.
     /// </summary>
-    Live
+    Live,
+
+    /// <summary>
+    /// A different (newer) version of this package is live in the PrimaryBucket.
+    /// This specific version will not be picked up by future syncs.
+    /// </summary>
+    Superseded
 }
 
 public class PackageStatusInfo

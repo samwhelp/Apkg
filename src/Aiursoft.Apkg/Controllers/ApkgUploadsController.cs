@@ -727,6 +727,15 @@ public class ApkgUploadsController(
                 g => g.GroupBy(x => (x.Package, x.Version, x.Architecture))
                     .ToDictionary(x => x.Key, x => x.First().Id));
 
+        // Secondary lookup: for each bucket, which (Package, Architecture) pairs exist
+        // at ANY version. Used to detect superseded packages.
+        var anyVersionLookup = existingInBuckets
+            .GroupBy(x => x.BucketId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => (x.Package, x.Architecture))
+                    .ToHashSet());
+
         var repoLookup = repoBuckets.ToDictionary(r => r.Id, r => r);
 
         return packages.Select(lp =>
@@ -763,6 +772,13 @@ public class ApkgUploadsController(
                     {
                         status = LocalPackageStatus.StagedForSigning;
                         message = "Included in a pending bucket. Waiting for signing (up to 5 minutes).";
+                    }
+                    else if (repoInfo?.PrimaryBucketId != null
+                             && anyVersionLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryByArch)
+                             && primaryByArch.Contains((lp.Package, lp.Architecture)))
+                    {
+                        status = LocalPackageStatus.Superseded;
+                        message = "A different version of this package is live. This version will not be synced.";
                     }
                 }
             }
