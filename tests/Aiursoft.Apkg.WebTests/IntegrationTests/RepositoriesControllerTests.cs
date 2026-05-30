@@ -661,4 +661,134 @@ public class RepositoriesControllerTests : TestBase
         Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode,
             "Bare /certs/{name} route must not be reachable after adding /artifacts prefix.");
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // (Distro, Suite) uniqueness enforcement
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task Create_DuplicateDistroSuite_RejectedWithError()
+    {
+        // Seed repo has Distro="anduinos", Suite="questing"
+        var data = new Dictionary<string, string>
+        {
+            { "Distro", _repo.Distro },
+            { "Name", "Duplicate Repo" },
+            { "Suite", _repo.Suite },
+            { "Components", "main" },
+            { "Architecture", "arm64" },
+            { "EnableGpgSign", "true" },
+            { "AllowAnyoneToUpload", "false" }
+        };
+        var response = await PostForm("/Repositories/Create", data);
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode,
+            "Should return the form page, not redirect.");
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(html.Contains("already exists"),
+            "Error message about duplicate (Distro, Suite) should appear.");
+    }
+
+    [TestMethod]
+    public async Task Create_SameDistroDifferentSuite_Allowed()
+    {
+        var data = new Dictionary<string, string>
+        {
+            { "Distro", _repo.Distro },
+            { "Name", "Different Suite Repo" },
+            { "Suite", "noble" },
+            { "Components", "main" },
+            { "Architecture", "amd64" },
+            { "EnableGpgSign", "true" },
+            { "AllowAnyoneToUpload", "false" }
+        };
+        var response = await PostForm("/Repositories/Create", data);
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        var db = GetService<ApkgDbContext>();
+        var created = db.AptRepositories.FirstOrDefault(r => r.Name == "Different Suite Repo");
+        Assert.IsNotNull(created, "Repo with same Distro but different Suite should be created.");
+    }
+
+    [TestMethod]
+    public async Task Create_SameSuiteDifferentDistro_Allowed()
+    {
+        var data = new Dictionary<string, string>
+        {
+            { "Distro", "ubuntu" },
+            { "Name", "Different Distro Repo" },
+            { "Suite", _repo.Suite },
+            { "Components", "main" },
+            { "Architecture", "amd64" },
+            { "EnableGpgSign", "true" },
+            { "AllowAnyoneToUpload", "false" }
+        };
+        var response = await PostForm("/Repositories/Create", data);
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        var db = GetService<ApkgDbContext>();
+        var created = db.AptRepositories.FirstOrDefault(r => r.Name == "Different Distro Repo");
+        Assert.IsNotNull(created, "Repo with same Suite but different Distro should be created.");
+    }
+
+    [TestMethod]
+    public async Task Edit_ChangeToConflictingDistroSuite_RejectedWithError()
+    {
+        // Create a second repo first
+        var db = GetService<ApkgDbContext>();
+        var secondRepo = new AptRepository
+        {
+            Distro = "ubuntu",
+            Name = "Target For Edit Conflict",
+            Suite = "noble",
+            Components = "main",
+            Architecture = "amd64"
+        };
+        db.AptRepositories.Add(secondRepo);
+        await db.SaveChangesAsync();
+
+        // Edit secondRepo to conflict with seed repo
+        var data = new Dictionary<string, string>
+        {
+            { "Id", secondRepo.Id.ToString() },
+            { "Distro", _repo.Distro },
+            { "Name", "Target For Edit Conflict" },
+            { "Suite", _repo.Suite },
+            { "Components", "main" },
+            { "Architecture", "arm64" },
+            { "EnableGpgSign", "true" },
+            { "AllowAnyoneToUpload", "false" }
+        };
+        var response = await PostForm($"/Repositories/Edit/{secondRepo.Id}", data,
+            tokenUrl: $"/Repositories/Edit/{secondRepo.Id}");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode,
+            "Should return the form page, not redirect.");
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(html.Contains("already exists"),
+            "Error message about duplicate (Distro, Suite) should appear on edit.");
+    }
+
+    [TestMethod]
+    public async Task Edit_KeepSameDistroSuite_Allowed()
+    {
+        // Edit the seed repo without changing Distro/Suite
+        var data = new Dictionary<string, string>
+        {
+            { "Id", _repo.Id.ToString() },
+            { "Distro", _repo.Distro },
+            { "Name", "Updated Components Only" },
+            { "Suite", _repo.Suite },
+            { "Components", "main,universe" },
+            { "Architecture", "amd64,arm64" },
+            { "EnableGpgSign", "true" },
+            { "AllowAnyoneToUpload", "false" }
+        };
+        var response = await PostForm($"/Repositories/Edit/{_repo.Id}", data,
+            tokenUrl: $"/Repositories/Edit/{_repo.Id}");
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode,
+            "Should redirect on success.");
+
+        var db = GetService<ApkgDbContext>();
+        db.Entry(_repo).Reload();
+        Assert.AreEqual("main,universe", _repo.Components);
+        Assert.AreEqual("amd64,arm64", _repo.Architecture);
+        Assert.AreEqual("Updated Components Only", _repo.Name);
+    }
 }

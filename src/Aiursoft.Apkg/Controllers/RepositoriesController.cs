@@ -256,6 +256,24 @@ public class RepositoriesController(
     {
         if (ModelState.IsValid)
         {
+            var duplicate = await dbContext.AptRepositories
+                .AnyAsync(r => r.Distro == model.Distro && r.Suite == model.Suite);
+            if (duplicate)
+            {
+                ModelState.AddModelError("Suite",
+                    $"A repository with Distro='{model.Distro}' and Suite='{model.Suite}' already exists. " +
+                    "APT identifies a repository by (base URL, distro, suite) — architecture is a dimension " +
+                    "within a repository, not a separate identity. Two repositories with the same (Distro, Suite) " +
+                    $"would share the same URL artifacts/{model.Distro}/dists/{model.Suite}/InRelease " +
+                    "and only one would be served. " +
+                    "To support multiple architectures, use a single repository and list architectures " +
+                    "separated by commas in the Architecture field (e.g., \"amd64,arm64\"). " +
+                    "Alternatively, use a different Distro name (e.g., \"anduinos-ports\").");
+            }
+        }
+
+        if (ModelState.IsValid)
+        {
             var repo = new AptRepository
             {
                 Distro = model.Distro,
@@ -313,6 +331,24 @@ public class RepositoriesController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(RepoEditViewModel model)
     {
+        if (ModelState.IsValid)
+        {
+            var duplicate = await dbContext.AptRepositories
+                .AnyAsync(r => r.Id != model.Id && r.Distro == model.Distro && r.Suite == model.Suite);
+            if (duplicate)
+            {
+                ModelState.AddModelError("Suite",
+                    $"A repository with Distro='{model.Distro}' and Suite='{model.Suite}' already exists. " +
+                    "APT identifies a repository by (base URL, distro, suite) — architecture is a dimension " +
+                    "within a repository, not a separate identity. Two repositories with the same (Distro, Suite) " +
+                    $"would share the same URL artifacts/{model.Distro}/dists/{model.Suite}/InRelease " +
+                    "and only one would be served. " +
+                    "To support multiple architectures, use a single repository and list architectures " +
+                    "separated by commas in the Architecture field (e.g., \"amd64,arm64\"). " +
+                    "Alternatively, use a different Distro name (e.g., \"anduinos-ports\").");
+            }
+        }
+
         if (ModelState.IsValid)
         {
             var repo = await dbContext.AptRepositories.FindAsync(model.Id);
