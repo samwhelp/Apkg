@@ -45,10 +45,6 @@ else if (Model.HasWarnings)
                 <div><strong>@Model.Manifest.Name</strong></div>
             </div>
             <div class="col-md-4">
-                <label class="form-label text-muted">Version</label>
-                <div><span class="badge bg-info">@Model.Manifest.Version</span></div>
-            </div>
-            <div class="col-md-4">
                 <label class="form-label text-muted">Component</label>
                 <div><span class="badge bg-dark">@(Model.Targets.FirstOrDefault()?.Entry.Component ?? "—")</span></div>
             </div>

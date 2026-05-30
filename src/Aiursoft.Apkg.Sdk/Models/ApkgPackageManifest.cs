@@ -13,9 +13,6 @@ public class ApkgPackageManifest
     [System.Xml.Serialization.XmlElement("Name")]
     public string Name { get; set; } = string.Empty;
 
-    [System.Xml.Serialization.XmlElement("Version")]
-    public string Version { get; set; } = string.Empty;
-
     [System.Xml.Serialization.XmlElement("Maintainer")]
     public string Maintainer { get; set; } = string.Empty;
 

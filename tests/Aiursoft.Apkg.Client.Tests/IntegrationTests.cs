@@ -140,7 +140,7 @@ public class IntegrationTests
             await CreateMinimalDebAsync(debPath, "my-pkg", "1.5.0", "amd64");
 
             var outputPackDir = Path.Combine(tempDir, "packed");
-            var apkgPath = await CreateApkgDirectlyAsync(outputPackDir, "my-pkg", "1.5.0", "main",
+            var apkgPath = await CreateApkgDirectlyAsync(outputPackDir, "my-pkg", "main",
             [
                 ("ubuntu", "noble", "amd64", debPath)
             ]);
@@ -182,7 +182,7 @@ public class IntegrationTests
             await CreateMinimalDebAsync(debPath, "my-pkg", "1.0.0", "amd64");
 
             var outputPackDir = Path.Combine(tempDir, "packed");
-            var apkgPath = await CreateApkgDirectlyAsync(outputPackDir, "my-pkg", "1.0.0", "main",
+            var apkgPath = await CreateApkgDirectlyAsync(outputPackDir, "my-pkg", "main",
             [
                 ("ubuntu", "noble", "amd64", debPath)
             ]);
@@ -271,7 +271,7 @@ public class IntegrationTests
     }
 
     private static async Task<string> CreateApkgDirectlyAsync(
-        string outputDir, string packageName, string version, string component,
+        string outputDir, string packageName, string component,
         List<(string distro, string suite, string arch, string debPath)> targets)
     {
         Directory.CreateDirectory(outputDir);
@@ -279,7 +279,6 @@ public class IntegrationTests
         var manifest = new ApkgPackageManifest
         {
             Name = packageName,
-            Version = version,
             Maintainer = "Test <test@example.com>",
             Description = "Test package",
             License = "MIT",

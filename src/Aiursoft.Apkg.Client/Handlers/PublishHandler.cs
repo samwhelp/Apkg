@@ -217,7 +217,6 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         var manifest = new ApkgPackageManifest
         {
             Name = project.PackageName,
-            Version = project.PackageVersion,
             Maintainer = string.IsNullOrWhiteSpace(project.Maintainer) ? project.PackageAuthors : project.Maintainer,
             Description = project.PackageDescription,
             Homepage = project.PackageHomepage,

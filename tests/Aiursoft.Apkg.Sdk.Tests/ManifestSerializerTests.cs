@@ -17,7 +17,6 @@ public class ManifestSerializerTests
         {
             FormatVersion = 2,
             Name = "my-pkg",
-            Version = "3.2.1",
             Maintainer = "Team <team@example.com>",
             Description = "A superb package",
             Homepage = "https://example.com",
@@ -40,8 +39,7 @@ public class ManifestSerializerTests
         var roundTripped = _serializer.DeserializePackageManifest(xml);
 
         Assert.AreEqual(original.Name, roundTripped.Name);
-        Assert.AreEqual(original.Version, roundTripped.Version);
-        Assert.AreEqual(original.Maintainer, roundTripped.Maintainer);
+                Assert.AreEqual(original.Maintainer, roundTripped.Maintainer);
         Assert.AreEqual(original.Description, roundTripped.Description);
         Assert.AreEqual(original.Homepage, roundTripped.Homepage);
         Assert.AreEqual(original.License, roundTripped.License);
@@ -83,7 +81,6 @@ public class ManifestSerializerTests
         var original = new ApkgPackageManifest
         {
             Name = "multi-arch",
-            Version = "1.0.0",
             Entries =
             {
                 new ApkgPackageEntry
@@ -127,7 +124,6 @@ public class ManifestSerializerTests
         var original = new ApkgPackageManifest
         {
             Name = "file-test",
-            Version = "4.0.0",
             Description = "File-based round-trip test",
             Entries =
             {
@@ -149,8 +145,7 @@ public class ManifestSerializerTests
             var result = await _serializer.DeserializePackageManifestFromFileAsync(path);
 
             Assert.AreEqual(original.Name, result.Name);
-            Assert.AreEqual(original.Version, result.Version);
-            Assert.AreEqual(1, result.Entries.Count);
+                        Assert.AreEqual(1, result.Entries.Count);
         }
         finally
         {
@@ -164,8 +159,7 @@ public class ManifestSerializerTests
         var manifest = new ApkgPackageManifest
         {
             Name = "test",
-            Version = "1.0.0"
-        };
+                    };
 
         var xml = SerializeV2(manifest);
         var result = _serializer.DeserializePackageManifest(xml);
@@ -179,8 +173,7 @@ public class ManifestSerializerTests
         var manifest = new ApkgPackageManifest
         {
             Name = "test",
-            Version = "1.0.0"
-        };
+                    };
 
         var xml = SerializeV2(manifest);
         var result = _serializer.DeserializePackageManifest(xml);
@@ -194,7 +187,6 @@ public class ManifestSerializerTests
         var manifest = new ApkgPackageManifest
         {
             Name = "test",
-            Version = "1.0.0",
             Entries =
             {
                 new ApkgPackageEntry
@@ -221,8 +213,7 @@ public class ManifestSerializerTests
         var v2 = new ApkgPackageManifest
         {
             Name = "name-field",
-            Version = "1.0"
-        };
+                    };
 
         var xml = SerializeV2(v2);
         // v2 uses <Name>, NOT <Package>
@@ -235,7 +226,6 @@ public class ManifestSerializerTests
         var v2 = new ApkgPackageManifest
         {
             Name = "test",
-            Version = "1.0",
             Entries =
             {
                 new ApkgPackageEntry
@@ -257,7 +247,6 @@ public class ManifestSerializerTests
         var v2 = new ApkgPackageManifest
         {
             Name = "test",
-            Version = "1.0",
             Entries =
             {
                 new ApkgPackageEntry { DebFile = "test_1.0_all.deb", Suite = "jammy" }
@@ -279,7 +268,6 @@ public class ManifestSerializerTests
         var v2 = new ApkgPackageManifest
         {
             Name = "test",
-            Version = "1.0",
             Entries =
             {
                 new ApkgPackageEntry

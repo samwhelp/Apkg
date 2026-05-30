@@ -721,8 +721,6 @@ public class ApkgUploadsControllerTests : TestBase
         var html = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(html.Contains("preview-pkg"),
             "Preview must show the package name from manifest.");
-        Assert.IsTrue(html.Contains("1.0.0"),
-            "Preview must show the version from manifest.");
         Assert.IsTrue(html.Contains("anduinos"),
             "Preview must show the target distro.");
     }
