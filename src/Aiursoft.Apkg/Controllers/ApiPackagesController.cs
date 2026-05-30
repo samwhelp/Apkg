@@ -148,7 +148,6 @@ public class ApiPackagesController(
                 UploadedByUserId = userId,
                 FileName = Path.GetFileName(apkg.FileName),
                 Package = manifest.Name,
-                Version = manifest.Version,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
                 Maintainer = NullIfEmpty(manifest.Maintainer),

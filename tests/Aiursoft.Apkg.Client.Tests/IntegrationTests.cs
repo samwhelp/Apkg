@@ -298,7 +298,7 @@ public class IntegrationTests
         serializer.Serialize(sw, manifest);
         var manifestBytes = System.Text.Encoding.UTF8.GetBytes(sw.ToString());
 
-        var apkgFileName = $"{packageName}.{version}.apkg";
+        var apkgFileName = $"{packageName}.apkg";
         var apkgPath = Path.Combine(outputDir, apkgFileName);
 
         await using (var fileStream = new FileStream(apkgPath, FileMode.Create, FileAccess.Write))

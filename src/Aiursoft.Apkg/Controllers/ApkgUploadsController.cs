@@ -24,8 +24,7 @@ public class ApkgUploadsController(
     DebUploadService debUploadService,
     FeatureFoldersProvider folders,
     UserManager<User> userManager,
-    ILogger<ApkgUploadsController> logger,
-    AptVersionComparisonService versionComparer) : Controller
+    ILogger<ApkgUploadsController> logger) : Controller
 {
     [HttpGet]
     [RenderInNavBar(
@@ -52,11 +51,10 @@ public class ApkgUploadsController(
             .OrderByDescending(u => u.UploadedAt)
             .ToListAsync();
 
-        // Group by package name, show only the latest version per package (by Debian version rules)
-        var comparer = Comparer<string>.Create(versionComparer.Compare);
+        // Group by package name, show only the latest upload per package (by UploadedAt)
         var latestUploads = allUploads
             .GroupBy(u => u.Package)
-            .Select(g => g.OrderByDescending(u => u.Version, comparer).First())
+            .Select(g => g.OrderByDescending(u => u.UploadedAt).First())
             .OrderByDescending(u => u.UploadedAt)
             .ToList();
 
@@ -78,6 +76,7 @@ public class ApkgUploadsController(
 
         var query = db.ApkgUploads
             .Include(u => u.UploadedByUser)
+            .Include(u => u.Packages)
             .Where(u => u.Package == name)
             .AsQueryable();
 
@@ -180,7 +179,6 @@ public class ApkgUploadsController(
                 UploadedByUserId = userId,
                 FileName = fileName,
                 Package = manifest.Name,
-                Version = manifest.Version,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
                 Maintainer = NullIfEmpty(manifest.Maintainer),
@@ -195,7 +193,6 @@ public class ApkgUploadsController(
         {
             pendingUpload.FileName = fileName;
             pendingUpload.Package = manifest.Name;
-            pendingUpload.Version = manifest.Version;
             pendingUpload.Component = component;
             pendingUpload.Description = NullIfEmpty(manifest.Description);
             pendingUpload.Maintainer = NullIfEmpty(manifest.Maintainer);
@@ -309,7 +306,6 @@ public class ApkgUploadsController(
                 UploadedByUserId = userId,
                 FileName = fileName,
                 Package = manifest.Name,
-                Version = manifest.Version,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
                 Maintainer = NullIfEmpty(manifest.Maintainer),
@@ -400,7 +396,6 @@ public class ApkgUploadsController(
 
             upload.FileName = fileName;
             upload.Package = manifest.Name;
-            upload.Version = manifest.Version;
             upload.Component = component;
             upload.Description = NullIfEmpty(manifest.Description);
             upload.Maintainer = NullIfEmpty(manifest.Maintainer);
@@ -440,32 +435,20 @@ public class ApkgUploadsController(
 
         var historyQuery = db.ApkgUploads
             .Include(u => u.UploadedByUser)
+            .Include(u => u.Packages)
             .Where(u => u.Package == upload.Package)
             .AsQueryable();
 
         if (!isAdmin)
             historyQuery = historyQuery.Where(u => u.UploadedByUserId == userId && u.IsListed);
 
-        var versionHistory = await historyQuery.ToListAsync();
+        var versionHistory = await historyQuery
+            .OrderByDescending(v => v.UploadedAt)
+            .ToListAsync();
 
-        // Sort by Debian version rules, latest first
-        var comparer = Comparer<string>.Create(versionComparer.Compare);
         int? latestVersionId = null;
-        try
-        {
-            versionHistory = versionHistory
-                .OrderByDescending(v => v.Version, comparer)
-                .ToList();
-            if (versionHistory.Count > 0)
-                latestVersionId = versionHistory.First().Id;
-        }
-        catch (ArgumentException)
-        {
-            // If a version string is unparseable, fall back to upload-time sort.
-            versionHistory = versionHistory
-                .OrderByDescending(v => v.UploadedAt)
-                .ToList();
-        }
+        if (versionHistory.Count > 0)
+            latestVersionId = versionHistory.First().Id;
 
         // Determine which version strings are currently live in primary buckets.
         var liveVersions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

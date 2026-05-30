@@ -26,7 +26,7 @@
                         <table class="table table-striped align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th>Version</th>
+                                    <th>Versions</th>
                                     <th>Component</th>
                                     <th>Status</th>
                                     <th>Uploaded</th>
@@ -40,7 +40,8 @@
                             <tbody>
                                 @foreach (var upload in Model.Uploads)
                                 {
-                                    var isLive = Model.LiveVersions.Contains(upload.Version);
+                                    var uploadVersions = upload.Packages.Select(p => p.Version).Distinct().ToList();
+                                    var isLive = uploadVersions.Any(ver => Model.LiveVersions.Contains(ver));
                                     var statusText = upload.IsListed
                                         ? (isLive ? "Live" : "Superseded")
                                         : "Unlisted";
@@ -48,7 +49,12 @@
                                         ? (isLive ? "bg-success" : "bg-secondary")
                                         : "bg-secondary";
                                     <tr>
-                                        <td><span class="badge bg-info">@upload.Version</span></td>
+                                        <td>
+                                            @foreach (var ver in uploadVersions)
+                                            {
+                                                <span class="badge bg-info">@ver</span>
+                                            }
+                                        </td>
                                         <td><span class="badge bg-dark">@upload.Component</span></td>
                                         <td><span class="badge @statusClass">@statusText</span></td>
                                         <td><small class="text-muted">@upload.UploadedAt.ToString("yyyy/M/d HH:mm")</small></td>
@@ -85,7 +91,7 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                Unlist <strong>@upload.Package (@upload.Version)</strong>? Generated packages will be disabled.
+                                                                Unlist <strong>@upload.Package</strong>? Generated packages will be disabled.
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <form method="post" asp-action="Unlist" asp-route-id="@upload.Id">
@@ -109,7 +115,7 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                Permanently delete <strong>@upload.Package (@upload.Version)</strong> and all generated LocalPackages?
+                                                                Permanently delete <strong>@upload.Package</strong> and all generated LocalPackages?
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <form method="post" asp-action="Delete" asp-route-id="@upload.Id">

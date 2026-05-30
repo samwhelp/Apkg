@@ -72,11 +72,6 @@ namespace Aiursoft.Apkg.MySql.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
-                    b.Property<string>("Version")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UploadedByUserId");

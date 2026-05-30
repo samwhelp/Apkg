@@ -57,7 +57,6 @@ public class ApkgUploadsControllerTests : TestBase
             UploadedByUserId = userId ?? _adminUserId,
             FileName = "test.apkg",
             Package = $"test-pkg-{Guid.NewGuid():N}",
-            Version = "1.0.0",
             Component = "main",
             Description = "Test package",
             IsPublished = isPublished,
@@ -159,16 +158,12 @@ public class ApkgUploadsControllerTests : TestBase
     public async Task Index_GroupedByPackage_ShowsLatestOnly()
     {
         var pkgName = $"grouped-pkg-{Guid.NewGuid():N}";
-        var oldVer = $"1.{Guid.NewGuid():N}"[..16];
-        var midVer = $"5.{Guid.NewGuid():N}"[..16];
-        var newVer = $"9.{Guid.NewGuid():N}"[..16];
-        // Add 3 versions of the same package at different times
+        // Add 3 uploads of the same package at different times
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId,
             FileName = "v1.apkg",
             Package = pkgName,
-            Version = oldVer,
             Component = "main",
             IsPublished = true,
             IsListed = true,
@@ -179,7 +174,6 @@ public class ApkgUploadsControllerTests : TestBase
             UploadedByUserId = _adminUserId,
             FileName = "v2.apkg",
             Package = pkgName,
-            Version = midVer,
             Component = "main",
             IsPublished = true,
             IsListed = true,
@@ -190,7 +184,6 @@ public class ApkgUploadsControllerTests : TestBase
             UploadedByUserId = _adminUserId,
             FileName = "v3.apkg",
             Package = pkgName,
-            Version = newVer,
             Component = "main",
             IsPublished = true,
             IsListed = true,
@@ -201,10 +194,10 @@ public class ApkgUploadsControllerTests : TestBase
         var response = await Http.GetAsync("/ApkgUploads");
         var html = await response.Content.ReadAsStringAsync();
 
-        // Latest version must appear, older versions must not
-        Assert.IsTrue(html.Contains(newVer), "Index should show the latest version.");
-        Assert.IsFalse(html.Contains(midVer), "Index should not show older versions.");
-        Assert.IsFalse(html.Contains(oldVer), "Index should not show older versions.");
+        // Latest upload must appear, older uploads must not
+        Assert.IsTrue(html.Contains(pkgName), "Index should show the latest upload.");
+        Assert.IsFalse(html.Contains("v2.apkg"), "Index should not show older uploads.");
+        Assert.IsFalse(html.Contains("v1.apkg"), "Index should not show older uploads.");
     }
 
     [TestMethod]
@@ -212,26 +205,23 @@ public class ApkgUploadsControllerTests : TestBase
     {
         var pkg1 = $"pkg-alpha-{Guid.NewGuid():N}";
         var pkg2 = $"pkg-beta-{Guid.NewGuid():N}";
-        var pkg1Old = $"1.{Guid.NewGuid():N}"[..16];
-        var pkg1New = $"9.{Guid.NewGuid():N}"[..16];
-        var pkg2Ver = $"5.{Guid.NewGuid():N}"[..16];
 
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId, FileName = "a1.apkg",
-            Package = pkg1, Version = pkg1Old, Component = "main",
+            Package = pkg1, Component = "main",
             IsPublished = true, IsListed = true
         });
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId, FileName = "a2.apkg",
-            Package = pkg1, Version = pkg1New, Component = "main",
+            Package = pkg1, Component = "main",
             IsPublished = true, IsListed = true
         });
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId, FileName = "b1.apkg",
-            Package = pkg2, Version = pkg2Ver, Component = "main",
+            Package = pkg2, Component = "main",
             IsPublished = true, IsListed = true
         });
         _db.SaveChanges();
@@ -239,10 +229,10 @@ public class ApkgUploadsControllerTests : TestBase
         var response = await Http.GetAsync("/ApkgUploads");
         var html = await response.Content.ReadAsStringAsync();
 
-        // Both packages latest versions should appear
-        Assert.IsTrue(html.Contains(pkg1New), "Latest version of first package should appear.");
-        Assert.IsTrue(html.Contains(pkg2Ver), "Second package version should appear.");
-        Assert.IsFalse(html.Contains(pkg1Old), "Older version of first package should not appear.");
+        // Both packages should appear
+        Assert.IsTrue(html.Contains(pkg1), "First package should appear.");
+        Assert.IsTrue(html.Contains(pkg2), "Second package should appear.");
+        Assert.IsFalse(html.Contains("a1.apkg"), "Older upload filename should not appear.");
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -277,19 +267,17 @@ public class ApkgUploadsControllerTests : TestBase
     public async Task PackageHistory_ShowsAllVersions()
     {
         var pkgName = $"history-pkg-{Guid.NewGuid():N}";
-        var oldVer = $"old-{Guid.NewGuid():N}"[..16];
-        var newVer = $"new-{Guid.NewGuid():N}"[..16];
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId, FileName = "v1.apkg",
-            Package = pkgName, Version = oldVer, Component = "main",
+            Package = pkgName, Component = "main",
             IsPublished = true, IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-2)
         });
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId, FileName = "v2.apkg",
-            Package = pkgName, Version = newVer, Component = "main",
+            Package = pkgName, Component = "main",
             IsPublished = true, IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-1)
         });
@@ -299,8 +287,6 @@ public class ApkgUploadsControllerTests : TestBase
         var html = await response.Content.ReadAsStringAsync();
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        Assert.IsTrue(html.Contains(oldVer), "History should show all versions including the oldest.");
-        Assert.IsTrue(html.Contains(newVer), "History should show all versions including the latest.");
         Assert.IsTrue(html.Contains(pkgName), "History should display the package name.");
     }
 
@@ -308,11 +294,10 @@ public class ApkgUploadsControllerTests : TestBase
     public async Task PackageHistory_ShowsBackLink()
     {
         var pkgName = $"backlink-pkg-{Guid.NewGuid():N}";
-        var version = $"ver-{Guid.NewGuid():N}"[..16];
         _db.ApkgUploads.Add(new ApkgUpload
         {
             UploadedByUserId = _adminUserId, FileName = "v1.apkg",
-            Package = pkgName, Version = version, Component = "main",
+            Package = pkgName, Component = "main",
             IsPublished = true, IsListed = true
         });
         _db.SaveChanges();

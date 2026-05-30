@@ -148,7 +148,7 @@ public class BuildHandler : ExecutableCommandHandlerBuilder
         foreach (var (distro, suite, arch) in targets)
         {
             logger.LogInformation("  [{Distro}/{Suite}/{Arch}]", distro, suite, arch);
-            await debBuilder.BuildAsync(projectDir, project, distro, suite, arch, outputDir);
+            await debBuilder.BuildAsync(projectDir, project, distro, suite, arch, outputDir).ConfigureAwait(false);
         }
 
         logger.LogInformation("Build complete. Debs written to {OutputDir}", outputDir);

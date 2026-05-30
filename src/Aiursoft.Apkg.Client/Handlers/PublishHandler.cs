@@ -103,6 +103,8 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         var project = await aosprojSerializer.DeserializeFromFileAsync(projectFile);
 
         // ── Build (unless --no-build) ─────────────────────────────────────────
+        HashSet<string> resolvedVersions = [];
+
         if (!noBuild)
         {
             // Lint first
@@ -125,10 +127,17 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
 
             var binDir = Path.Combine(projectDir, "bin");
 
+            // Clean up stale .deb files from previous builds so they don't
+            // pollute the pack step or cause the wrong version to be derived.
+            if (Directory.Exists(binDir))
+                foreach (var stale in Directory.GetFiles(binDir, $"{project.PackageName}_*.deb"))
+                    File.Delete(stale);
+
             foreach (var (distro, suite, arch) in targets)
             {
                 logger.LogInformation("  [{Distro}/{Suite}/{Arch}]", distro, suite, arch);
-                await debBuilder.BuildAsync(projectDir, project, distro, suite, arch, binDir);
+                var (_, builtVersion) = await debBuilder.BuildAsync(projectDir, project, distro, suite, arch, binDir);
+                resolvedVersions.Add(builtVersion);
             }
         }
 
@@ -142,12 +151,49 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
             throw new DirectoryNotFoundException(
                 $"bin/ directory not found at {binDirectory}. Run 'apkg publish' without --no-build first.");
 
-        var debFiles = Directory.GetFiles(binDirectory, $"{project.PackageName}_*.deb");
-        if (debFiles.Length == 0)
+        var allDebFiles = Directory.GetFiles(binDirectory, $"{project.PackageName}_*.deb");
+        if (allDebFiles.Length == 0)
             throw new FileNotFoundException(
                 $"No .deb files found in {binDirectory} matching '{project.PackageName}_*.deb'.");
 
-        logger.LogInformation("Packing {Count} .deb file(s) into .apkg:", debFiles.Length);
+        // Filter to only include .deb files whose version matches what we just built.
+        // When --no-build is used, resolvedVersions is empty and we accept all files.
+        List<string> debFiles;
+
+        if (!noBuild && resolvedVersions.Count > 0)
+        {
+            debFiles = [];
+            foreach (var debPath in allDebFiles)
+            {
+                var v = DeriveVersionFromDeb(debPath, project.PackageName);
+                if (resolvedVersions.Contains(v))
+                    debFiles.Add(debPath);
+                else
+                    logger.LogWarning("  Skipping {File} — version {Version} was not built in this run",
+                        Path.GetFileName(debPath), v);
+            }
+
+            if (debFiles.Count == 0)
+                throw new FileNotFoundException(
+                    $"No .deb files matched the built versions. Something may have gone wrong during the build.");
+        }
+        else
+        {
+            debFiles = [..allDebFiles];
+
+            // Warn if multiple versions are present (common user error when bumping versions)
+            var versionsFound = allDebFiles
+                .Select(f => DeriveVersionFromDeb(f, project.PackageName))
+                .Distinct()
+                .ToList();
+            if (versionsFound.Count > 1)
+                logger.LogWarning(
+                    "Found multiple versions in bin/: {Versions}. Only .deb files matching " +
+                    "the project's PackageVersion should be present.",
+                    string.Join(", ", versionsFound));
+        }
+
+        logger.LogInformation("Packing {Count} .deb file(s) into .apkg:", debFiles.Count);
 
         var entries = new List<ApkgPackageEntry>();
         foreach (var debPath in debFiles)
@@ -168,13 +214,10 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
             logger.LogInformation("  + {File} → {Distro}/{Suite}", debFileName, distro, suite);
         }
 
-        // Derive resolved version from first .deb filename (handles $(UpstreamVersion) etc.)
-        var resolvedVersion = DeriveVersionFromDeb(debFiles[0], project.PackageName);
-
         var manifest = new ApkgPackageManifest
         {
             Name = project.PackageName,
-            Version = resolvedVersion,
+            Version = project.PackageVersion,
             Maintainer = string.IsNullOrWhiteSpace(project.Maintainer) ? project.PackageAuthors : project.Maintainer,
             Description = project.PackageDescription,
             Homepage = project.PackageHomepage,
@@ -185,7 +228,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         var manifestXml = SerializeManifest(manifest);
 
         Directory.CreateDirectory(outputDir);
-        var apkgFileName = $"{project.PackageName}.{resolvedVersion}.apkg";
+        var apkgFileName = $"{project.PackageName}.apkg";
         var apkgPath = Path.Combine(outputDir, apkgFileName);
 
         logger.LogInformation("Writing {File}...", apkgFileName);

@@ -28,10 +28,6 @@ public class ApkgUpload
 
     [Required]
     [MaxLength(128)]
-    public required string Version { get; set; }
-
-    [Required]
-    [MaxLength(128)]
     public required string Component { get; set; }
 
     public string? Description { get; set; }

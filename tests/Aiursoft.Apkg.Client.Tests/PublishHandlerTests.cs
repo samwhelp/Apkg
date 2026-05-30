@@ -298,4 +298,70 @@ public class PublishHandlerTests
         Assert.AreEqual("jammy", suite);
         Assert.AreEqual("amd64", arch);
     }
+
+    // ── Multi-version contamination ──────────────────────────────────────────
+
+    [TestMethod]
+    public void CollectDebFiles_MultipleVersionsInBin_AllVersionsCollected()
+    {
+        // Simulate bin/ containing stale .deb files from multiple past builds.
+        // The current pack step uses Directory.GetFiles(binDir, "{name}_*.deb")
+        // with no version filter, so all versions get packed into the .apkg.
+        var tmp = Path.Combine(Path.GetTempPath(), $"apkg_test_{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(tmp);
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.1_noble_amd64.deb"), "");
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.1_noble_arm64.deb"), "");
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.2_noble_amd64.deb"), "");
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.2_noble_arm64.deb"), "");
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.3_noble_amd64.deb"), "");
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.3_noble_arm64.deb"), "");
+
+            // This is exactly what PublishHandler does at line 145.
+            var collected = Directory.GetFiles(tmp, "myapp_*.deb");
+
+            // BUG: all 6 files are collected — 1.0.1, 1.0.2, and 1.0.3 all together.
+            // A single .apkg would contain every .deb ever built, regardless of version.
+            Assert.AreEqual(6, collected.Length,
+                "All versions are collected — old .deb files contaminate the .apkg");
+
+            // BUG: debFiles[0] is filesystem-order-dependent. We can't predict which
+            // version "wins", but it's a fact that the code picks the first one blindly.
+            // The right behaviour would be to derive the version from the project, or to
+            // clean up old files so only one version exists at pack time.
+            var derived = PublishHandler.DeriveVersionFromDeb(collected[0], "myapp");
+            var allVersions = new[] { "1.0.1", "1.0.2", "1.0.3" };
+            Assert.IsTrue(allVersions.Contains(derived),
+                $"Derived version '{derived}' is one of the versions on disk — " +
+                "but which one is a matter of luck.");
+        }
+        finally
+        {
+            Directory.Delete(tmp, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void CollectDebFiles_OnlyOneVersionInBin_AllGood()
+    {
+        // When bin/ has only the current version's files, everything works.
+        var tmp = Path.Combine(Path.GetTempPath(), $"apkg_test_{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(tmp);
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.3_noble_amd64.deb"), "");
+            File.WriteAllText(Path.Combine(tmp, "myapp_1.0.3_noble_arm64.deb"), "");
+
+            var collected = Directory.GetFiles(tmp, "myapp_*.deb");
+
+            Assert.AreEqual(2, collected.Length);
+            var derived = PublishHandler.DeriveVersionFromDeb(collected[0], "myapp");
+            Assert.AreEqual("1.0.3", derived);
+        }
+        finally
+        {
+            Directory.Delete(tmp, recursive: true);
+        }
+    }
 }

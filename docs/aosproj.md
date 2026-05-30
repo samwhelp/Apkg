@@ -568,7 +568,7 @@ apkg new       → 创建 .aosproj 骨架
 apkg add       → 往 .aosproj 追加文件条目
 apkg lint      → 验证 .aosproj 语法和文件存在性（见上方规则表）
 apkg build     → 默认构建全部 TargetSuites × TargetArchitectures；--suite/--arch 限定单个目标
-apkg publish   → 自动 lint + build（默认全部 target）+ 打包为 bin/<name>.<ver>.apkg；--no-build 跳过构建
+apkg publish   → 自动 lint + build（默认全部 target）+ 打包为 bin/<name>.apkg；--no-build 跳过构建
 apkg push      → 上传 .apkg 到 Apkg 服务器
 ```
 
@@ -602,7 +602,7 @@ TargetArchitectures: amd64 arm64
 ### `apkg push` 参数
 
 ```bash
-apkg push bin/anduinos-shell-ext.2.1.0.apkg \
+apkg push bin/anduinos-shell-ext.apkg \
   --source https://apkg-dev.aiursoft.com \
   --api-key <你的 API Key>
 ```

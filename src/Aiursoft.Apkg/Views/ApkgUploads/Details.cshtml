@@ -49,10 +49,6 @@
                     @* ── Overview Tab ── *@
                     <div class="row g-3 mb-3">
                         <div class="col-md-3">
-                            <label class="form-label text-muted">Version</label>
-                            <div><span class="badge bg-info">@Model.Upload.Version</span></div>
-                        </div>
-                        <div class="col-md-3">
                             <label class="form-label text-muted">Component</label>
                             <div><span class="badge bg-dark">@Model.Upload.Component</span></div>
                         </div>
@@ -199,7 +195,7 @@
                             <table class="table table-striped align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Version</th>
+                                        <th>Versions</th>
                                         <th>Component</th>
                                         <th>Status</th>
                                         <th>Uploaded</th>
@@ -213,7 +209,8 @@
                                 <tbody>
                                     @foreach (var v in Model.VersionHistory)
                                     {
-                                        var isLive = Model.LiveVersions.Contains(v.Version);
+                                        var uploadVersions = v.Packages.Select(p => p.Version).Distinct().ToList();
+                                        var isLive = uploadVersions.Any(ver => Model.LiveVersions.Contains(ver));
                                         var rowStatus = v.IsListed
                                             ? (isLive ? "Live" : "Superseded")
                                             : "Unlisted";
@@ -223,7 +220,10 @@
                                         var isCurrent = v.Id == Model.Upload.Id;
                                         <tr class="@(isCurrent ? "table-active" : "")">
                                             <td>
-                                                <span class="badge bg-info">@v.Version</span>
+                                                @foreach (var ver in uploadVersions)
+                                                {
+                                                    <span class="badge bg-info">@ver</span>
+                                                }
                                                 @if (Model.LatestVersionId == v.Id)
                                                 {
                                                     <span class="badge bg-success ms-1">Latest</span>
@@ -269,7 +269,7 @@
                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                 </div>
                                                                 <div class="modal-body">
-                                                                    Unlist <strong>@v.Package (@v.Version)</strong>? Generated packages will be disabled.
+                                                                    Unlist <strong>@v.Package</strong>? Generated packages will be disabled.
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <form method="post" asp-action="Unlist" asp-route-id="@v.Id">
@@ -293,7 +293,7 @@
                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                 </div>
                                                                 <div class="modal-body">
-                                                                    Permanently delete <strong>@v.Package (@v.Version)</strong> and all generated LocalPackages?
+                                                                    Permanently delete <strong>@v.Package</strong> and all generated LocalPackages?
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <form method="post" asp-action="Delete" asp-route-id="@v.Id">
