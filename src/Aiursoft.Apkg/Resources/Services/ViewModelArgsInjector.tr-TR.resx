@@ -96,9 +96,6 @@
   <data name="Dashboard" xml:space="preserve">
     <value>Gösterge Paneli</value>
   </data>
-  <data name="Deb Standalone" xml:space="preserve">
-    <value>Bağımsız Deb</value>
-  </data>
   <data name="Delete Role" xml:space="preserve">
     <value>Rolü Sil</value>
   </data>

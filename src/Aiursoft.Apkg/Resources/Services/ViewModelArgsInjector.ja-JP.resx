@@ -99,9 +99,6 @@
   <data name="Dashboard" xml:space="preserve">
     <value>ダッシュボード</value>
   </data>
-  <data name="Deb Standalone" xml:space="preserve">
-    <value>デビアン独立パッケージ</value>
-  </data>
   <data name="Delete Role" xml:space="preserve">
     <value>ロールを削除</value>
   </data>

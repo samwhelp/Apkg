@@ -282,7 +282,6 @@ public class ApiPackagesApkgUploadTests : TestBase
     public async Task ApkgUpload_Ownership_SameTripletDifferentUser_Returns403()
     {
         // Arrange: create User A who "owns" the (Name, Distro, Component) triplet
-        var userAKey = await CreateApiKeyAsync(withManageRepos: true);
         var userManager = GetService<UserManager<User>>();
 
         var emailB = $"apkgupload-{Guid.NewGuid():N}@test.com";
@@ -359,7 +358,6 @@ public class ApiPackagesApkgUploadTests : TestBase
     public async Task ApkgUpload_Ownership_SameTripletSameUser_Allowed()
     {
         // Same user uploading the same triplet should succeed (not be rejected)
-        var rawKey = await CreateApiKeyAsync(withManageRepos: true);
 
         // First, directly insert an upload record in the DB
         var userEmail = $"apkgupload-{Guid.NewGuid():N}@test.com";

@@ -99,9 +99,6 @@
   <data name="Dashboard" xml:space="preserve">
     <value>แดชบอร์ด</value>
   </data>
-  <data name="Deb Standalone" xml:space="preserve">
-    <value>เด็บแบบสแตนด์อโลน</value>
-  </data>
   <data name="Delete Role" xml:space="preserve">
     <value>ลบบทบาท</value>
   </data>

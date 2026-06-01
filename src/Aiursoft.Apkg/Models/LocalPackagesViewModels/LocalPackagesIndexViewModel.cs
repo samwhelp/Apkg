@@ -1,5 +1,4 @@
 using Aiursoft.Apkg.Entities;
-using Aiursoft.UiStack.Layout;
 
 namespace Aiursoft.Apkg.Models.LocalPackagesViewModels;
 
@@ -40,15 +39,4 @@ public class PackageStatusInfo
     public LocalPackageStatus Status { get; set; }
     public string? StatusMessage { get; set; }
     public int? LivePackageId { get; set; }
-}
-
-public class LocalPackagesIndexViewModel : UiStackLayoutViewModel
-{
-    public LocalPackagesIndexViewModel()
-    {
-        PageTitle = "Local Packages";
-    }
-
-    public List<PackageStatusInfo> Packages { get; set; } = [];
-    public bool IsAdmin { get; set; }
 }

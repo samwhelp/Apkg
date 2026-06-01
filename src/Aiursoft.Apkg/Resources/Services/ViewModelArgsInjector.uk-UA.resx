@@ -96,9 +96,6 @@
   <data name="Dashboard" xml:space="preserve">
     <value>Панель керування</value>
   </data>
-  <data name="Deb Standalone" xml:space="preserve">
-    <value>Deb як окремий модуль</value>
-  </data>
   <data name="Delete Role" xml:space="preserve">
     <value>Видалити роль</value>
   </data>

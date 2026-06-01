@@ -96,9 +96,6 @@
   <data name="Dashboard" xml:space="preserve">
     <value>Hallintapaneeli</value>
   </data>
-  <data name="Deb Standalone" xml:space="preserve">
-    <value>Deb Itsestään Toimiva</value>
-  </data>
   <data name="Delete Role" xml:space="preserve">
     <value>Poista rooli</value>
   </data>

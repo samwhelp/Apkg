@@ -99,9 +99,6 @@
   <data name="Dashboard" xml:space="preserve">
     <value>Tableau de bord</value>
   </data>
-  <data name="Deb Standalone" xml:space="preserve">
-    <value>Deb Autonome</value>
-  </data>
   <data name="Delete Role" xml:space="preserve">
     <value>Supprimer le rôle</value>
   </data>
