@@ -171,12 +171,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>حزمي (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>حزمي</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>تفاصيل الحزم الخاصة بي</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>مفتاح API جديد</value>
   </data>

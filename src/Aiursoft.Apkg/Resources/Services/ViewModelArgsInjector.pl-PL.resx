@@ -171,12 +171,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>Moje pakiety (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>MojePakiety</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>Moje pakiety (podpakiet)</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>Nowy klucz API</value>
   </data>

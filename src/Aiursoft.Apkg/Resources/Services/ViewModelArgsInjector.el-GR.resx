@@ -171,12 +171,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>Τα πακέτα μου (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>TaPackagesMou</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>Υποτομή Πακέτων</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>Νέος Κλειδί API</value>
   </data>

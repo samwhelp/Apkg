@@ -174,12 +174,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>Gói của tôi (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>MyPackages</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>Gói Của Tôi (Phụ)</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>Khóa API Mới</value>
   </data>
