@@ -1,4 +1,4 @@
-@model Aiursoft.Apkg.Models.ApkgPackagesViewModels.ApkgUploadHistoryViewModel
+@model Aiursoft.Apkg.Models.ApkgPackagesViewModels.ApkgRevisionHistoryViewModel
 
 <div class="row mb-2 mb-xl-3">
     <div class="col-auto">
@@ -10,7 +10,7 @@
     <div class="col-xl-10">
         <div class="card h-100">
             <div class="card-body">
-                @if (!Model.Uploads.Any())
+                @if (!Model.Revisions.Any())
                 {
                     <p class="text-muted mb-0">@Localizer["No uploads yet."]</p>
                 }
@@ -31,7 +31,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var item in Model.Uploads)
+                                @foreach (var item in Model.Revisions)
                                 {
                                     var rev = item.Revision;
                                     <tr>
@@ -49,17 +49,13 @@
                                         <td><small class="text-muted">@rev.FileName</small></td>
                                         <td><span class="badge bg-secondary">@item.PackageCount</span></td>
                                         <td>
-                                            @if (rev.IsPublished)
+                                            @if (rev.TempApkgFileInVaultPath == null)
                                             {
                                                 <span class="badge bg-success">Published</span>
                                             }
-                                            else if (!string.IsNullOrWhiteSpace(rev.VaultPath))
-                                            {
-                                                <span class="badge bg-warning text-dark">Draft</span>
-                                            }
                                             else
                                             {
-                                                <span class="badge bg-secondary">—</span>
+                                                <span class="badge bg-warning text-dark">Unpublished</span>
                                             }
                                             @if (!rev.IsListed)
                                             {
@@ -69,9 +65,9 @@
                                         <td><small class="text-muted">@rev.UploadedAt.ToString("yyyy/M/d HH:mm")</small></td>
                                         <td class="text-end">
                                             <div class="btn-group">
-                                                @if (!rev.IsPublished && !string.IsNullOrWhiteSpace(rev.VaultPath))
+                                                @if (!string.IsNullOrWhiteSpace(rev.TempApkgFileInVaultPath))
                                                 {
-                                                    <a asp-action="Preview" asp-route-vaultPath="@rev.VaultPath"
+                                                    <a asp-action="Preview" asp-route-vaultPath="@rev.TempApkgFileInVaultPath"
                                                        class="btn btn-sm btn-warning" title="Continue to Publish">
                                                         <i class="align-middle me-1" data-lucide="upload-cloud"></i> Continue →
                                                     </a>

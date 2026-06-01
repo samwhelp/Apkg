@@ -1,5 +1,5 @@
 using Aiursoft.Apkg.Entities;
-using Aiursoft.Apkg.Models.LocalPackagesViewModels;
+using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels;
 using Aiursoft.UiStack.Layout;
 
 namespace Aiursoft.Apkg.Models.ApkgPackagesViewModels;

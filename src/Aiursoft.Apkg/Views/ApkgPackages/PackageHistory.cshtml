@@ -1,4 +1,4 @@
-@using Aiursoft.Apkg.Models.LocalPackagesViewModels
+@using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels
 @model Aiursoft.Apkg.Models.ApkgPackagesViewModels.ApkgPackagesPackageHistoryViewModel
 
 <div class="row mb-2 mb-xl-3">
@@ -186,7 +186,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            Unlist <strong>@Model.PackageName @(revision.LocalPackages.FirstOrDefault()?.Version ?? "")</strong>? Generated packages will be disabled.
+                                            Unlist <strong>@Model.PackageName @(revision.ApkgDebPackages.FirstOrDefault()?.Version ?? "")</strong>? Generated packages will be disabled.
                                         </div>
                                         <div class="modal-footer">
                                             <form method="post" asp-action="Unlist" asp-route-id="@revision.Id">
@@ -209,7 +209,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            Permanently delete <strong>@Model.PackageName @(revision.LocalPackages.FirstOrDefault()?.Version ?? "")</strong> and all generated Local Packages?
+                                            Permanently delete <strong>@Model.PackageName @(revision.ApkgDebPackages.FirstOrDefault()?.Version ?? "")</strong> and all generated Local Packages?
                                         </div>
                                         <div class="modal-footer">
                                             <form method="post" asp-action="Delete" asp-route-id="@revision.Id">

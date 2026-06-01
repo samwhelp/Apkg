@@ -77,7 +77,7 @@
                     @Localizer["Mirror"]
                     <i data-lucide="circle-help" style="width:14px;height:14px;vertical-align:middle;margin-left:3px;cursor:help;"
                        data-bs-toggle="tooltip" data-bs-placement="top"
-                       data-bs-title="@Localizer["If linked, this repository's Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version."]"></i>
+                       data-bs-title="@Localizer["If linked, this repository's Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version."]"></i>
                 </label>
                 <select asp-for="MirrorId" asp-items="Model.AvailableMirrors" class="form-select">
                     <option value="">@Localizer["-- None (Standalone) --"]</option>
@@ -114,7 +114,7 @@
                            data-bs-title="@Localizer["If unchecked, only users with the 'Upload to Restricted Repositories' permission can publish packages to this repository."]"></i>
                     </label>
                 </div>
-                <div class="form-text">@Localizer["Allows any logged-in user to upload LocalPackages to this repository."]</div>
+                <div class="form-text">@Localizer["Allows any logged-in user to upload ApkgDebPackages to this repository."]</div>
             </div>
 
             <hr />

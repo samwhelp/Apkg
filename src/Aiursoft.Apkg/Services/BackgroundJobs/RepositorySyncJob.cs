@@ -134,8 +134,8 @@ public class RepositorySyncJob(
             }
         }
 
-        // 2b. Merge LocalPackages: override all upstream (Package, Architecture) pairs
-        var localPackages = await db.LocalPackages
+        // 2b. Merge ApkgDebPackages: override all upstream (Package, Architecture) pairs
+        var localPackages = await db.ApkgDebPackages
             .AsNoTracking()
             .Include(lp => lp.ApkgRevision).ThenInclude(r => r.ApkgPackage)
             .Where(lp => lp.RepositoryId == repo.Id && lp.IsEnabled)
@@ -145,7 +145,7 @@ public class RepositorySyncJob(
         {
             logger.LogInformation("Merging {Count} local packages into Bucket {BucketId}...", localPackages.Count, newBucketId);
 
-            // Remove all upstream packages that conflict with a LocalPackage by (Package, Architecture)
+            // Remove all upstream packages that conflict with a ApkgDebPackage by (Package, Architecture)
             foreach (var lp in localPackages)
             {
                 var toRemove = db.AptPackages
@@ -155,7 +155,7 @@ public class RepositorySyncJob(
             await db.SaveChangesAsync();
             db.ChangeTracker.Clear();
 
-            // Insert LocalPackages as AptPackages in the new bucket
+            // Insert ApkgDebPackages as AptPackages in the new bucket
             foreach (var lp in localPackages)
             {
                 var component = lp.ApkgRevision?.ApkgPackage?.Component ?? "main";
@@ -174,7 +174,7 @@ public class RepositorySyncJob(
                     DescriptionMd5 = string.Empty,
                     Section = lp.Section ?? string.Empty,
                     Priority = lp.Priority ?? string.Empty,
-                    Origin = "LocalPackage",
+                    Origin = "ApkgDebPackage",
                     Bugs = string.Empty,
                     Homepage = lp.Homepage,
                     InstalledSize = lp.InstalledSize,

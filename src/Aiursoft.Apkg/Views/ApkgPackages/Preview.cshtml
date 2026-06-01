@@ -138,14 +138,9 @@ else if (Model.HasWarnings)
         <hr />
         <form asp-action="Publish" method="post" class="d-inline">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="vaultPath" value="@Model.VaultPath" />
+            <input type="hidden" name="vaultPath" value="@Model.TempApkgFileInVaultPath" />
             <input type="hidden" name="fileName" value="@Model.FileName" />
             <button type="submit" class="btn btn-primary">Publish</button>
-        </form>
-        <form asp-action="DiscardDraft" method="post" class="d-inline ms-2">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="vaultPath" value="@Model.VaultPath" />
-            <button type="submit" class="btn btn-secondary">Discard &amp; Re-upload</button>
         </form>
     </div>
 </div>

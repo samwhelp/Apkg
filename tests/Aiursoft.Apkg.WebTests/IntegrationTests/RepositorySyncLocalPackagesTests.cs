@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Aiursoft.Apkg.WebTests.IntegrationTests;
 
 /// <summary>
-/// Tests for RepositorySyncJob + LocalPackage override semantics:
-///   - An enabled LocalPackage replaces ALL upstream entries for the same (Package, Architecture)
-///   - A disabled LocalPackage is ignored
-///   - LocalPackage metadata is preserved faithfully in the new bucket
+/// Tests for RepositorySyncJob + ApkgDebPackage override semantics:
+///   - An enabled ApkgDebPackage replaces ALL upstream entries for the same (Package, Architecture)
+///   - A disabled ApkgDebPackage is ignored
+///   - ApkgDebPackage metadata is preserved faithfully in the new bucket
 ///   - Non-conflicting packages from the mirror survive alongside local packages
 ///   - Multiple distinct local packages all get inserted
 /// </summary>
@@ -143,7 +143,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         return sha256;
     }
 
-    private LocalPackage AddLocalPackage(
+    private ApkgDebPackage AddLocalPackage(
         string name,
         string version = "99.0",
         string arch = "amd64",
@@ -151,7 +151,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         string component = "main")
     {
         var sha256 = Guid.NewGuid().ToString("N").PadRight(64, '0')[..64];
-        var lp = new LocalPackage
+        var lp = new ApkgDebPackage
         {
             UploadedByUserId = _adminUserId,
             RepositoryId = _repo.Id,
@@ -167,7 +167,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
             SHA256 = sha256,
             IsEnabled = isEnabled
         };
-        _db.LocalPackages.Add(lp);
+        _db.ApkgDebPackages.Add(lp);
         _db.SaveChanges();
         return lp;
     }
@@ -205,11 +205,11 @@ public class RepositorySyncLocalPackagesTests : TestBase
             .ToListAsync();
 
         Assert.AreEqual(1, curlPkgs.Count,
-            "LocalPackage must replace the upstream package — only one 'curl' entry must exist.");
+            "ApkgDebPackage must replace the upstream package — only one 'curl' entry must exist.");
         Assert.AreEqual("99.0", curlPkgs[0].Version,
-            "The surviving entry must be the LocalPackage version, not the upstream one.");
-        Assert.AreEqual("LocalPackage", curlPkgs[0].Origin,
-            "Origin must be set to 'LocalPackage' for entries sourced from LocalPackage.");
+            "The surviving entry must be the ApkgDebPackage version, not the upstream one.");
+        Assert.AreEqual("ApkgDebPackage", curlPkgs[0].Origin,
+            "Origin must be set to 'ApkgDebPackage' for entries sourced from ApkgDebPackage.");
     }
 
     [TestMethod]
@@ -228,9 +228,9 @@ public class RepositorySyncLocalPackagesTests : TestBase
             .ToListAsync();
 
         Assert.IsTrue(curlPkgs.Any(p => p.Version == "7.88"),
-            "Upstream version must survive when the LocalPackage is disabled.");
+            "Upstream version must survive when the ApkgDebPackage is disabled.");
         Assert.IsFalse(curlPkgs.Any(p => p.Version == "99.0"),
-            "Disabled LocalPackage must NOT appear in the new bucket.");
+            "Disabled ApkgDebPackage must NOT appear in the new bucket.");
     }
 
     [TestMethod]
@@ -250,7 +250,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
             .ToListAsync();
 
         Assert.AreEqual(1, pkgs.Count,
-            "All upstream versions of (libssl3, amd64) must be replaced by the single LocalPackage entry.");
+            "All upstream versions of (libssl3, amd64) must be replaced by the single ApkgDebPackage entry.");
         Assert.AreEqual("99.1", pkgs[0].Version);
     }
 
@@ -274,7 +274,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         var arm64Pkgs = pkgs.Where(p => p.Architecture == "arm64").ToList();
 
         Assert.AreEqual(1, amd64Pkgs.Count, "amd64 override must produce exactly one entry.");
-        Assert.AreEqual("99.0", amd64Pkgs[0].Version, "amd64 must show the LocalPackage version.");
+        Assert.AreEqual("99.0", amd64Pkgs[0].Version, "amd64 must show the ApkgDebPackage version.");
         Assert.AreEqual(1, arm64Pkgs.Count, "arm64 entry must survive untouched.");
         Assert.AreEqual("1.21", arm64Pkgs[0].Version, "arm64 version must remain the upstream value.");
     }
@@ -309,8 +309,8 @@ public class RepositorySyncLocalPackagesTests : TestBase
         Assert.AreEqual("libc6 (>= 2.17)", inserted.Depends);
         Assert.AreEqual(local.SHA256, inserted.SHA256);
         Assert.AreEqual(local.Filename, inserted.Filename);
-        Assert.IsFalse(inserted.IsVirtual, "LocalPackage-sourced entries must not be marked as virtual.");
-        Assert.IsNull(inserted.RemoteUrl, "LocalPackage-sourced entries must not have a RemoteUrl.");
+        Assert.IsFalse(inserted.IsVirtual, "ApkgDebPackage-sourced entries must not be marked as virtual.");
+        Assert.IsNull(inserted.RemoteUrl, "ApkgDebPackage-sourced entries must not have a RemoteUrl.");
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -334,8 +334,8 @@ public class RepositorySyncLocalPackagesTests : TestBase
         var grepPkg = await _db.AptPackages
             .FirstOrDefaultAsync(p => p.BucketId == newBucket!.Id && p.Package == "grep");
 
-        Assert.IsNotNull(bashPkg, "bash must be present (from LocalPackage).");
-        Assert.AreEqual("99.0", bashPkg.Version, "bash must be the LocalPackage version.");
+        Assert.IsNotNull(bashPkg, "bash must be present (from ApkgDebPackage).");
+        Assert.AreEqual("99.0", bashPkg.Version, "bash must be the ApkgDebPackage version.");
 
         Assert.IsNotNull(grepPkg, "grep must survive from the mirror, as it was not overridden.");
         Assert.AreEqual("3.8", grepPkg.Version, "grep must keep its original upstream version.");
@@ -378,7 +378,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
             .Where(p => p.BucketId == newBucket!.Id && p.Package == "mixed-pkg")
             .ToListAsync();
 
-        Assert.AreEqual(1, pkgs.Count, "Only the enabled LocalPackage must be inserted.");
+        Assert.AreEqual(1, pkgs.Count, "Only the enabled ApkgDebPackage must be inserted.");
         Assert.AreEqual("2.0", pkgs[0].Version);
     }
 
@@ -402,7 +402,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         var pkg = await _db.AptPackages
             .FirstOrDefaultAsync(p => p.BucketId == newBucket!.Id && p.Package == "standalone-pkg");
 
-        Assert.IsNotNull(pkg, "LocalPackage must be included even in a standalone (mirror-less) repo.");
+        Assert.IsNotNull(pkg, "ApkgDebPackage must be included even in a standalone (mirror-less) repo.");
         Assert.AreEqual("3.0", pkg.Version);
     }
 
@@ -416,7 +416,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         // Simulate old packages from a previous sync that should NOT be carried forward
         SetRepoPrimaryWithRealPackage("orphaned-pkg", version: "1.0");
 
-        // Add only a different LocalPackage
+        // Add only a different ApkgDebPackage
         AddLocalPackage("new-pkg", version: "2.0");
 
         // Act
@@ -428,14 +428,14 @@ public class RepositorySyncLocalPackagesTests : TestBase
         var orphanedPkg = await _db.AptPackages
             .FirstOrDefaultAsync(p => p.BucketId == newBucket!.Id && p.Package == "orphaned-pkg");
 
-        Assert.IsNotNull(newPkg, "Enabled LocalPackage must be in the new bucket.");
+        Assert.IsNotNull(newPkg, "Enabled ApkgDebPackage must be in the new bucket.");
         Assert.AreEqual("2.0", newPkg.Version);
         Assert.IsNull(orphanedPkg,
             "Old AptPackages from the previous primary bucket must NOT be carried forward in standalone repos.");
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // Version ordering: what happens when a LocalPackage is older/newer
+    // Version ordering: what happens when a ApkgDebPackage is older/newer
     // than the upstream mirror package?
     // ──────────────────────────────────────────────────────────────────────
 
@@ -449,7 +449,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         // Act
         var newBucket = await RunSyncAndGetNewBucket();
 
-        // Assert: LocalPackage unconditionally replaces all upstream entries
+        // Assert: ApkgDebPackage unconditionally replaces all upstream entries
         // by (Package, Architecture) in step 2b, even when it is older.
         // The old version wins — this is a downgrade.
         var pkgs = await _db.AptPackages
@@ -459,7 +459,7 @@ public class RepositorySyncLocalPackagesTests : TestBase
         Assert.AreEqual(1, pkgs.Count,
             "Only one version must exist after sync.");
         Assert.AreEqual("1.0", pkgs[0].Version,
-            "LocalPackage v1.0 replaces mirror v2.0 — the older version wins (downgrade).");
+            "ApkgDebPackage v1.0 replaces mirror v2.0 — the older version wins (downgrade).");
     }
 
     [TestMethod]
@@ -472,14 +472,14 @@ public class RepositorySyncLocalPackagesTests : TestBase
         // Act
         var newBucket = await RunSyncAndGetNewBucket();
 
-        // Assert: newer LocalPackage replaces upstream — normal upgrade path
+        // Assert: newer ApkgDebPackage replaces upstream — normal upgrade path
         var pkgs = await _db.AptPackages
             .Where(p => p.BucketId == newBucket!.Id && p.Package == "upgrade-pkg")
             .ToListAsync();
 
         Assert.AreEqual(1, pkgs.Count);
         Assert.AreEqual("2.0", pkgs[0].Version,
-            "LocalPackage v2.0 replaces mirror v1.0 — the newer version wins.");
+            "ApkgDebPackage v2.0 replaces mirror v1.0 — the newer version wins.");
     }
 
     // ──────────────────────────────────────────────────────────────────────

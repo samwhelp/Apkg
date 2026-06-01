@@ -3,7 +3,7 @@ using System.IO.Compression;
 using Aiursoft.Apkg.Authorization;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Models.ApkgPackagesViewModels;
-using Aiursoft.Apkg.Models.LocalPackagesViewModels;
+using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels;
 using Aiursoft.Apkg.Sdk.Models;
 using Aiursoft.Apkg.Sdk.Services;
 using Aiursoft.Apkg.Services;
@@ -42,24 +42,24 @@ public class ApkgPackagesController(
         var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
 
         var query = db.ApkgPackages
-            .Include(p => p.Revisions).ThenInclude(r => r.LocalPackages)
+            .Include(p => p.Revisions).ThenInclude(r => r.ApkgDebPackages)
             .Include(p => p.OwnerUser)
             .AsQueryable();
 
         if (!isAdmin)
             query = query.Where(p => p.OwnerUserId == userId);
 
-        // Exclude packages with no revisions (created by ownership check but never pushed)
-        query = query.Where(p => p.Revisions.Any());
+        // Only show packages with at least one published revision
+        query = query.Where(p => p.Revisions.Any(r => r.TempApkgFileInVaultPath == null));
 
         var packages = await query
             .OrderByDescending(p => p.Revisions.Max(r => r.UploadedAt))
             .ToListAsync();
 
-        // Collect all LocalPackages across all revisions for live-status computation
+        // Collect all ApkgDebPackages across all revisions for live-status computation
         var allLocalPackages = packages
             .SelectMany(p => p.Revisions)
-            .SelectMany(r => r.LocalPackages)
+            .SelectMany(r => r.ApkgDebPackages)
             .ToList();
 
         var allRepoIds = allLocalPackages.Select(lp => lp.RepositoryId).Distinct().ToList();
@@ -95,9 +95,9 @@ public class ApkgPackagesController(
 
             // Find the latest published revision that has live packages
             ApkgRevision? liveRevision = null;
-            foreach (var revision in orderedRevisions.Where(r => r.IsPublished))
+            foreach (var revision in orderedRevisions.Where(r => r.TempApkgFileInVaultPath == null))
             {
-                var hasLive = revision.LocalPackages.Any(lp =>
+                var hasLive = revision.ApkgDebPackages.Any(lp =>
                     lp.IsEnabled &&
                     repoPrimaryMap.TryGetValue(lp.RepositoryId, out var bucketId) &&
                     liveKeySet.Contains((bucketId, lp.Package, lp.Version, lp.Architecture)));
@@ -108,11 +108,11 @@ public class ApkgPackagesController(
                 }
             }
 
-            // If no live revision, use the latest published revision (or the latest draft for the owner)
-            var displayRevision = liveRevision ?? orderedRevisions.FirstOrDefault(r => r.IsPublished) ?? latestRevision;
+            // If no live revision, use the latest published revision
+            var displayRevision = liveRevision ?? orderedRevisions.FirstOrDefault(r => r.TempApkgFileInVaultPath == null) ?? latestRevision;
 
-            var totalCount = displayRevision.LocalPackages.Count;
-            var livePackages = displayRevision.LocalPackages
+            var totalCount = displayRevision.ApkgDebPackages.Count;
+            var livePackages = displayRevision.ApkgDebPackages
                 .Where(lp =>
                     lp.IsEnabled &&
                     repoPrimaryMap.TryGetValue(lp.RepositoryId, out var bucketId) &&
@@ -121,10 +121,10 @@ public class ApkgPackagesController(
 
             int? nextVersionRevisionId = null;
             string? nextVersionSummary = null;
-            if (liveRevision != null && latestRevision.Id != liveRevision.Id && latestRevision.IsPublished)
+            if (liveRevision != null && latestRevision.Id != liveRevision.Id && latestRevision.TempApkgFileInVaultPath == null)
             {
                 nextVersionRevisionId = latestRevision.Id;
-                nextVersionSummary = latestRevision.LocalPackages
+                nextVersionSummary = latestRevision.ApkgDebPackages
                     .Select(lp => lp.Version)
                     .Distinct()
                     .FirstOrDefault();
@@ -138,8 +138,7 @@ public class ApkgPackagesController(
                 TotalPackageCount = totalCount,
                 LiveVersions = livePackages.Select(lp => lp.Version).Distinct().ToList(),
                 SyncStatus = liveRevision != null ? UploadSyncStatus.Live
-                    : displayRevision.IsPublished ? UploadSyncStatus.Syncing
-                    : UploadSyncStatus.Draft,
+                    : UploadSyncStatus.Syncing,
                 NextVersionRevisionId = nextVersionRevisionId,
                 NextVersionSummary = nextVersionSummary
             });
@@ -168,7 +167,7 @@ public class ApkgPackagesController(
 
         var query = db.ApkgRevisions
             .Include(r => r.ApkgPackage)
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
             .AsQueryable();
 
         if (!isAdmin)
@@ -178,18 +177,18 @@ public class ApkgPackagesController(
             .OrderByDescending(r => r.UploadedAt)
             .ToListAsync();
 
-        var items = revisions.Select(r => new ApkgUploadHistoryItem
+        var items = revisions.Select(r => new ApkgRevisionHistoryItem
         {
             Revision = r,
             PackageName = r.ApkgPackage?.Name ?? "(deleted)",
             Distro = r.ApkgPackage?.Distro ?? "—",
             Component = r.ApkgPackage?.Component ?? "—",
-            PackageCount = r.LocalPackages.Count
+            PackageCount = r.ApkgDebPackages.Count
         }).ToList();
 
-        return this.StackView(new ApkgUploadHistoryViewModel
+        return this.StackView(new ApkgRevisionHistoryViewModel
         {
-            Uploads = items
+            Revisions = items
         });
     }
 
@@ -204,7 +203,7 @@ public class ApkgPackagesController(
 
         var query = db.ApkgPackages
             .Include(p => p.Revisions).ThenInclude(r => r.UploadedByUser)
-            .Include(p => p.Revisions).ThenInclude(r => r.LocalPackages).ThenInclude(lp => lp.Repository)
+            .Include(p => p.Revisions).ThenInclude(r => r.ApkgDebPackages).ThenInclude(lp => lp.Repository)
             .Where(p => p.Name == name)
             .AsQueryable();
 
@@ -222,10 +221,10 @@ public class ApkgPackagesController(
             return NotFound();
 
         var revisions = package.Revisions.OrderByDescending(r => r.UploadedAt).ToList();
-        var allLocalPackages = revisions.SelectMany(r => r.LocalPackages).ToList();
+        var allLocalPackages = revisions.SelectMany(r => r.ApkgDebPackages).ToList();
         var allPackageStatuses = await BuildPackageStatusAsync(allLocalPackages);
 
-        int? latestVersionId = revisions.FirstOrDefault(r => r.IsPublished)?.Id;
+        int? latestVersionId = revisions.FirstOrDefault(r => r.TempApkgFileInVaultPath == null)?.Id;
         var normalizedFilter = versionsFilter?.ToLowerInvariant() switch
         {
             "live" => "live",
@@ -301,11 +300,17 @@ public class ApkgPackagesController(
 
         var userId = userManager.GetUserId(User)!;
         var package = await EnsurePackageOwnershipAsync(manifest.Name, distro, component, userId);
+        if (package == null)
+        {
+            ModelState.AddModelError(nameof(model.ApkgFilePath),
+                $"Package '{manifest.Name}' for distro '{distro}' component '{component}' is already owned by another user.");
+            return this.StackView(model);
+        }
 
         var pendingRevision = await db.ApkgRevisions
             .FirstOrDefaultAsync(r => r.ApkgPackageId == package.Id
-                                     && r.VaultPath == model.ApkgFilePath
-                                     && !r.IsPublished);
+                                     && r.TempApkgFileInVaultPath == model.ApkgFilePath
+                                     && r.TempApkgFileInVaultPath != null);
 
         var fileName = Path.GetFileName(model.ApkgFilePath!);
         if (string.IsNullOrWhiteSpace(fileName))
@@ -318,8 +323,8 @@ public class ApkgPackagesController(
                 ApkgPackageId = package.Id,
                 UploadedByUserId = userId,
                 FileName = fileName,
-                VaultPath = model.ApkgFilePath,
-                IsPublished = false,
+                TempApkgFileInVaultPath = model.ApkgFilePath,
+                
                 IsListed = true
             };
             db.ApkgRevisions.Add(pendingRevision);
@@ -369,8 +374,8 @@ public class ApkgPackagesController(
         var userId = userManager.GetUserId(User)!;
         var revision = await db.ApkgRevisions
             .FirstOrDefaultAsync(r => r.UploadedByUserId == userId
-                                      && r.VaultPath == vaultPath
-                                      && !r.IsPublished);
+                                      && r.TempApkgFileInVaultPath == vaultPath
+                                      && r.TempApkgFileInVaultPath != null);
 
         var fileName = revision?.FileName;
         if (string.IsNullOrWhiteSpace(fileName))
@@ -425,6 +430,9 @@ public class ApkgPackagesController(
 
         var userId = userManager.GetUserId(User)!;
         var package = await EnsurePackageOwnershipAsync(manifest.Name, distro, component, userId);
+        if (package == null)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                $"Package '{manifest.Name}' for distro '{distro}' component '{component}' is already owned by another user.");
 
         // Update package metadata from manifest
         package.Description = NullIfEmpty(manifest.Description) ?? package.Description;
@@ -432,10 +440,10 @@ public class ApkgPackagesController(
         package.Homepage = NullIfEmpty(manifest.Homepage) ?? package.Homepage;
 
         var revision = await db.ApkgRevisions
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
             .FirstOrDefaultAsync(r => r.ApkgPackageId == package.Id
-                                      && r.VaultPath == vaultPath
-                                      && !r.IsPublished);
+                                      && r.TempApkgFileInVaultPath == vaultPath
+                                      && r.TempApkgFileInVaultPath != null);
 
         if (revision == null)
         {
@@ -444,8 +452,8 @@ public class ApkgPackagesController(
                 ApkgPackageId = package.Id,
                 UploadedByUserId = userId,
                 FileName = fileName,
-                VaultPath = vaultPath,
-                IsPublished = false,
+                TempApkgFileInVaultPath = vaultPath,
+                
                 IsListed = true
             };
             db.ApkgRevisions.Add(revision);
@@ -531,8 +539,7 @@ public class ApkgPackagesController(
             DeleteIfExists(physicalPath);
 
             revision.FileName = fileName;
-            revision.VaultPath = null;
-            revision.IsPublished = true;
+            revision.TempApkgFileInVaultPath = null;
             revision.IsListed = true;
             await db.SaveChangesAsync();
 
@@ -554,7 +561,7 @@ public class ApkgPackagesController(
         var revision = await db.ApkgRevisions
             .Include(r => r.ApkgPackage).ThenInclude(p => p!.OwnerUser)
             .Include(r => r.UploadedByUser)
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
                 .ThenInclude(lp => lp.Repository)
             .FirstOrDefaultAsync(r => r.Id == id);
         if (revision == null)
@@ -570,7 +577,7 @@ public class ApkgPackagesController(
 
         var historyQuery = db.ApkgRevisions
             .Include(r => r.UploadedByUser)
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
                 .ThenInclude(lp => lp.Repository)
             .Where(r => r.ApkgPackageId == package.Id)
             .AsQueryable();
@@ -583,14 +590,14 @@ public class ApkgPackagesController(
             .ToListAsync();
 
         // Use the most recent *published* revision as "latest"
-        int? latestVersionId = versionHistory.FirstOrDefault(r => r.IsPublished)?.Id;
+        int? latestVersionId = versionHistory.FirstOrDefault(r => r.TempApkgFileInVaultPath == null)?.Id;
 
         // Gather ALL packages across all revisions for the Versions tab
-        var allHistoryPackages = versionHistory.SelectMany(r => r.LocalPackages).ToList();
+        var allHistoryPackages = versionHistory.SelectMany(r => r.ApkgDebPackages).ToList();
 
         // Always include current revision's packages
         var historyPackageIds = allHistoryPackages.Select(p => p.Id).ToHashSet();
-        foreach (var pkg in revision.LocalPackages)
+        foreach (var pkg in revision.ApkgDebPackages)
         {
             if (!historyPackageIds.Contains(pkg.Id))
                 allHistoryPackages.Add(pkg);
@@ -599,7 +606,7 @@ public class ApkgPackagesController(
         var allPackageStatuses = await BuildPackageStatusAsync(allHistoryPackages);
 
         // Overview tab needs only this revision's packages
-        var currentPackageIds = revision.LocalPackages.Select(p => p.Id).ToHashSet();
+        var currentPackageIds = revision.ApkgDebPackages.Select(p => p.Id).ToHashSet();
         var packages = allPackageStatuses
             .Where(ps => currentPackageIds.Contains(ps.Package.Id))
             .ToList();
@@ -632,7 +639,7 @@ public class ApkgPackagesController(
     public async Task<IActionResult> Unlist(int id)
     {
         var revision = await db.ApkgRevisions
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
             .FirstOrDefaultAsync(r => r.Id == id);
         if (revision == null)
             return NotFound();
@@ -643,7 +650,7 @@ public class ApkgPackagesController(
             return Forbid();
 
         revision.IsListed = false;
-        foreach (var lp in revision.LocalPackages)
+        foreach (var lp in revision.ApkgDebPackages)
             lp.IsEnabled = false;
 
         await db.SaveChangesAsync();
@@ -659,50 +666,17 @@ public class ApkgPackagesController(
             return Forbid();
 
         var revision = await db.ApkgRevisions
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
             .FirstOrDefaultAsync(r => r.Id == id);
         if (revision == null)
             return NotFound();
 
         revision.IsListed = true;
-        foreach (var lp in revision.LocalPackages)
+        foreach (var lp in revision.ApkgDebPackages)
             lp.IsEnabled = true;
 
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Details), new { id });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DiscardDraft(string vaultPath)
-    {
-        var userId = userManager.GetUserId(User)!;
-        var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
-
-        var draft = await db.ApkgRevisions
-            .Include(r => r.LocalPackages)
-            .FirstOrDefaultAsync(r => r.VaultPath == vaultPath && !r.IsPublished);
-
-        if (draft == null)
-            return RedirectToAction(nameof(Upload));
-
-        if (draft.UploadedByUserId != userId && !isAdmin)
-            return Forbid();
-
-        if (!string.IsNullOrWhiteSpace(draft.VaultPath))
-        {
-            try
-            {
-                var physicalPath = storageService.GetFilePhysicalPath(draft.VaultPath, isVault: true);
-                DeleteIfExists(physicalPath);
-            }
-            catch (ArgumentException) { }
-        }
-
-        db.LocalPackages.RemoveRange(draft.LocalPackages);
-        db.ApkgRevisions.Remove(draft);
-        await db.SaveChangesAsync();
-        return RedirectToAction(nameof(Upload));
     }
 
     [HttpPost]
@@ -714,16 +688,16 @@ public class ApkgPackagesController(
             return Forbid();
 
         var revision = await db.ApkgRevisions
-            .Include(r => r.LocalPackages)
+            .Include(r => r.ApkgDebPackages)
             .FirstOrDefaultAsync(r => r.Id == id);
         if (revision == null)
             return NotFound();
 
-        if (!string.IsNullOrWhiteSpace(revision.VaultPath))
+        if (!string.IsNullOrWhiteSpace(revision.TempApkgFileInVaultPath))
         {
             try
             {
-                var physicalPath = storageService.GetFilePhysicalPath(revision.VaultPath, isVault: true);
+                var physicalPath = storageService.GetFilePhysicalPath(revision.TempApkgFileInVaultPath, isVault: true);
                 DeleteIfExists(physicalPath);
             }
             catch (ArgumentException)
@@ -731,8 +705,43 @@ public class ApkgPackagesController(
             }
         }
 
-        db.LocalPackages.RemoveRange(revision.LocalPackages);
+        db.ApkgDebPackages.RemoveRange(revision.ApkgDebPackages);
         db.ApkgRevisions.Remove(revision);
+        await db.SaveChangesAsync();
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeletePackage(int id)
+    {
+        var userId = userManager.GetUserId(User)!;
+        var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
+
+        var package = await db.ApkgPackages
+            .Include(p => p.Revisions).ThenInclude(r => r.ApkgDebPackages)
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (package == null)
+            return NotFound();
+
+        if (!isAdmin && package.OwnerUserId != userId)
+            return Forbid();
+
+        // Clean up vault files for all revisions
+        foreach (var revision in package.Revisions)
+        {
+            if (!string.IsNullOrWhiteSpace(revision.TempApkgFileInVaultPath))
+            {
+                try
+                {
+                    var physicalPath = storageService.GetFilePhysicalPath(revision.TempApkgFileInVaultPath, isVault: true);
+                    DeleteIfExists(physicalPath);
+                }
+                catch (ArgumentException) { }
+            }
+        }
+
+        db.ApkgPackages.Remove(package);
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }
@@ -742,7 +751,7 @@ public class ApkgPackagesController(
         var targets = await BuildTargetInfosAsync(manifest);
         return new ApkgPackagesPreviewViewModel
         {
-            VaultPath = vaultPath,
+            TempApkgFileInVaultPath = vaultPath,
             FileName = fileName,
             Manifest = manifest,
             Targets = targets
@@ -854,7 +863,7 @@ public class ApkgPackagesController(
         return Path.Combine(folders.GetWorkspaceFolder(), $"apkg-upload-{Guid.NewGuid()}{extension}");
     }
 
-    private async Task<List<PackageStatusInfo>> BuildPackageStatusAsync(List<LocalPackage> packages)
+    private async Task<List<PackageStatusInfo>> BuildPackageStatusAsync(List<ApkgDebPackage> packages)
     {
         if (packages.Count == 0)
             return [];
@@ -976,18 +985,18 @@ public class ApkgPackagesController(
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    private async Task<ApkgPackage> EnsurePackageOwnershipAsync(string name, string distro, string component, string userId)
+    /// <summary>
+    /// Resolves or creates an <see cref="ApkgPackage"/> for the given (Name, Distro, Component)
+    /// triplet. Returns null when the triplet exists but is owned by a different user —
+    /// callers must treat null as an ownership conflict and return an appropriate error response.
+    /// </summary>
+    private async Task<ApkgPackage?> EnsurePackageOwnershipAsync(string name, string distro, string component, string userId)
     {
         var package = await db.ApkgPackages
             .FirstOrDefaultAsync(p => p.Name == name && p.Distro == distro && p.Component == component);
 
         if (package != null)
-        {
-            if (package.OwnerUserId != userId)
-                throw new InvalidOperationException(
-                    $"Package '{name}' for distro '{distro}' component '{component}' is already owned by another user. Only the original uploader may add versions to this package.");
-            return package;
-        }
+            return package.OwnerUserId != userId ? null : package;
 
         package = new ApkgPackage
         {

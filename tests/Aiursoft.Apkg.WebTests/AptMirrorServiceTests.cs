@@ -86,7 +86,7 @@ public class AptMirrorServiceTests
             DescriptionMd5 = "test",
             Section = "test",
             Priority = "optional",
-            Origin = "LocalPackage",
+            Origin = "ApkgDebPackage",
             Bugs = string.Empty,
             Size = "12345",
             MD5sum = string.Empty,
@@ -123,7 +123,7 @@ public class AptMirrorServiceTests
     ///
     /// Scenario:
     ///   An old (now-orphaned) bucket contains an AptPackage for "pool/main/b/pkg/pkg_1.0_all.deb"
-    ///   with SHA256 = OLD_HASH.  A CI rebuild re-uploaded the package; the new LocalPackage record
+    ///   with SHA256 = OLD_HASH.  A CI rebuild re-uploaded the package; the new ApkgDebPackage record
     ///   has SHA256 = NEW_HASH and is referenced by the CURRENT primary bucket.
     ///   The Packages index was generated from the primary bucket, so it lists NEW_HASH.
     ///
@@ -307,7 +307,7 @@ public class AptMirrorServiceTests
         DescriptionMd5 = "test",
         Section = "admin",
         Priority = "required",
-        Origin = "LocalPackage",
+        Origin = "ApkgDebPackage",
         Bugs = string.Empty,
         Size = size.ToString(),
         MD5sum = string.Empty,

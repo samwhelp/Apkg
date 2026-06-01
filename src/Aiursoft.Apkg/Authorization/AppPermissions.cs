@@ -81,7 +81,7 @@ public class AppPermissions
                 localizer["Allows auditing the repository snapshot history and disk usage."]),
             new(AppPermissionNames.CanUploadToRestrictedRepositories,
                 localizer["Upload to Restricted Repositories"],
-                localizer["Allows uploading LocalPackages to repositories that have AllowAnyoneToUpload disabled."])
+                localizer["Allows uploading ApkgDebPackages to repositories that have AllowAnyoneToUpload disabled."])
         ];
         return allPermission;
     }

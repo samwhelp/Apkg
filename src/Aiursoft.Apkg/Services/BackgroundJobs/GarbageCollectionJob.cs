@@ -104,7 +104,7 @@ public class GarbageCollectionJob(
                 .Distinct()
                 .ToListAsync();
 
-            var localPackageHashes = await db.LocalPackages
+            var localPackageHashes = await db.ApkgDebPackages
                 .Select(lp => lp.SHA256)
                 .Distinct()
                 .ToListAsync();

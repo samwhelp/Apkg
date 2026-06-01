@@ -257,7 +257,7 @@ public class RepositoriesController(
 
         if (repo == null) return NotFound();
 
-        var packageCount = await dbContext.LocalPackages
+        var packageCount = await dbContext.ApkgDebPackages
             .CountAsync(lp => lp.RepositoryId == id && lp.IsEnabled);
 
         var model = new RepoDetailsViewModel

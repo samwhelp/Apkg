@@ -12,12 +12,12 @@ namespace Aiursoft.Apkg.WebTests.IntegrationTests;
 /// The GC uses a two-phase approach for physical files:
 ///   Phase 1 – Delete orphaned buckets and all their AptPackage rows from DB.
 ///   Phase 2 – Scan ObjectsRoot for .deb files; delete any whose SHA256 is no
-///              longer referenced by any AptPackage OR LocalPackage row.
+///              longer referenced by any AptPackage OR ApkgDebPackage row.
 ///
 /// Critical invariants:
 ///   • A CAS file whose hash is referenced by an active AptPackage MUST be preserved.
-///   • A CAS file whose hash is referenced by a LocalPackage MUST be preserved,
-///     even if no AptPackage row currently references it (the LocalPackage acts as
+///   • A CAS file whose hash is referenced by a ApkgDebPackage MUST be preserved,
+///     even if no AptPackage row currently references it (the ApkgDebPackage acts as
 ///     a "hold" so the file survives the next RepositorySyncJob).
 ///   • A CAS file with NO references (genuinely orphaned) MUST be deleted.
 /// </summary>
@@ -120,7 +120,7 @@ public class GarbageCollectionCasTests : TestBase
     // ── Tests ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// A .deb file with no corresponding AptPackage or LocalPackage is genuinely
+    /// A .deb file with no corresponding AptPackage or ApkgDebPackage is genuinely
     /// orphaned and must be deleted.
     /// </summary>
     [TestMethod]
@@ -137,7 +137,7 @@ public class GarbageCollectionCasTests : TestBase
 
         // Assert
         Assert.IsFalse(File.Exists(path),
-            "GC must delete a .deb file whose SHA256 is not referenced by any AptPackage or LocalPackage.");
+            "GC must delete a .deb file whose SHA256 is not referenced by any AptPackage or ApkgDebPackage.");
         _createdFiles.Remove(path); // already gone, no cleanup needed
     }
 
@@ -163,14 +163,14 @@ public class GarbageCollectionCasTests : TestBase
     }
 
     /// <summary>
-    /// A .deb file referenced by a LocalPackage (but with no current AptPackage row)
-    /// must be preserved. LocalPackages hold a permanent reference to their binaries
-    /// so the file survives until the LocalPackage is removed or re-synced.
+    /// A .deb file referenced by a ApkgDebPackage (but with no current AptPackage row)
+    /// must be preserved. ApkgDebPackages hold a permanent reference to their binaries
+    /// so the file survives until the ApkgDebPackage is removed or re-synced.
     /// </summary>
     [TestMethod]
     public async Task GcJob_KeepsCasFile_WhenLocalPackageReferencesSha256()
     {
-        // Arrange: CAS file exists, only referenced by a LocalPackage (no AptPackage row yet)
+        // Arrange: CAS file exists, only referenced by a ApkgDebPackage (no AptPackage row yet)
         var userManager = GetService<UserManager<User>>();
         var admin = await userManager.FindByEmailAsync("admin@default.com");
         var repo = await _db.AptRepositories.FirstAsync();
@@ -178,7 +178,7 @@ public class GarbageCollectionCasTests : TestBase
         var sha256 = Guid.NewGuid().ToString("N").PadRight(64, '0')[..64];
         var path = CreateCasFile(sha256);
 
-        _db.LocalPackages.Add(new LocalPackage
+        _db.ApkgDebPackages.Add(new ApkgDebPackage
         {
             UploadedByUserId = admin!.Id,
             RepositoryId = repo.Id,
@@ -193,13 +193,13 @@ public class GarbageCollectionCasTests : TestBase
         });
         _db.SaveChanges();
 
-        // Act: GC runs — no AptPackage row references this SHA256, only LocalPackage does
+        // Act: GC runs — no AptPackage row references this SHA256, only ApkgDebPackage does
         var gc = GetService<GarbageCollectionJob>();
         await gc.ExecuteAsync();
 
-        // Assert: the LocalPackage's binary must be preserved
+        // Assert: the ApkgDebPackage's binary must be preserved
         Assert.IsTrue(File.Exists(path),
-            "GC must NOT delete a .deb file whose SHA256 is referenced by a LocalPackage, " +
+            "GC must NOT delete a .deb file whose SHA256 is referenced by a ApkgDebPackage, " +
             "even if no AptPackage row currently holds that SHA256.");
     }
 }

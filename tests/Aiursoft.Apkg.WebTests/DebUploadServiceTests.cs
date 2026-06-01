@@ -133,7 +133,7 @@ public class DebUploadServiceTests
 
     /// <summary>
     /// Uploading the identical .deb binary a second time must return 409 and must NOT
-    /// add a second row to LocalPackages or a second file in the CAS store.
+    /// add a second row to ApkgDebPackages or a second file in the CAS store.
     ///
     /// This simulates an accidental re-trigger of the same CI job or a user clicking
     /// "publish" twice in the GUI.
@@ -165,7 +165,7 @@ public class DebUploadServiceTests
         };
         db.AptRepositories.Add(repo);
 
-        // LocalPackage.UploadedByUserId is a FK to the Users table — seed a minimal user.
+        // ApkgDebPackage.UploadedByUserId is a FK to the Users table — seed a minimal user.
         var userId = Guid.NewGuid().ToString();
         db.Users.Add(new User
         {
@@ -208,10 +208,10 @@ public class DebUploadServiceTests
         Assert.IsTrue(result2.Error!.Contains("SHA256"),
             $"Error message should mention SHA256. Got: {result2.Error}");
 
-        var rowCount = await db2.LocalPackages
+        var rowCount = await db2.ApkgDebPackages
             .CountAsync(p => p.RepositoryId == repo.Id && p.Package == "idempotency-test-pkg");
         Assert.AreEqual(1, rowCount,
-            "Exactly one LocalPackage row must exist — the second upload must not write a new row.");
+            "Exactly one ApkgDebPackage row must exist — the second upload must not write a new row.");
     }
 
     /// <summary>
@@ -304,10 +304,10 @@ public class DebUploadServiceTests
             "The second binary must NOT be saved to the CAS store when rejected by slot conflict.");
 
         // Verify only one row exists for this slot
-        var rowCount = await db2.LocalPackages
+        var rowCount = await db2.ApkgDebPackages
             .CountAsync(p => p.RepositoryId == repo.Id && p.Package == "slot-conflict-pkg");
         Assert.AreEqual(1, rowCount,
-            "Exactly one LocalPackage row must exist for this (package, version) slot.");
+            "Exactly one ApkgDebPackage row must exist for this (package, version) slot.");
     }
 
     // ── Downgrade guard tests ─────────────────────────────────────────────────

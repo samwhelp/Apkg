@@ -50,7 +50,7 @@
                                 UploadSyncStatus.Syncing    => ("Syncing",    "bg-info"),
                                 UploadSyncStatus.Superseded => ("Superseded", "bg-secondary"),
                                 UploadSyncStatus.Unlisted   => ("Unlisted",   "bg-secondary"),
-                                _                           => ("Draft",      "bg-secondary"),
+                                _                           => ("Syncing",    "bg-info"),
                             };
 
                             string publishBadgeClass;
@@ -104,21 +104,12 @@
                                 <td><small class="text-muted">@revision.UploadedAt.ToString("yyyy/M/d HH:mm")</small></td>
                                 <td class="text-end">
                                     <div class="btn-group">
-                                        @if (syncStatus == UploadSyncStatus.Draft && !string.IsNullOrWhiteSpace(revision.VaultPath))
-                                        {
-                                            <a asp-action="Preview" asp-route-vaultPath="@revision.VaultPath" class="btn btn-sm btn-warning" title="Continue to Preview &amp; Publish">
-                                                <i class="align-middle me-1" data-lucide="upload-cloud"></i> Continue →
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <a asp-action="Details" asp-route-id="@revision.Id" asp-route-tab="versions" class="btn btn-sm btn-outline-info" title="@Localizer["Version History"]">
-                                                <i class="align-middle" data-lucide="history"></i>
-                                            </a>
-                                            <a asp-action="Details" asp-route-id="@revision.Id" class="btn btn-sm btn-outline-info" title="@Localizer["Details"]">
-                                                <i class="align-middle" data-lucide="eye"></i>
-                                            </a>
-                                        }
+                                        <a asp-action="Details" asp-route-id="@revision.Id" asp-route-tab="versions" class="btn btn-sm btn-outline-info" title="@Localizer["Version History"]">
+                                            <i class="align-middle" data-lucide="history"></i>
+                                        </a>
+                                        <a asp-action="Details" asp-route-id="@revision.Id" class="btn btn-sm btn-outline-info" title="@Localizer["Details"]">
+                                            <i class="align-middle" data-lucide="eye"></i>
+                                        </a>
                                         @if (revision.IsListed)
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#unlistUpload-@revision.Id" title="@Localizer["Unlist"]">
@@ -131,6 +122,9 @@
                                                 <i class="align-middle" data-lucide="trash-2"></i>
                                             </button>
                                         }
+                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePackage-@item.Package.Id" title="@Localizer["Delete Package"]">
+                                            <i class="align-middle" data-lucide="folder-x"></i>
+                                        </button>
                                     </div>
 
                                     @if (revision.IsListed)
@@ -167,7 +161,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        @Localizer["Permanently delete"] <strong>@item.Package.Name</strong> @Localizer["and all generated LocalPackages?"]
+                                                        @Localizer["Permanently delete"] <strong>@item.Package.Name</strong> @Localizer["and all generated ApkgDebPackages?"]
                                                     </div>
                                                     <div class="modal-footer">
                                                         <form method="post" asp-action="Delete" asp-route-id="@revision.Id">
@@ -180,6 +174,27 @@
                                             </div>
                                         </div>
                                     }
+
+                                    <div class="modal fade" id="deletePackage-@item.Package.Id" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content text-start">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">@Localizer["Delete Package Family"]</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    @Localizer["This will permanently delete the entire package family"] <strong>@item.Package.Name</strong> (@item.Package.Distro/@item.Package.Component) @Localizer["and ALL its revisions and local packages. The package name will be released for other users. This cannot be undone."]
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <form method="post" asp-action="DeletePackage" asp-route-id="@item.Package.Id">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
+                                                        <button type="submit" class="btn btn-danger">@Localizer["Delete Entire Package"]</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         }

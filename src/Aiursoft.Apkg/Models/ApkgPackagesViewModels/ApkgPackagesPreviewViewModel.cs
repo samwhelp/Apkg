@@ -10,7 +10,7 @@ public class ApkgPackagesPreviewViewModel : UiStackLayoutViewModel
         PageTitle = "Preview APKG Upload";
     }
 
-    public required string VaultPath { get; set; }
+    public required string TempApkgFileInVaultPath { get; set; }
     public required string FileName { get; set; }
     public required ApkgPackageManifest Manifest { get; init; }
     public required List<ApkgPreviewTargetInfo> Targets { get; init; }

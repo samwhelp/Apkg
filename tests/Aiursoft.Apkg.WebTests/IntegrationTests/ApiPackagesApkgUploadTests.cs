@@ -429,7 +429,6 @@ public class ApiPackagesApkgUploadTests : TestBase
     public async Task ApkgUpload_Ownership_DifferentDistro_NoConflict()
     {
         var rawKeyA = await CreateApiKeyAsync(withManageRepos: true);
-        var userManager = GetService<UserManager<User>>();
 
         // User A creates package "a1" for distro "anduinos"
         var manifestA = """

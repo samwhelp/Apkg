@@ -18,7 +18,7 @@ public class ApkgTempCleanupJob(
     {
         var cutoff = DateTime.UtcNow.AddMinutes(-30);
         var expiredUploads = await db.ApkgRevisions
-            .Where(u => !u.IsPublished && !u.LocalPackages.Any() && u.UploadedAt < cutoff)
+            .Where(u => u.TempApkgFileInVaultPath != null && !u.ApkgDebPackages.Any() && u.UploadedAt < cutoff)
             .ToListAsync();
 
         if (expiredUploads.Count == 0)
@@ -29,11 +29,11 @@ public class ApkgTempCleanupJob(
 
         foreach (var upload in expiredUploads)
         {
-            if (!string.IsNullOrWhiteSpace(upload.VaultPath))
+            if (!string.IsNullOrWhiteSpace(upload.TempApkgFileInVaultPath))
             {
                 try
                 {
-                    var physicalPath = storageService.GetFilePhysicalPath(upload.VaultPath, isVault: true);
+                    var physicalPath = storageService.GetFilePhysicalPath(upload.TempApkgFileInVaultPath, isVault: true);
                     if (File.Exists(physicalPath))
                         File.Delete(physicalPath);
                 }

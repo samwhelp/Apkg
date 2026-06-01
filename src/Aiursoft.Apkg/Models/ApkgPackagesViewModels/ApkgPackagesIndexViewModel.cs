@@ -4,8 +4,6 @@ namespace Aiursoft.Apkg.Models.ApkgPackagesViewModels;
 
 public enum UploadSyncStatus
 {
-    /// <summary>Upload was created (file in vault) but Publish was never clicked.</summary>
-    Draft,
     /// <summary>Upload is unlisted and hidden from APT clients.</summary>
     Unlisted,
     /// <summary>Published; packages are waiting for the RepositorySyncJob.</summary>

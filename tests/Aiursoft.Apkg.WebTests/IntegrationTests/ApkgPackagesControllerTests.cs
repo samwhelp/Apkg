@@ -50,7 +50,6 @@ public class ApkgPackagesControllerTests : TestBase
         string? userId = null,
         string? packageName = null,
         string? component = null,
-        bool isPublished = true,
         bool isListed = true,
         string? vaultPath = null)
     {
@@ -70,9 +69,8 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = userId ?? _adminUserId,
             FileName = "test.apkg",
-            IsPublished = isPublished,
             IsListed = isListed,
-            VaultPath = vaultPath
+            TempApkgFileInVaultPath = vaultPath
         };
         _db.ApkgRevisions.Add(revision);
         _db.SaveChanges();
@@ -186,7 +184,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "v1.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-3)
         });
@@ -195,7 +193,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "v2.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-2)
         });
@@ -204,7 +202,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "v3.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-1)
         });
@@ -240,17 +238,17 @@ public class ApkgPackagesControllerTests : TestBase
         _db.ApkgRevisions.Add(new ApkgRevision
         {
             ApkgPackageId = pkg1.Id, UploadedByUserId = _adminUserId, FileName = "a1.apkg",
-            IsPublished = true, IsListed = true
+            IsListed = true
         });
         _db.ApkgRevisions.Add(new ApkgRevision
         {
             ApkgPackageId = pkg1.Id, UploadedByUserId = _adminUserId, FileName = "a2.apkg",
-            IsPublished = true, IsListed = true
+            IsListed = true
         });
         _db.ApkgRevisions.Add(new ApkgRevision
         {
             ApkgPackageId = pkg2.Id, UploadedByUserId = _adminUserId, FileName = "b1.apkg",
-            IsPublished = true, IsListed = true
+            IsListed = true
         });
         _db.SaveChanges();
 
@@ -306,13 +304,13 @@ public class ApkgPackagesControllerTests : TestBase
         _db.ApkgRevisions.Add(new ApkgRevision
         {
             ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId, FileName = "v1.apkg",
-            IsPublished = true, IsListed = true,
+            IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-2)
         });
         _db.ApkgRevisions.Add(new ApkgRevision
         {
             ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId, FileName = "v2.apkg",
-            IsPublished = true, IsListed = true,
+            IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-1)
         });
         _db.SaveChanges();
@@ -339,7 +337,7 @@ public class ApkgPackagesControllerTests : TestBase
         _db.ApkgRevisions.Add(new ApkgRevision
         {
             ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId, FileName = "v1.apkg",
-            IsPublished = true, IsListed = true
+            IsListed = true
         });
         _db.SaveChanges();
 
@@ -437,7 +435,7 @@ public class ApkgPackagesControllerTests : TestBase
     [TestMethod]
     public async Task Unlist_AdminCanUnlistOwnUpload_RedirectsToIndex()
     {
-        var revision = AddApkgPackageAndRevision(isPublished: true, isListed: true);
+        var revision = AddApkgPackageAndRevision(isListed: true);
 
         var token = await GetAntiCsrfToken("/ApkgPackages");
         var response = await Http.PostAsync($"/ApkgPackages/Unlist/{revision.Id}",
@@ -460,7 +458,7 @@ public class ApkgPackagesControllerTests : TestBase
     [TestMethod]
     public async Task Relist_Anonymous_RedirectsToLogin()
     {
-        var revision = AddApkgPackageAndRevision(isPublished: true, isListed: false);
+        var revision = AddApkgPackageAndRevision(isListed: false);
         var response = await _anonHttp.PostAsync($"/ApkgPackages/Relist/{revision.Id}",
             new FormUrlEncodedContent(new Dictionary<string, string>()));
         Assert.AreEqual(HttpStatusCode.Found, response.StatusCode,
@@ -470,7 +468,7 @@ public class ApkgPackagesControllerTests : TestBase
     [TestMethod]
     public async Task Relist_Admin_RelistsUploadAndRedirectsToDetails()
     {
-        var revision = AddApkgPackageAndRevision(isPublished: true, isListed: false);
+        var revision = AddApkgPackageAndRevision(isListed: false);
 
         var token = await GetAntiCsrfToken("/ApkgPackages");
         var response = await Http.PostAsync($"/ApkgPackages/Relist/{revision.Id}",
@@ -831,7 +829,7 @@ public class ApkgPackagesControllerTests : TestBase
             }));
 
         var revision = _db.ApkgRevisions
-            .First(r => r.VaultPath == vaultPath && !r.IsPublished);
+            .First(r => r.TempApkgFileInVaultPath == vaultPath);
 
         token = await GetAntiCsrfToken("/ApkgPackages");
         var response = await Http.PostAsync("/ApkgPackages/Publish",
@@ -846,19 +844,17 @@ public class ApkgPackagesControllerTests : TestBase
             "Publish with no matching repo must still redirect (to Details).");
 
         _db.Entry(revision).Reload();
-        Assert.IsTrue(revision.IsPublished,
-            "Upload must be marked as published even when no entries matched a repo.");
-        Assert.IsNull(revision.VaultPath,
-            "Vault path must be cleared after successful publish.");
+        Assert.IsNull(revision.TempApkgFileInVaultPath,
+            "TempApkgFileInVaultPath must be cleared after successful publish.");
     }
 
     // ──────────────────────────────────────────────────────────────────────
     // Push-twice-same-triplet equivalence
     // ──────────────────────────────────────────────────────────────────────
 
-    private LocalPackage CreateLocalPackage(int revisionId, string pkg, string ver, string arch)
+    private ApkgDebPackage CreateLocalPackage(int revisionId, string pkg, string ver, string arch)
     {
-        return new LocalPackage
+        return new ApkgDebPackage
         {
             ApkgRevisionId = revisionId,
             RepositoryId = 1,
@@ -891,7 +887,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "push1.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-2)
         };
@@ -903,7 +899,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "push2.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-1)
         };
@@ -912,11 +908,11 @@ public class ApkgPackagesControllerTests : TestBase
 
         // Push 1: 3 debs
         for (var i = 0; i < 3; i++)
-            _db.LocalPackages.Add(CreateLocalPackage(rev1.Id, $"deb-{i}", "1.0.0", "amd64"));
+            _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, $"deb-{i}", "1.0.0", "amd64"));
 
         // Push 2: 2 debs (different names, same triplet)
         for (var i = 0; i < 2; i++)
-            _db.LocalPackages.Add(CreateLocalPackage(rev2.Id, $"deb-{i + 3}", "2.0.0", "amd64"));
+            _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, $"deb-{i + 3}", "2.0.0", "amd64"));
 
         _db.SaveChanges();
 
@@ -927,16 +923,16 @@ public class ApkgPackagesControllerTests : TestBase
         Assert.AreEqual(2, revisions.Count,
             "Two pushes on the same triplet must create two revisions under one package.");
 
-        // Assert: total 5 LocalPackages across both revisions
-        var totalDebs = _db.LocalPackages
+        // Assert: total 5 ApkgDebPackages across both revisions
+        var totalDebs = _db.ApkgDebPackages
             .Count(lp => lp.ApkgRevision != null
                          && lp.ApkgRevision.ApkgPackageId == pkg.Id);
         Assert.AreEqual(5, totalDebs,
             "Push 1 (3 debs) + Push 2 (2 debs) = 5 total debs under the same ApkgPackage.");
 
         // Assert: each revision has the correct count
-        Assert.AreEqual(3, _db.LocalPackages.Count(lp => lp.ApkgRevisionId == rev1.Id));
-        Assert.AreEqual(2, _db.LocalPackages.Count(lp => lp.ApkgRevisionId == rev2.Id));
+        Assert.AreEqual(3, _db.ApkgDebPackages.Count(lp => lp.ApkgRevisionId == rev1.Id));
+        Assert.AreEqual(2, _db.ApkgDebPackages.Count(lp => lp.ApkgRevisionId == rev2.Id));
     }
 
     [TestMethod]
@@ -957,24 +953,24 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "keep.apkg",
-            IsPublished = true,
+            
             IsListed = true
         };
         _db.ApkgRevisions.Add(rev1);
         _db.SaveChanges();
-        _db.LocalPackages.Add(CreateLocalPackage(rev1.Id, "keep-deb", "1.0.0", "amd64"));
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, "keep-deb", "1.0.0", "amd64"));
 
         var rev2 = new ApkgRevision
         {
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "delete.apkg",
-            IsPublished = true,
+            
             IsListed = true
         };
         _db.ApkgRevisions.Add(rev2);
         _db.SaveChanges();
-        _db.LocalPackages.Add(CreateLocalPackage(rev2.Id, "del-deb", "2.0.0", "amd64"));
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, "del-deb", "2.0.0", "amd64"));
         _db.SaveChanges();
 
         // Act: delete revision 2
@@ -990,16 +986,16 @@ public class ApkgPackagesControllerTests : TestBase
         // Assert: rev1 and its package survive
         Assert.IsTrue(_db.ApkgRevisions.Any(r => r.Id == rev1.Id),
             "Revision 1 must survive deletion of revision 2.");
-        Assert.AreEqual(1, _db.LocalPackages.Count(lp => lp.ApkgRevisionId == rev1.Id),
-            "Revision 1's LocalPackage must be untouched.");
+        Assert.AreEqual(1, _db.ApkgDebPackages.Count(lp => lp.ApkgRevisionId == rev1.Id),
+            "Revision 1's ApkgDebPackage must be untouched.");
         Assert.IsTrue(_db.ApkgPackages.Any(p => p.Id == pkg.Id),
             "ApkgPackage must survive deletion of one revision.");
 
         // Assert: rev2 and its packages are gone
         Assert.IsFalse(_db.ApkgRevisions.Any(r => r.Id == rev2.Id),
             "Revision 2 must be deleted.");
-        Assert.AreEqual(0, _db.LocalPackages.Count(lp => lp.ApkgRevisionId == rev2.Id),
-            "Revision 2's LocalPackages must cascade-delete with it.");
+        Assert.AreEqual(0, _db.ApkgDebPackages.Count(lp => lp.ApkgRevisionId == rev2.Id),
+            "Revision 2's ApkgDebPackages must cascade-delete with it.");
     }
 
     [TestMethod]
@@ -1022,26 +1018,26 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "first-push.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-2)
         };
         _db.ApkgRevisions.Add(rev1);
         _db.SaveChanges();
-        _db.LocalPackages.Add(CreateLocalPackage(rev1.Id, "deb-alpha", "1.0.0", "amd64"));
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, "deb-alpha", "1.0.0", "amd64"));
 
         var rev2 = new ApkgRevision
         {
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "second-push.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-1)
         };
         _db.ApkgRevisions.Add(rev2);
         _db.SaveChanges();
-        _db.LocalPackages.Add(CreateLocalPackage(rev2.Id, "deb-beta", "2.0.0", "arm64"));
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, "deb-beta", "2.0.0", "arm64"));
         _db.SaveChanges();
 
         var response = await Http.GetAsync(
@@ -1049,7 +1045,7 @@ public class ApkgPackagesControllerTests : TestBase
         var html = await response.Content.ReadAsStringAsync();
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        // PackageHistory renders LocalPackages (each .deb) with their version and architecture,
+        // PackageHistory renders ApkgDebPackages (each .deb) with their version and architecture,
         // NOT the revision FileName. Both pushes' debs should be visible with "all" filter.
         Assert.IsTrue(html.Contains("1.0.0"),
             "PackageHistory must show deb from first push.");
@@ -1081,7 +1077,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "v1.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-2)
         });
@@ -1090,7 +1086,7 @@ public class ApkgPackagesControllerTests : TestBase
             ApkgPackageId = pkg.Id,
             UploadedByUserId = _adminUserId,
             FileName = "v2.apkg",
-            IsPublished = true,
+            
             IsListed = true,
             UploadedAt = DateTime.UtcNow.AddHours(-1)
         });
@@ -1107,5 +1103,441 @@ public class ApkgPackagesControllerTests : TestBase
             $"Index must show '{pkgName}'. Body: {html[..Math.Min(500, html.Length)]}");
         Assert.IsFalse(html.Contains("v1.apkg"),
             "Older push filename must not appear in Index.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Unpublished handling
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task Index_UnpublishedRevision_IsHiddenFromIndex()
+    {
+        var pkgName = $"unpub-idx-{Guid.NewGuid():N}";
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        _db.ApkgRevisions.Add(new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id,
+            UploadedByUserId = _adminUserId,
+            FileName = "unpublished.apkg",
+            TempApkgFileInVaultPath = "apkg-upload/unpublished.apkg",
+            IsListed = true
+        });
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync("/ApkgPackages");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsFalse(html.Contains(pkgName),
+            "Unpublished package (TempApkgFileInVaultPath != null) must not appear in Index.");
+    }
+
+    [TestMethod]
+    public async Task Index_PublishedRevision_ShowsSyncingStatus()
+    {
+        var pkgName = $"syncing-idx-{Guid.NewGuid():N}";
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        _db.ApkgRevisions.Add(new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id,
+            UploadedByUserId = _adminUserId,
+            FileName = "published.apkg",
+            
+            IsListed = true
+        });
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync("/ApkgPackages");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(html.Contains("Syncing"),
+            "Published but not-yet-live package must show Syncing badge in Index.");
+    }
+
+    [TestMethod]
+    public async Task Details_UnpublishedRevision_RendersWithPublishAffordance()
+    {
+        var revision = AddApkgPackageAndRevision(vaultPath: "apkg-upload/unpub-test.apkg");
+
+        var response = await Http.GetAsync($"/ApkgPackages/Details/{revision.Id}");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        // Unpublished details should show the Publish affordance
+        Assert.IsTrue(html.Contains(revision.ApkgPackage!.Name),
+            "Details must show the package name.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // PackageHistory version filters
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task PackageHistory_FilterLatest_ShowsOnlyLatestRevisionPackages()
+    {
+        var pkgName = $"flt-{Guid.NewGuid():N}";
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, "pkg-a", "1.0.0", "amd64"));
+
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, "pkg-b", "2.0.0", "arm64"));
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync(
+            $"/ApkgPackages/PackageHistory?name={Uri.EscapeDataString(pkgName)}&distro=ubuntu&component=main&versionsFilter=latest");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        // latest filter → only rev2's packages (latest published revision).
+        // Use architecture to distinguish: it only appears in table <td>, not in modals,
+        // whereas version strings also appear in Unlist/Delete modal bodies.
+        Assert.IsTrue(html.Contains("arm64"),
+            "Latest filter must show the latest revision's package (arch arm64).");
+        Assert.IsFalse(html.Contains("amd64"),
+            "Latest filter must NOT show the older revision's package (arch amd64).");
+    }
+
+    [TestMethod]
+    public async Task PackageHistory_FilterAll_ShowsAllRevisionsPackages()
+    {
+        var pkgName = $"fltall-{Guid.NewGuid():N}";
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, "pkg-a", "1.0.0", "amd64"));
+
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, "pkg-b", "2.0.0", "arm64"));
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync(
+            $"/ApkgPackages/PackageHistory?name={Uri.EscapeDataString(pkgName)}&distro=ubuntu&component=main&versionsFilter=all");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        // all filter → both revisions' packages must appear
+        Assert.IsTrue(html.Contains("1.0.0"),
+            "All filter must show the first revision's package version.");
+        Assert.IsTrue(html.Contains("2.0.0"),
+            "All filter must show the second revision's package version.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // UploadHistory
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task UploadHistory_Anonymous_RedirectsToLogin()
+    {
+        var response = await _anonHttp.GetAsync("/ApkgPackages/UploadHistory");
+        Assert.AreEqual(HttpStatusCode.Found, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task UploadHistory_Authenticated_Returns200()
+    {
+        var response = await Http.GetAsync("/ApkgPackages/UploadHistory");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task UploadHistory_ShowsOwnRevisions()
+    {
+        var revision = AddApkgPackageAndRevision();
+        var response = await Http.GetAsync("/ApkgPackages/UploadHistory");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(html.Contains(revision.ApkgPackage!.Name),
+            "UploadHistory must list the user's own revision.");
+    }
+
+    [TestMethod]
+    public async Task UploadHistory_UnpublishedRevision_ShowsUnpublishedBadge()
+    {
+        AddApkgPackageAndRevision(vaultPath: "apkg-upload/unpub.apkg");
+        var response = await Http.GetAsync("/ApkgPackages/UploadHistory");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(html.Contains("Unpublished"),
+            "UploadHistory must show Unpublished badge for revisions with TempApkgFileInVaultPath set.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // DeletePackage
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task DeletePackage_Anonymous_RedirectsToLogin()
+    {
+        var revision = AddApkgPackageAndRevision();
+        var pkgId = revision.ApkgPackageId;
+
+        var response = await _anonHttp.PostAsync($"/ApkgPackages/DeletePackage?id={pkgId}",
+            new FormUrlEncodedContent(new Dictionary<string, string>()));
+        Assert.AreEqual(HttpStatusCode.Found, response.StatusCode);
+
+        var stillExists = _db.ApkgPackages.Any(p => p.Id == pkgId);
+        Assert.IsTrue(stillExists, "Package must survive anonymous delete attempt.");
+    }
+
+    [TestMethod]
+    public async Task DeletePackage_Owner_DeletesEntirePackageAndRevisionsAndLocalPackages()
+    {
+        var pkg = new ApkgPackage
+        {
+            Name = $"delpkg-{Guid.NewGuid():N}",
+            Distro = "ubuntu",
+            Component = "main",
+            OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "r1.apkg", IsListed = true
+        };
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "r2.apkg", IsListed = true
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, "deb-a", "1.0.0", "amd64"));
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, "deb-b", "2.0.0", "arm64"));
+        _db.SaveChanges();
+
+        var pkgId = pkg.Id;
+        var token = await GetAntiCsrfToken("/ApkgPackages");
+        var response = await Http.PostAsync($"/ApkgPackages/DeletePackage?id={pkgId}",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { "__RequestVerificationToken", token }
+            }));
+
+        Assert.AreEqual(HttpStatusCode.Found, response.StatusCode);
+
+        // Cascade: package, all revisions, and all local packages must be gone
+        Assert.IsFalse(_db.ApkgPackages.Any(p => p.Id == pkgId));
+        Assert.IsFalse(_db.ApkgRevisions.Any(r => r.ApkgPackageId == pkgId));
+        Assert.AreEqual(0, _db.ApkgDebPackages.Count(lp =>
+            lp.ApkgRevision != null && lp.ApkgRevision.ApkgPackageId == pkgId));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Live status (requires AptRepository + PrimaryBucket + AptPackage setup)
+    // ──────────────────────────────────────────────────────────────────────
+
+    private void SetupLiveInfra(string distro, string suite, string architecture, string component,
+        out int bucketId, out int repoId)
+    {
+        var bucket = new AptBucket();
+        _db.AptBuckets.Add(bucket);
+        _db.SaveChanges();
+        bucketId = bucket.Id;
+
+        var repo = new AptRepository
+        {
+            Name = $"repo-{Guid.NewGuid():N}",
+            Distro = distro,
+            Suite = suite,
+            Components = component,
+            Architecture = architecture,
+            PrimaryBucketId = bucketId
+        };
+        _db.AptRepositories.Add(repo);
+        _db.SaveChanges();
+        repoId = repo.Id;
+    }
+
+    private void InsertLiveAptPackage(int bucketId, string package, string version, string architecture, string component)
+    {
+        var sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+        _db.AptPackages.Add(new AptPackage
+        {
+            BucketId = bucketId,
+            Package = package,
+            Version = version,
+            Architecture = architecture,
+            Component = component,
+            Filename = $"pool/main/{package[0]}/{package}/{package}_{version}_{architecture}.deb",
+            OriginSuite = "noble",
+            OriginComponent = component,
+            Maintainer = "test <test@test.com>",
+            Description = "Test package",
+            DescriptionMd5 = "d41d8cd98f00b204e9800998ecf8427e",
+            Section = "utils",
+            Priority = "optional",
+            Origin = "test",
+            Bugs = "https://example.com/bugs",
+            Size = "1024",
+            MD5sum = "d41d8cd98f00b204e9800998ecf8427e",
+            SHA1 = "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+            SHA256 = sha256,
+            SHA512 = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+            IsVirtual = false
+        });
+        _db.SaveChanges();
+    }
+
+    [TestMethod]
+    public async Task Index_LiveRevision_ShowsLiveStatusAndNextVersion()
+    {
+        var pkgName = $"live-idx-{Guid.NewGuid():N}";
+        SetupLiveInfra("ubuntu", "noble", "amd64", "main", out var bucketId, out var repoId);
+
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        // Revision 1: published, has a live package (exists in AptPackages)
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.SaveChanges();
+
+        var lp1 = CreateLocalPackage(rev1.Id, "live-deb", "1.0.0", "amd64");
+        lp1.RepositoryId = repoId;
+        _db.ApkgDebPackages.Add(lp1);
+
+        // Make it live by inserting a matching AptPackage
+        InsertLiveAptPackage(bucketId, "live-deb", "1.0.0", "amd64", "main");
+        _db.SaveChanges();
+
+        // Revision 2: newer published revision, not yet live
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+
+        var lp2 = CreateLocalPackage(rev2.Id, "live-deb", "2.0.0", "amd64");
+        lp2.RepositoryId = repoId;
+        _db.ApkgDebPackages.Add(lp2);
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync("/ApkgPackages");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(html.Contains(pkgName), "Live package must appear in Index.");
+        Assert.IsTrue(html.Contains("Live"),
+            "Index must show Live badge when a revision's packages are confirmed in the APT repo.");
+        Assert.IsTrue(html.Contains("2.0.0"),
+            "Index must show Next Version badge linking to the newer pending revision.");
+    }
+
+    [TestMethod]
+    public async Task PackageHistory_FilterLive_ShowsOnlyLivePackages()
+    {
+        var pkgName = $"live-hist-{Guid.NewGuid():N}";
+        SetupLiveInfra("ubuntu", "noble", "amd64", "main", out var bucketId, out var repoId);
+
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        var rev = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg", IsListed = true
+        };
+        _db.ApkgRevisions.Add(rev);
+        _db.SaveChanges();
+
+        // Live package
+        var liveLp = CreateLocalPackage(rev.Id, "live-deb", "1.0.0", "amd64");
+        liveLp.RepositoryId = repoId;
+        _db.ApkgDebPackages.Add(liveLp);
+        InsertLiveAptPackage(bucketId, "live-deb", "1.0.0", "amd64", "main");
+
+        // Staged package (not live)
+        var stagedLp = CreateLocalPackage(rev.Id, "live-deb", "2.0.0", "amd64");
+        stagedLp.RepositoryId = repoId;
+        _db.ApkgDebPackages.Add(stagedLp);
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync(
+            $"/ApkgPackages/PackageHistory?name={Uri.EscapeDataString(pkgName)}&distro=ubuntu&component=main&versionsFilter=live");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        // Live filter → only the package confirmed in AptPackages appears
+        Assert.IsTrue(html.Contains("1.0.0"),
+            "Live filter must show the version confirmed in the APT repo.");
+        Assert.IsFalse(html.Contains("2.0.0"),
+            "Live filter must NOT show the version that is not yet in the APT repo.");
     }
 }

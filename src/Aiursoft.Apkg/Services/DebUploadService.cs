@@ -9,7 +9,7 @@ public sealed class DebUploadResult
 {
     public int StatusCode { get; init; }
     public string? Error { get; init; }
-    public LocalPackage? Package { get; init; }
+    public ApkgDebPackage? Package { get; init; }
 }
 
 public class DebUploadService(
@@ -71,7 +71,7 @@ public class DebUploadService(
             sha512 = BitConverter.ToString(sha512Hasher.Hash!).Replace("-", "").ToLowerInvariant();
         }
 
-        var sha256Conflict = await db.LocalPackages
+        var sha256Conflict = await db.ApkgDebPackages
             .AnyAsync(lp => lp.RepositoryId == repo.Id && lp.SHA256 == sha256);
         if (sha256Conflict)
         {
@@ -107,7 +107,7 @@ public class DebUploadService(
             };
         }
 
-        var slotConflict = await db.LocalPackages
+        var slotConflict = await db.ApkgDebPackages
             .AnyAsync(lp => lp.RepositoryId == repo.Id
                             && lp.Package == pkgName
                             && lp.Version == pkgVersion
@@ -158,7 +158,7 @@ public class DebUploadService(
 
         var pkgFirstChar = pkgName[0].ToString();
         var filename = $"pool/{component}/{pkgFirstChar}/{pkgName}/{pkgName}_{pkgVersion}_{pkgArch}.deb";
-        var lp = new LocalPackage
+        var lp = new ApkgDebPackage
         {
             UploadedByUserId = uploadedByUserId,
             RepositoryId = repo.Id,
@@ -189,7 +189,7 @@ public class DebUploadService(
             MD5sum = md5sum,
             SHA512 = sha512
         };
-        db.LocalPackages.Add(lp);
+        db.ApkgDebPackages.Add(lp);
         await db.SaveChangesAsync();
 
         return new DebUploadResult

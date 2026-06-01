@@ -131,8 +131,7 @@ public class ApiPackagesController(
                 ApkgPackageId = existingPackage.Id,
                 UploadedByUserId = userId,
                 FileName = Path.GetFileName(apkg.FileName),
-                VaultPath = null,
-                IsPublished = false,
+                TempApkgFileInVaultPath = null,
                 IsListed = true
             };
             db.ApkgRevisions.Add(revisionRecord);
@@ -237,13 +236,12 @@ public class ApiPackagesController(
                 if (summary.Errors.Count > 0 && !skipDuplicate)
                     return Conflict(summary);
 
-                revisionRecord.IsPublished = true;
                 await db.SaveChangesAsync();
                 return Ok(summary);
             }
 
             // Nothing was uploaded — clean up the record and any associated packages
-            db.LocalPackages.RemoveRange(revisionRecord.LocalPackages);
+            db.ApkgDebPackages.RemoveRange(revisionRecord.ApkgDebPackages);
             db.ApkgRevisions.Remove(revisionRecord);
             await db.SaveChangesAsync();
 

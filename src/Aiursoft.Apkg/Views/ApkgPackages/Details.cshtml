@@ -1,4 +1,4 @@
-@using Aiursoft.Apkg.Models.LocalPackagesViewModels
+@using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels
 @model Aiursoft.Apkg.Models.ApkgPackagesViewModels.ApkgPackagesDetailsViewModel
 @{
     var pkg_identity = Model.Revision.ApkgPackage;
@@ -59,7 +59,7 @@
                         <a class="nav-link @(Model.ActiveTab == "versions" ? "active" : "")"
                            asp-action="Details" asp-route-id="@Model.Revision.Id" asp-route-tab="versions" asp-route-versionsFilter="@Model.VersionsFilter">
                             <i class="align-middle me-1" data-lucide="history"></i> Versions
-                            @{ var publishedCount = Model.VersionHistory.Count(v => v.IsPublished); }
+                            @{ var publishedCount = Model.VersionHistory.Count(v => v.TempApkgFileInVaultPath == null); }
                             @if (publishedCount > 0)
                             {
                                 <span class="badge bg-secondary ms-1">@publishedCount</span>
@@ -95,16 +95,13 @@
                 @if (Model.ActiveTab == "overview")
                 {
                     @* ── Overview Tab ── *@
-                    @if (!Model.Revision.IsPublished)
+                    @if (Model.Revision.TempApkgFileInVaultPath != null)
                     {
                         <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
                             <i data-lucide="clock" style="width:18px;height:18px;flex-shrink:0;"></i>
                             <div>
-                                This upload is a <strong>draft</strong> and has not been published yet. No packages have been generated.
-                                @if (!string.IsNullOrWhiteSpace(Model.Revision.VaultPath))
-                                {
-                                    <a asp-action="Preview" asp-route-vaultPath="@Model.Revision.VaultPath" class="alert-link ms-1">Go to Preview to Publish →</a>
-                                }
+                                This upload has not been published yet. No packages have been generated.
+                                <a asp-action="Preview" asp-route-vaultPath="@Model.Revision.TempApkgFileInVaultPath" class="alert-link ms-1">Go to Preview to Publish →</a>
                             </div>
                         </div>
                     }
@@ -432,7 +429,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            Unlist <strong>@pkg_identity?.Name @(histRevision.LocalPackages.FirstOrDefault()?.Version ?? "")</strong>? Generated packages will be disabled.
+                                            Unlist <strong>@pkg_identity?.Name @(histRevision.ApkgDebPackages.FirstOrDefault()?.Version ?? "")</strong>? Generated packages will be disabled.
                                         </div>
                                         <div class="modal-footer">
                                             <form method="post" asp-action="Unlist" asp-route-id="@histRevision.Id">
@@ -455,7 +452,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            Permanently delete <strong>@pkg_identity?.Name @(histRevision.LocalPackages.FirstOrDefault()?.Version ?? "")</strong> and all generated Local Packages?
+                                            Permanently delete <strong>@pkg_identity?.Name @(histRevision.ApkgDebPackages.FirstOrDefault()?.Version ?? "")</strong> and all generated Local Packages?
                                         </div>
                                         <div class="modal-footer">
                                             <form method="post" asp-action="Delete" asp-route-id="@histRevision.Id">
@@ -488,7 +485,7 @@
                 <h6 class="mb-2">@Localizer["Live (Variant) Attributes"]</h6>
                 <p class="text-muted small mb-2">@Localizer["Within a single .apkg, each entry may vary on three <strong>live attributes</strong>: <strong>Version</strong> (extracted from the .deb binary, never written in manifest.xml), <strong>Suite</strong>, and <strong>Architecture</strong>. This lets you ship e.g. amd64 and arm64 builds of the same version in one upload."]</p>
                 <hr />
-                <p class="text-muted small mb-0"><strong>@Localizer["Tip:"]</strong> @Localizer["Use <code>apkg push</code> from the CLI to create and upload .apkg files. Uploads remain as drafts until published — only published uploads generate packages visible in APT repositories."]</p>
+                <p class="text-muted small mb-0"><strong>@Localizer["Tip:"]</strong> @Localizer["Use <code>apkg push</code> from the CLI to create and upload .apkg files. Uploads must be published before they appear in APT repositories."]</p>
             </div>
         </div>
     </div>

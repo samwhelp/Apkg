@@ -1,6 +1,6 @@
 using Aiursoft.Apkg.Entities;
 
-namespace Aiursoft.Apkg.Models.LocalPackagesViewModels;
+namespace Aiursoft.Apkg.Models.ApkgDebPackagesViewModels;
 
 public enum LocalPackageStatus
 {
@@ -35,7 +35,7 @@ public enum LocalPackageStatus
 
 public class PackageStatusInfo
 {
-    public required LocalPackage Package { get; set; }
+    public required ApkgDebPackage Package { get; set; }
     public LocalPackageStatus Status { get; set; }
     public string? StatusMessage { get; set; }
     public int? LivePackageId { get; set; }
