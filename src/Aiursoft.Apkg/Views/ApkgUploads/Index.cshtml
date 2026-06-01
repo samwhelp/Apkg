@@ -8,7 +8,7 @@
     <div class="col-auto ms-auto">
         <a asp-action="Upload" class="btn btn-primary">
             <i class="align-middle me-1" data-lucide="upload"></i>
-            @Localizer["Upload New Package"]
+            @Localizer["Upload apkg mixed package"]
         </a>
     </div>
 </div>
@@ -181,8 +181,8 @@
                 <div class="text-center mb-3">
                     <i data-lucide="inbox" style="width:48px;height:48px;"></i>
                 </div>
-                <h6 class="mb-2">@Localizer["What is an Upload?"]</h6>
-                <p class="text-muted small mb-2">@Localizer["Each upload represents a .apkg bundle pushed to this server. After processing, packages are extracted and synced to their target APT repositories."]</p>
+                <h6 class="mb-2">@Localizer["What is a mixed package?"]</h6>
+                <p class="text-muted small mb-2">@Localizer["An .apkg mixed package is Apkg's proprietary format that bundles multiple .deb packages into a single upload. After processing, each contained .deb is extracted and synced to its target APT repository."]</p>
                 <p class="text-muted small mb-0"><strong>@Localizer["Tip:"]</strong> @Localizer["Upload via CLI with <code>apkg push</code> or use the Web UI. Uploads must be published before they appear in repositories."]</p>
             </div>
         </div>

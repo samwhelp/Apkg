@@ -7,7 +7,7 @@ public class ApkgUploadsUploadViewModel : UiStackLayoutViewModel
 {
     public ApkgUploadsUploadViewModel()
     {
-        PageTitle = "Upload APKG Package";
+        PageTitle = "Upload apkg mixed package";
     }
 
     [Display(Name = ".apkg File")]

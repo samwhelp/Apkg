@@ -18,8 +18,11 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name="Each upload represents a .apkg bundle pushed to this server. After processing, packages are extracted and synced to their target APT repositories." xml:space="preserve">
+      <data name="An .apkg mixed package is Apkg's proprietary format that bundles multiple .deb packages into a single upload. After processing, each contained .deb is extracted and synced to its target APT repository." xml:space="preserve">
     <value>Każde przesłanie odpowiada pakietowi .apkg wgranemu na ten serwer. Po przetworzeniu pakiety są wypakowywane i synchronizowane z ich docelowymi repozytoriami APT.</value>
+  </data>
+  <data name="Upload apkg mixed package" xml:space="preserve">
+    <value>Upload apkg mixed package</value>
   </data>
   <data name="Tip:" xml:space="preserve">
     <value>Wskazówka:</value>
@@ -27,7 +30,7 @@
   <data name="Upload via CLI with &lt;code&gt;apkg push&lt;/code&gt; or use the Web UI. Uploads must be published before they appear in repositories." xml:space="preserve">
     <value>Prześlij przez CLI za pomocą &lt;code&gt;apkg push&lt;/code&gt; lub skorzystaj z interfejsu Web UI. Przesłane pakiety muszą zostać opublikowane, zanim pojawią się w repozytoriach.</value>
   </data>
-  <data name="What is an Upload?" xml:space="preserve">
+  <data name="What is a mixed package?" xml:space="preserve">
     <value>Czym jest Upload?</value>
   </data>
 
