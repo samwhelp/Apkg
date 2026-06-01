@@ -171,12 +171,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>Mina paket (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>MinaPaket</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>Mina paket (under)</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>Ny API-nyckel</value>
   </data>

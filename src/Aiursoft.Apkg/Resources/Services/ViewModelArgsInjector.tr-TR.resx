@@ -171,12 +171,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>Paketlerim (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>Paketlerim</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>Paketlerim (Alt)</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>Yeni API Anahtarı</value>
   </data>

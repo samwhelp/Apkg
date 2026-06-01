@@ -174,12 +174,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>我的套件 (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>我的軟件包</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>我的套件副標題</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>新 API 金鑰</value>
   </data>

@@ -174,12 +174,6 @@
   <data name="My Packages (APKG)" xml:space="preserve">
     <value>내 패키지 (APKG)</value>
   </data>
-  <data name="MyPackages" xml:space="preserve">
-    <value>내 패키지</value>
-  </data>
-  <data name="MyPackagesSub" xml:space="preserve">
-    <value>내 패키지의 하위 항목</value>
-  </data>
   <data name="New API Key" xml:space="preserve">
     <value>새 API 키</value>
   </data>

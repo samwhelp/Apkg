@@ -127,8 +127,6 @@ public class ViewModelArgsInjector(
         _ = localizer["Upload apkg mixed package"];
     
         _ = localizer["Apkg Hybrid"];
-        _ = localizer["MyPackages"];
-        _ = localizer["MyPackagesSub"];
     }
 
     public void InjectSimple(

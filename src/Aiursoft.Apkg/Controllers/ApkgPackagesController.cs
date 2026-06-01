@@ -29,9 +29,9 @@ public class ApkgPackagesController(
 {
     [HttpGet]
     [RenderInNavBar(
-        NavGroupName = "MyPackages",
+        NavGroupName = "My Packages",
         NavGroupOrder = 25,
-        CascadedLinksGroupName = "MyPackagesSub",
+        CascadedLinksGroupName = "My Packages",
         CascadedLinksIcon = "package",
         CascadedLinksOrder = 10,
         LinkText = "Apkg Hybrid",
@@ -152,9 +152,9 @@ public class ApkgPackagesController(
 
     [HttpGet]
     [RenderInNavBar(
-        NavGroupName = "MyPackages",
+        NavGroupName = "My Packages",
         NavGroupOrder = 25,
-        CascadedLinksGroupName = "MyPackagesSub",
+        CascadedLinksGroupName = "My Packages",
         CascadedLinksIcon = "history",
         CascadedLinksOrder = 20,
         LinkText = "Upload History",
