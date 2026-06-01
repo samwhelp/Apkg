@@ -1,7 +1,7 @@
 @using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels
 @model Aiursoft.Apkg.Models.ApkgPackagesViewModels.ApkgPackagesDetailsViewModel
 @{
-    var pkg_identity = Model.Revision.ApkgPackage;
+    var pkg = Model.Package;
 }
 
 <div class="row mb-2 mb-xl-3">
@@ -12,17 +12,7 @@
         </a>
     </div>
     <div class="col-auto">
-        <h3 class="mb-0">@pkg_identity?.Name</h3>
-    </div>
-    <div class="col-auto">
-        @if (Model.Revision.IsListed)
-        {
-            <span class="badge bg-success">Listed</span>
-        }
-        else
-        {
-            <span class="badge bg-secondary">Unlisted</span>
-        }
+        <h3 class="mb-0">@pkg.Name</h3>
     </div>
 </div>
 
@@ -51,147 +41,108 @@
                 <ul class="nav nav-tabs card-header-tabs">
                     <li class="nav-item">
                         <a class="nav-link @(Model.ActiveTab == "overview" ? "active" : "")"
-                           asp-action="Details" asp-route-id="@Model.Revision.Id" asp-route-tab="overview">
+                           asp-action="Details" asp-route-id="@pkg.Id" asp-route-tab="overview">
                             <i class="align-middle me-1" data-lucide="info"></i> Overview
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link @(Model.ActiveTab == "versions" ? "active" : "")"
-                           asp-action="Details" asp-route-id="@Model.Revision.Id" asp-route-tab="versions" asp-route-versionsFilter="@Model.VersionsFilter">
+                           asp-action="Details" asp-route-id="@pkg.Id" asp-route-tab="versions" asp-route-versionsFilter="@Model.VersionsFilter">
                             <i class="align-middle me-1" data-lucide="history"></i> Versions
-                            @{ var publishedCount = Model.VersionHistory.Count(v => v.TempApkgFileInVaultPath == null); }
-                            @if (publishedCount > 0)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(Model.ActiveTab == "history" ? "active" : "")"
+                           asp-action="Details" asp-route-id="@pkg.Id" asp-route-tab="history">
+                            <i class="align-middle me-1" data-lucide="upload-cloud"></i> Upload History
+                            @if (Model.UploadHistory.Count > 0)
                             {
-                                <span class="badge bg-secondary ms-1">@publishedCount</span>
+                                <span class="badge bg-secondary ms-1">@Model.UploadHistory.Count</span>
                             }
                         </a>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
-                @{
-                    var uploadDates = Model.VersionHistory
-                        .ToDictionary(vv => vv.Id, vv => vv.UploadedAt);
-                    var uploaderDict = Model.VersionHistory
-                        .ToDictionary(vv => vv.Id, vv => vv.UploadedByUser?.UserName ?? "—");
-                    var uploadListedDict = Model.VersionHistory
-                        .ToDictionary(vv => vv.Id, vv => vv.IsListed);
-
-                    var filteredPkgs = (Model.VersionsFilter switch
-                    {
-                        "live" => Model.AllPackageStatuses
-                            .Where(ps => ps.Status == LocalPackageStatus.Live),
-                        "all" => Model.AllPackageStatuses.AsEnumerable(),
-                        _ => Model.AllPackageStatuses
-                            .Where(ps => ps.Package.ApkgRevisionId == Model.LatestVersionId)
-                    })
-                    .OrderByDescending(ps => ps.Package.ApkgRevisionId.HasValue
-                        ? uploadDates.GetValueOrDefault(ps.Package.ApkgRevisionId.Value)
-                        : DateTime.MinValue)
-                    .ThenBy(ps => ps.Package.Architecture)
-                    .ThenBy(ps => ps.Package.Repository?.Suite ?? "")
-                    .ToList();
-                }
                 @if (Model.ActiveTab == "overview")
                 {
                     @* ── Overview Tab ── *@
-                    @if (Model.Revision.TempApkgFileInVaultPath != null)
+                    var unpublishedRevisions = Model.UploadHistory
+                        .Where(uh => uh.Revision.TempApkgFileInVaultPath != null)
+                        .ToList();
+                    @if (unpublishedRevisions.Count > 0)
                     {
                         <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
                             <i data-lucide="clock" style="width:18px;height:18px;flex-shrink:0;"></i>
                             <div>
-                                This upload has not been published yet. No packages have been generated.
-                                <a asp-action="Preview" asp-route-vaultPath="@Model.Revision.TempApkgFileInVaultPath" class="alert-link ms-1">Go to Preview to Publish →</a>
-                            </div>
-                        </div>
-                    }
-                    @if (Model.LatestVersionId.HasValue && Model.Revision.Id != Model.LatestVersionId)
-                    {
-                        <div class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert">
-                            <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
-                            <div>
-                                A newer version of <strong>@pkg_identity?.Name</strong> was uploaded.
-                                <a asp-action="Details" asp-route-id="@Model.LatestVersionId" class="alert-link ms-1">View the latest version →</a>
+                                @unpublishedRevisions.Count unpublished upload(s) pending publish.
+                                @foreach (var uh in unpublishedRevisions)
+                                {
+                                    <a asp-action="Preview" asp-route-vaultPath="@uh.Revision.TempApkgFileInVaultPath" class="alert-link ms-1">Go to Preview →</a>
+                                }
                             </div>
                         </div>
                     }
                     <div class="row g-3 mb-3">
-                        @{
-                            var distro = pkg_identity?.Distro;
-                        }
                         <div class="col-md-3">
                             <label class="form-label text-muted">Package</label>
-                            <div><strong>@pkg_identity?.Name</strong></div>
+                            <div><strong>@pkg.Name</strong></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label text-muted">Distro</label>
-                            <div><span class="badge bg-dark">@distro</span></div>
+                            <div><span class="badge bg-dark">@pkg.Distro</span></div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label text-muted">Component</label>
-                            <div><span class="badge bg-dark">@pkg_identity?.Component</span></div>
+                            <div><span class="badge bg-dark">@pkg.Component</span></div>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label text-muted">Uploaded At</label>
-                            <div>@Model.Revision.UploadedAt.ToString("yyyy/M/d HH:mm") UTC</div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label text-muted">Uploader</label>
-                            <div>@(Model.Revision.UploadedByUser?.UserName ?? "—")</div>
+                            <label class="form-label text-muted">Created</label>
+                            <div>@pkg.CreatedAt.ToString("yyyy/M/d HH:mm") UTC</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Maintainer</label>
-                            <div>@(string.IsNullOrWhiteSpace(pkg_identity?.Maintainer) ? "—" : pkg_identity.Maintainer)</div>
+                            <div>@(string.IsNullOrWhiteSpace(pkg.Maintainer) ? "—" : pkg.Maintainer)</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Homepage</label>
                             <div>
-                                @if (string.IsNullOrWhiteSpace(pkg_identity?.Homepage))
+                                @if (string.IsNullOrWhiteSpace(pkg.Homepage))
                                 {
                                     <span>—</span>
                                 }
                                 else
                                 {
-                                    <a href="@pkg_identity.Homepage" target="_blank" rel="noopener noreferrer">@pkg_identity.Homepage</a>
+                                    <a href="@pkg.Homepage" target="_blank" rel="noopener noreferrer">@pkg.Homepage</a>
                                 }
                             </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-muted">Description</label>
-                            <div>@(string.IsNullOrWhiteSpace(pkg_identity?.Description) ? "—" : pkg_identity.Description)</div>
+                            <div>@(string.IsNullOrWhiteSpace(pkg.Description) ? "—" : pkg.Description)</div>
                         </div>
                     </div>
 
                     <hr />
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        @if (Model.Revision.IsListed && (Model.IsOwner || Model.IsAdmin))
-                        {
-                            <form method="post" asp-action="Unlist" asp-route-id="@Model.Revision.Id">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-warning">Unlist</button>
-                            </form>
-                        }
-                        else if (!Model.Revision.IsListed && Model.IsAdmin)
-                        {
-                            <form method="post" asp-action="Relist" asp-route-id="@Model.Revision.Id">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-success">Relist</button>
-                            </form>
-                        }
 
-                        @if (Model.IsAdmin)
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @if (Model.IsOwner || Model.IsAdmin)
                         {
-                            <form method="post" asp-action="Delete" asp-route-id="@Model.Revision.Id">
+                            <form method="post" asp-action="DeletePackage" asp-route-id="@pkg.Id">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger">Delete</button>
+                                <button type="submit" class="btn btn-danger"
+                                        onclick="return confirm('Permanently delete the entire package family @pkg.Name and ALL its revisions? This cannot be undone.')">
+                                    <i class="align-middle me-1" data-lucide="folder-x"></i> Delete Package
+                                </button>
                             </form>
                         }
                     </div>
 
-                    <h6 class="mb-3">Generated Local Packages</h6>
-                    @if (!Model.Packages.Any())
+                    <h6 class="mb-3">Effective Packages</h6>
+                    <p class="text-muted small mb-2">Latest version per (Architecture, Suite) across all uploads. These are the debs that will be sent to APT repositories.</p>
+                    @if (!Model.EffectivePackages.Any())
                     {
-                        <p class="text-muted mb-0">No Local Packages were generated for this upload.</p>
+                        <p class="text-muted mb-0">No packages have been uploaded yet.</p>
                     }
                     else
                     {
@@ -203,19 +154,26 @@
                                         <th>Version</th>
                                         <th>Architecture</th>
                                         <th>Suite</th>
+                                        <th>Uploaded At</th>
                                         <th>Sync Status</th>
                                         <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var info in Model.Packages)
+                                    @foreach (var info in Model.EffectivePackages)
                                     {
-                                        var pkg = info.Package;
+                                        var deb = info.Package;
+                                        var uploadedAt = deb.ApkgRevision?.UploadedAt;
                                         <tr>
-                                            <td><strong>@pkg.Package</strong></td>
-                                            <td><span class="badge bg-info">@pkg.Version</span></td>
-                                            <td><span class="badge bg-dark">@pkg.Architecture</span></td>
-                                            <td><small>@(pkg.Repository?.Suite ?? "—")</small></td>
+                                            <td><strong>@deb.Package</strong></td>
+                                            <td><span class="badge bg-info">@deb.Version</span></td>
+                                            <td><span class="badge bg-dark">@deb.Architecture</span></td>
+                                            <td><small>@(deb.Repository?.Suite ?? "—")</small></td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @(uploadedAt.HasValue ? uploadedAt.Value.ToString("yyyy/M/d HH:mm") : "—")
+                                                </small>
+                                            </td>
                                             <td>
                                                 @switch (info.Status)
                                                 {
@@ -261,20 +219,142 @@
                         </div>
                     }
                 }
+                else if (Model.ActiveTab == "history")
+                {
+                    @* ── Upload History Tab ── *@
+                    @if (!Model.UploadHistory.Any())
+                    {
+                        <p class="text-muted mb-0">No upload history yet.</p>
+                    }
+                    else
+                    {
+                        @foreach (var uploadItem in Model.UploadHistory)
+                        {
+                            var rev = uploadItem.Revision;
+                            var isUnpublished = rev.TempApkgFileInVaultPath != null;
+                            <div class="card mb-3 @(isUnpublished ? "border-warning" : "")">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>@rev.FileName</strong>
+                                        @if (isUnpublished)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2">Unpublished</span>
+                                        }
+                                        @if (!rev.IsListed)
+                                        {
+                                            <span class="badge bg-secondary ms-2">Unlisted</span>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <small class="text-muted align-self-center">
+                                            @rev.UploadedAt.ToString("yyyy/M/d HH:mm") UTC
+                                            by @(rev.UploadedByUser?.UserName ?? "—")
+                                        </small>
+                                        @if (isUnpublished)
+                                        {
+                                            <a asp-action="Preview" asp-route-vaultPath="@rev.TempApkgFileInVaultPath" class="btn btn-sm btn-primary">Publish</a>
+                                        }
+                                        @if (!isUnpublished && rev.IsListed && (Model.IsOwner || Model.IsAdmin))
+                                        {
+                                            <form method="post" asp-action="Unlist" asp-route-id="@rev.Id" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-warning">Unlist</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    @if (!uploadItem.DebStatuses.Any())
+                                    {
+                                        <p class="text-muted mb-0 small">No debs in this upload. The .apkg has not been published yet.</p>
+                                    }
+                                    else
+                                    {
+                                        <table class="table table-sm table-striped mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Package</th>
+                                                    <th>Version</th>
+                                                    <th>Architecture</th>
+                                                    <th>Suite</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var info in uploadItem.DebStatuses)
+                                                {
+                                                    var deb = info.Package;
+                                                    <tr>
+                                                        <td><strong>@deb.Package</strong></td>
+                                                        <td><span class="badge bg-info">@deb.Version</span></td>
+                                                        <td><span class="badge bg-dark">@deb.Architecture</span></td>
+                                                        <td><small>@(deb.Repository?.Suite ?? "—")</small></td>
+                                                        <td>
+                                                            @switch (info.Status)
+                                                            {
+                                                                case LocalPackageStatus.Live:
+                                                                    <span class="badge bg-success">Live</span>
+                                                                    break;
+                                                                case LocalPackageStatus.StagedForSigning:
+                                                                    <span class="badge bg-info">Staged</span>
+                                                                    break;
+                                                                case LocalPackageStatus.PendingSync:
+                                                                    <span class="badge bg-warning text-dark">Pending Sync</span>
+                                                                    break;
+                                                                case LocalPackageStatus.Superseded:
+                                                                    <span class="badge bg-secondary">Superseded</span>
+                                                                    break;
+                                                                case LocalPackageStatus.Disabled:
+                                                                    <span class="badge bg-secondary">Disabled</span>
+                                                                    break;
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                }
                 else
                 {
                     @* ── Versions Tab ── *@
+                    var uploadDates = Model.UploadHistory
+                        .ToDictionary(uh => uh.Revision.Id, uh => uh.Revision.UploadedAt);
+                    var uploaderDict = Model.UploadHistory
+                        .ToDictionary(uh => uh.Revision.Id, uh => uh.Revision.UploadedByUser?.UserName ?? "—");
+
+                    var latestRevisionId = Model.UploadHistory
+                        .FirstOrDefault(uh => uh.Revision.TempApkgFileInVaultPath == null)?.Revision.Id;
+
+                    var filteredPkgs = (Model.VersionsFilter switch
+                    {
+                        "live" => Model.AllPackageStatuses
+                            .Where(ps => ps.Status == LocalPackageStatus.Live),
+                        "all" => Model.AllPackageStatuses.AsEnumerable(),
+                        _ => Model.AllPackageStatuses
+                            .Where(ps => ps.Package.ApkgRevisionId == latestRevisionId)
+                    })
+                        .OrderByDescending(ps => ps.Package.ApkgRevisionId.HasValue
+                            ? uploadDates.GetValueOrDefault(ps.Package.ApkgRevisionId.Value)
+                            : DateTime.MinValue)
+                        .ThenBy(ps => ps.Package.Architecture)
+                        .ThenBy(ps => ps.Package.Repository?.Suite ?? "")
+                        .ToList();
 
                     <div class="d-flex gap-2 mb-3">
-                        <a asp-action="Details" asp-route-id="@Model.Revision.Id" asp-route-tab="versions" asp-route-versionsFilter="latest"
+                        <a asp-action="Details" asp-route-id="@pkg.Id" asp-route-tab="versions" asp-route-versionsFilter="latest"
                            class="btn btn-sm @(Model.VersionsFilter == "latest" ? "btn-primary" : "btn-outline-secondary")">
                             Latest
                         </a>
-                        <a asp-action="Details" asp-route-id="@Model.Revision.Id" asp-route-tab="versions" asp-route-versionsFilter="live"
+                        <a asp-action="Details" asp-route-id="@pkg.Id" asp-route-tab="versions" asp-route-versionsFilter="live"
                            class="btn btn-sm @(Model.VersionsFilter == "live" ? "btn-primary" : "btn-outline-secondary")">
                             Live
                         </a>
-                        <a asp-action="Details" asp-route-id="@Model.Revision.Id" asp-route-tab="versions" asp-route-versionsFilter="all"
+                        <a asp-action="Details" asp-route-id="@pkg.Id" asp-route-tab="versions" asp-route-versionsFilter="all"
                            class="btn btn-sm @(Model.VersionsFilter == "all" ? "btn-primary" : "btn-outline-secondary")">
                             All
                         </a>
@@ -306,57 +386,38 @@
                                 <tbody>
                                     @foreach (var ps in filteredPkgs)
                                     {
-                                        var pkg = ps.Package;
-                                        var uploadedAt = pkg.ApkgRevisionId.HasValue
-                                            ? uploadDates.GetValueOrDefault(pkg.ApkgRevisionId.Value)
+                                        var deb = ps.Package;
+                                        var uploadedAt = deb.ApkgRevisionId.HasValue
+                                            ? uploadDates.GetValueOrDefault(deb.ApkgRevisionId.Value)
                                             : (DateTime?)null;
-                                        var isFromCurrentView = pkg.ApkgRevisionId == Model.Revision.Id;
-                                        <tr class="@(isFromCurrentView ? "table-active" : "")">
+                                        var isFromLatest = deb.ApkgRevisionId == latestRevisionId;
+                                        <tr>
                                             <td>
-                                                <span class="badge bg-dark">@pkg.Architecture</span>
-                                                @if (pkg.ApkgRevisionId == Model.LatestVersionId)
+                                                <span class="badge bg-dark">@deb.Architecture</span>
+                                                @if (isFromLatest)
                                                 {
                                                     <span class="badge bg-success ms-1">Newest</span>
                                                 }
-                                                @if (isFromCurrentView)
-                                                {
-                                                    <small class="text-muted ms-1">(this upload)</small>
-                                                }
                                             </td>
-                                            <td><span class="badge bg-info">@pkg.Version</span></td>
-                                            <td><small>@(pkg.Repository?.Suite ?? "—")</small></td>
+                                            <td><span class="badge bg-info">@deb.Version</span></td>
+                                            <td><small>@(deb.Repository?.Suite ?? "—")</small></td>
                                             <td>
                                                 @switch (ps.Status)
                                                 {
                                                     case LocalPackageStatus.Live:
-                                                        <span class="badge bg-success" title="@ps.StatusMessage">
-                                                            <i class="align-middle me-1" data-lucide="check-circle" style="width:12px;height:12px;"></i> Live
-                                                        </span>
+                                                        <span class="badge bg-success">Live</span>
                                                         break;
                                                     case LocalPackageStatus.StagedForSigning:
-                                                        <span class="badge bg-info" title="@ps.StatusMessage">
-                                                            <i class="align-middle me-1" data-lucide="clock" style="width:12px;height:12px;"></i> Signing
-                                                        </span>
+                                                        <span class="badge bg-info">Staged</span>
                                                         break;
                                                     case LocalPackageStatus.PendingSync:
-                                                        <span class="badge bg-warning text-dark" title="@ps.StatusMessage">
-                                                            <i class="align-middle me-1" data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Syncing
-                                                        </span>
+                                                        <span class="badge bg-warning text-dark">Pending Sync</span>
                                                         break;
                                                     case LocalPackageStatus.Superseded:
-                                                        <span class="badge bg-secondary"
-                                                              data-bs-toggle="tooltip"
-                                                              title="Superseded — a newer version is live. This deb file remains in CAS storage until the garbage collection job runs (~70 min) and removes unreferenced content.">
-                                                            <i class="align-middle me-1" data-lucide="archive" style="width:12px;height:12px;"></i> Superseded
-                                                        </span>
+                                                        <span class="badge bg-secondary">Superseded</span>
                                                         break;
                                                     case LocalPackageStatus.Disabled:
-                                                        <span class="badge bg-secondary" title="@ps.StatusMessage">
-                                                            <i class="align-middle me-1" data-lucide="slash" style="width:12px;height:12px;"></i> Disabled
-                                                        </span>
-                                                        break;
-                                                    default:
-                                                        <span class="badge bg-secondary">Unknown</span>
+                                                        <span class="badge bg-secondary">Disabled</span>
                                                         break;
                                                 }
                                             </td>
@@ -367,104 +428,25 @@
                                             </td>
                                             @if (Model.IsAdmin)
                                             {
-                                                var uploader = pkg.ApkgRevisionId.HasValue
-                                                    ? uploaderDict.GetValueOrDefault(pkg.ApkgRevisionId.Value, "—")
+                                                var uploader = deb.ApkgRevisionId.HasValue
+                                                    ? uploaderDict.GetValueOrDefault(deb.ApkgRevisionId.Value, "—")
                                                     : "—";
                                                 <td><small>@uploader</small></td>
                                             }
                                             <td class="text-end">
-                                                <div class="btn-group">
-                                                    @if (ps.Status == LocalPackageStatus.Live && ps.LivePackageId.HasValue)
-                                                    {
-                                                        <a asp-controller="Repositories" asp-action="PackageDetails" asp-route-id="@ps.LivePackageId.Value"
-                                                           class="btn btn-sm btn-outline-info" title="View in repository">
-                                                            <i class="align-middle" data-lucide="external-link"></i>
-                                                        </a>
-                                                    }
-                                                    @if (pkg.ApkgRevisionId.HasValue && pkg.ApkgRevisionId.Value != Model.Revision.Id)
-                                                    {
-                                                        <a asp-action="Details" asp-route-id="@pkg.ApkgRevisionId.Value"
-                                                           class="btn btn-sm btn-outline-secondary" title="View upload details">
-                                                            <i class="align-middle" data-lucide="eye"></i>
-                                                        </a>
-                                                    }
-                                                    @if (pkg.ApkgRevisionId.HasValue)
-                                                    {
-                                                        var uploadIdForBtn = pkg.ApkgRevisionId.Value;
-                                                        var isListedForBtn = uploadListedDict.GetValueOrDefault(uploadIdForBtn, false);
-                                                        if (isListedForBtn && (Model.IsOwner || Model.IsAdmin))
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-outline-warning"
-                                                                    data-bs-toggle="modal" data-bs-target="#unlistUpload-@uploadIdForBtn" title="Unlist">
-                                                                <i class="align-middle" data-lucide="archive-x"></i>
-                                                            </button>
-                                                        }
-                                                        if (Model.IsAdmin)
-                                                        {
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    data-bs-toggle="modal" data-bs-target="#deleteUpload-@uploadIdForBtn" title="Delete">
-                                                                <i class="align-middle" data-lucide="trash-2"></i>
-                                                            </button>
-                                                        }
-                                                    }
-                                                </div>
+                                                @if (ps.Status == LocalPackageStatus.Live && ps.LivePackageId.HasValue)
+                                                {
+                                                    <a asp-controller="Repositories" asp-action="PackageDetails" asp-route-id="@ps.LivePackageId.Value"
+                                                       class="btn btn-sm btn-outline-info" title="View in repository">
+                                                        <i class="align-middle" data-lucide="external-link"></i>
+                                                    </a>
+                                                }
                                             </td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
-                    }
-
-                    @foreach (var histRevision in Model.VersionHistory
-                        .Where(v => filteredPkgs.Any(ps => ps.Package.ApkgRevisionId == v.Id)))
-                    {
-                        if (histRevision.IsListed && (Model.IsOwner || Model.IsAdmin))
-                        {
-                            <div class="modal fade" id="unlistUpload-@histRevision.Id" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content text-start">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Confirm Unlist</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            Unlist <strong>@pkg_identity?.Name @(histRevision.ApkgDebPackages.FirstOrDefault()?.Version ?? "")</strong>? Generated packages will be disabled.
-                                        </div>
-                                        <div class="modal-footer">
-                                            <form method="post" asp-action="Unlist" asp-route-id="@histRevision.Id">
-                                                @Html.AntiForgeryToken()
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-warning">Unlist</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        if (Model.IsAdmin)
-                        {
-                            <div class="modal fade" id="deleteUpload-@histRevision.Id" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content text-start">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Confirm Delete</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            Permanently delete <strong>@pkg_identity?.Name @(histRevision.ApkgDebPackages.FirstOrDefault()?.Version ?? "")</strong> and all generated Local Packages?
-                                        </div>
-                                        <div class="modal-footer">
-                                            <form method="post" asp-action="Delete" asp-route-id="@histRevision.Id">
-                                                @Html.AntiForgeryToken()
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-danger">Delete</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     }
                 }
             </div>

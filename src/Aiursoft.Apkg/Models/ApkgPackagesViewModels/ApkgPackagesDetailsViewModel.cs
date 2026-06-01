@@ -8,16 +8,21 @@ public class ApkgPackagesDetailsViewModel : UiStackLayoutViewModel
 {
     public ApkgPackagesDetailsViewModel()
     {
-        PageTitle = "APKG Upload Details";
+        PageTitle = "APKG Package Details";
     }
 
-    public required ApkgRevision Revision { get; init; }
-    public required List<PackageStatusInfo> Packages { get; init; }
-    public List<PackageStatusInfo> AllPackageStatuses { get; init; } = [];
-    public required List<ApkgRevision> VersionHistory { get; init; }
-    public int? LatestVersionId { get; init; }
+    public required ApkgPackage Package { get; init; }
+    public required List<PackageStatusInfo> EffectivePackages { get; init; }
+    public required List<PackageStatusInfo> AllPackageStatuses { get; init; }
+    public required List<UploadHistoryItem> UploadHistory { get; init; }
     public required string ActiveTab { get; init; } = "overview";
     public string VersionsFilter { get; init; } = "latest";
     public bool IsAdmin { get; init; }
     public bool IsOwner { get; init; }
+}
+
+public class UploadHistoryItem
+{
+    public required ApkgRevision Revision { get; init; }
+    public required List<PackageStatusInfo> DebStatuses { get; init; }
 }

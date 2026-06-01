@@ -50,7 +50,7 @@ public class ApkgPackagesController(
             query = query.Where(p => p.OwnerUserId == userId);
 
         var packages = await query
-            .OrderByDescending(p => p.Revisions.Max(r => (DateTime?)r.UploadedAt))
+            .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
         // Collect all ApkgDebPackages across all revisions for live-status computation
@@ -233,6 +233,7 @@ public class ApkgPackagesController(
 
         return this.StackView(new ApkgPackagesPackageHistoryViewModel
         {
+            PackageId = package.Id,
             PackageName = name,
             Revisions = revisions,
             AllPackageStatuses = allPackageStatuses,
@@ -545,7 +546,7 @@ public class ApkgPackagesController(
             if (skippedRepos.Count > 0)
                 TempData["SkippedRepoWarnings"] = string.Join("|", skippedRepos.Distinct());
 
-            return RedirectToAction(nameof(Details), new { id = revision.Id });
+            return RedirectToAction(nameof(Details), new { id = package.Id });
         }
         finally
         {
@@ -557,58 +558,37 @@ public class ApkgPackagesController(
     [HttpGet]
     public async Task<IActionResult> Details(int id, string? tab = null, string? versionsFilter = null)
     {
-        var revision = await db.ApkgRevisions
-            .Include(r => r.ApkgPackage).ThenInclude(p => p!.OwnerUser)
-            .Include(r => r.UploadedByUser)
-            .Include(r => r.ApkgDebPackages)
-                .ThenInclude(lp => lp.Repository)
-            .FirstOrDefaultAsync(r => r.Id == id);
-        if (revision == null)
+        var package = await db.ApkgPackages
+            .Include(p => p.OwnerUser)
+            .Include(p => p.Revisions).ThenInclude(r => r.UploadedByUser)
+            .Include(p => p.Revisions).ThenInclude(r => r.ApkgDebPackages).ThenInclude(lp => lp.Repository)
+            .FirstOrDefaultAsync(p => p.Id == id);
+        if (package == null)
             return NotFound();
 
         var userId = userManager.GetUserId(User)!;
         var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
-        var isOwner = revision.UploadedByUserId == userId;
+        var isOwner = package.OwnerUserId == userId;
         if (!isAdmin && !isOwner)
             return Forbid();
 
-        var package = revision.ApkgPackage!;
+        var revisions = package.Revisions.OrderByDescending(r => r.UploadedAt).ToList();
 
-        var historyQuery = db.ApkgRevisions
-            .Include(r => r.UploadedByUser)
-            .Include(r => r.ApkgDebPackages)
-                .ThenInclude(lp => lp.Repository)
-            .Where(r => r.ApkgPackageId == package.Id)
-            .AsQueryable();
+        // All debs across ALL revisions
+        var allDebs = revisions.SelectMany(r => r.ApkgDebPackages).ToList();
+        var allPackageStatuses = await BuildPackageStatusAsync(allDebs);
 
-        if (!isAdmin)
-            historyQuery = historyQuery.Where(r => r.UploadedByUserId == userId && r.IsListed);
+        // Effective deb list: GroupBy (Package, Architecture, Suite, RepositoryId), Max(Version)
+        var effectiveDebs = ComputeEffectiveDebList(allPackageStatuses);
 
-        var versionHistory = await historyQuery
-            .OrderByDescending(r => r.UploadedAt)
-            .ToListAsync();
-
-        // Use the most recent *published* revision as "latest"
-        int? latestVersionId = versionHistory.FirstOrDefault(r => r.TempApkgFileInVaultPath == null)?.Id;
-
-        // Gather ALL packages across all revisions for the Versions tab
-        var allHistoryPackages = versionHistory.SelectMany(r => r.ApkgDebPackages).ToList();
-
-        // Always include current revision's packages
-        var historyPackageIds = allHistoryPackages.Select(p => p.Id).ToHashSet();
-        foreach (var pkg in revision.ApkgDebPackages)
+        // Upload history: each Revision as an upload event
+        var uploadHistory = revisions.Select(r => new UploadHistoryItem
         {
-            if (!historyPackageIds.Contains(pkg.Id))
-                allHistoryPackages.Add(pkg);
-        }
-
-        var allPackageStatuses = await BuildPackageStatusAsync(allHistoryPackages);
-
-        // Overview tab needs only this revision's packages
-        var currentPackageIds = revision.ApkgDebPackages.Select(p => p.Id).ToHashSet();
-        var packages = allPackageStatuses
-            .Where(ps => currentPackageIds.Contains(ps.Package.Id))
-            .ToList();
+            Revision = r,
+            DebStatuses = allPackageStatuses
+                .Where(ps => ps.Package.ApkgRevisionId == r.Id)
+                .ToList()
+        }).ToList();
 
         var normalizedFilter = versionsFilter?.ToLowerInvariant() switch
         {
@@ -617,20 +597,48 @@ public class ApkgPackagesController(
             _      => "latest"
         };
 
-        var activeTab = tab == "versions" ? "versions" : "overview";
+        var activeTab = tab switch
+        {
+            "versions" => "versions",
+            "history"  => "history",
+            _          => "overview"
+        };
 
         return this.StackView(new ApkgPackagesDetailsViewModel
         {
-            Revision = revision,
-            Packages = packages,
+            Package = package,
+            EffectivePackages = effectiveDebs,
             AllPackageStatuses = allPackageStatuses,
-            VersionHistory = versionHistory,
-            LatestVersionId = latestVersionId,
+            UploadHistory = uploadHistory,
             ActiveTab = activeTab,
             IsAdmin = isAdmin,
             IsOwner = isOwner,
             VersionsFilter = normalizedFilter
         });
+    }
+
+    private List<PackageStatusInfo> ComputeEffectiveDebList(List<PackageStatusInfo> allStatuses)
+    {
+        var enabled = allStatuses.Where(ps => ps.Package.IsEnabled).ToList();
+
+        var grouped = enabled
+            .GroupBy(ps => (
+                ps.Package.Package,
+                ps.Package.Architecture,
+                ps.Package.Repository?.Suite ?? "",
+                ps.Package.RepositoryId))
+            .ToList();
+
+        var effective = new List<PackageStatusInfo>();
+        foreach (var group in grouped)
+        {
+            var best = group.OrderByDescending(
+                ps => ps.Package.Version,
+                Comparer<string>.Create(versionComparer.Compare)).First();
+            effective.Add(best);
+        }
+
+        return effective;
     }
 
     [HttpPost]
@@ -675,7 +683,7 @@ public class ApkgPackagesController(
             lp.IsEnabled = true;
 
         await db.SaveChangesAsync();
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Details), new { id = revision.ApkgPackageId });
     }
 
     [HttpPost]

@@ -6,6 +6,7 @@ namespace Aiursoft.Apkg.Models.ApkgPackagesViewModels;
 
 public class ApkgPackagesPackageHistoryViewModel : UiStackLayoutViewModel
 {
+    public int PackageId { get; init; }
     public required string PackageName { get; init; }
     public required List<ApkgRevision> Revisions { get; init; }
     public List<PackageStatusInfo> AllPackageStatuses { get; init; } = [];

@@ -92,7 +92,7 @@
                                 <td>
                                     @if (item.NextVersionRevisionId.HasValue)
                                     {
-                                        <a asp-action="Details" asp-route-id="@item.NextVersionRevisionId.Value" class="badge bg-warning text-dark text-decoration-none">
+                                        <a asp-action="Details" asp-route-id="@item.Package.Id" asp-route-tab="versions" class="badge bg-warning text-dark text-decoration-none">
                                             @item.NextVersionSummary
                                         </a>
                                     }
@@ -108,22 +108,16 @@
                                         {
                                             <span class="badge bg-warning text-dark me-1">Unpublished</span>
                                         }
-                                        <a asp-action="Details" asp-route-id="@revision.Id" asp-route-tab="versions" class="btn btn-sm btn-outline-info" title="@Localizer["Version History"]">
+                                        <a asp-action="Details" asp-route-id="@item.Package.Id" asp-route-tab="versions" class="btn btn-sm btn-outline-info" title="@Localizer["Version History"]">
                                             <i class="align-middle" data-lucide="history"></i>
                                         </a>
-                                        <a asp-action="Details" asp-route-id="@revision.Id" class="btn btn-sm btn-outline-info" title="@Localizer["Details"]">
+                                        <a asp-action="Details" asp-route-id="@item.Package.Id" class="btn btn-sm btn-outline-info" title="@Localizer["Details"]">
                                             <i class="align-middle" data-lucide="eye"></i>
                                         </a>
                                         @if (revision.IsListed)
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#unlistUpload-@revision.Id" title="@Localizer["Unlist"]">
                                                 <i class="align-middle" data-lucide="archive-x"></i>
-                                            </button>
-                                        }
-                                        @if (Model.IsAdmin)
-                                        {
-                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUpload-@revision.Id" title="@Localizer["Delete"]">
-                                                <i class="align-middle" data-lucide="trash-2"></i>
                                             </button>
                                         }
                                         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePackage-@item.Package.Id" title="@Localizer["Delete Package"]">
@@ -148,30 +142,6 @@
                                                             @Html.AntiForgeryToken()
                                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
                                                             <button type="submit" class="btn btn-warning">@Localizer["Unlist"]</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-
-                                    @if (Model.IsAdmin)
-                                    {
-                                        <div class="modal fade" id="deleteUpload-@revision.Id" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content text-start">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">@Localizer["Confirm Delete"]</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        @Localizer["Permanently delete"] <strong>@item.Package.Name</strong> @Localizer["and all generated ApkgDebPackages?"]
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <form method="post" asp-action="Delete" asp-route-id="@revision.Id">
-                                                            @Html.AntiForgeryToken()
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
-                                                            <button type="submit" class="btn btn-danger">@Localizer["Delete"]</button>
                                                         </form>
                                                     </div>
                                                 </div>

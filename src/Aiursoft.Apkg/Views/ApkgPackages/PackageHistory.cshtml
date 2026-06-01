@@ -145,8 +145,8 @@
                                                 }
                                                 @if (pkg.ApkgRevisionId.HasValue)
                                                 {
-                                                    <a asp-action="Details" asp-route-id="@pkg.ApkgRevisionId.Value"
-                                                       class="btn btn-sm btn-outline-secondary" title="View upload details">
+                                                    <a asp-action="Details" asp-route-id="@Model.PackageId"
+                                                       class="btn btn-sm btn-outline-secondary" title="View package details">
                                                         <i class="align-middle" data-lucide="eye"></i>
                                                     </a>
                                                     var uploadId = pkg.ApkgRevisionId.Value;

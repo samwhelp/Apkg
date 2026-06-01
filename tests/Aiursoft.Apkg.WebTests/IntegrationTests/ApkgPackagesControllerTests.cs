@@ -378,29 +378,132 @@ public class ApkgPackagesControllerTests : TestBase
     public async Task Details_Anonymous_RedirectsToLogin()
     {
         var revision = AddApkgPackageAndRevision();
-        var response = await _anonHttp.GetAsync($"/ApkgPackages/Details/{revision.Id}");
+        var response = await _anonHttp.GetAsync($"/ApkgPackages/Details/{revision.ApkgPackageId}");
 
         Assert.AreEqual(HttpStatusCode.Found, response.StatusCode,
             "Anonymous access to Details must redirect to login.");
     }
 
     [TestMethod]
-    public async Task Details_NonExistentUpload_Returns404()
+    public async Task Details_NonExistentPackage_Returns404()
     {
         var response = await Http.GetAsync("/ApkgPackages/Details/999999");
 
         Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode,
-            "Details for a non-existent upload must return 404.");
+            "Details for a non-existent package must return 404.");
     }
 
     [TestMethod]
-    public async Task Details_AdminCanViewAnyUpload_Returns200()
+    public async Task Details_AdminCanViewOwnPackage_Returns200()
     {
         var revision = AddApkgPackageAndRevision();
-        var response = await Http.GetAsync($"/ApkgPackages/Details/{revision.Id}");
+        var response = await Http.GetAsync($"/ApkgPackages/Details/{revision.ApkgPackageId}");
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode,
-            "An admin must be able to view any upload's Details.");
+            "An admin must be able to view their own package's Details.");
+    }
+
+    [TestMethod]
+    public async Task Details_OverviewTab_ShowsEffectiveDebList()
+    {
+        var pkg = new ApkgPackage
+        {
+            Name = $"effdeb-{Guid.NewGuid():N}",
+            Distro = "ubuntu",
+            Component = "main",
+            OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        // Revision 1: amd64 v1.0 + arm64 v1.0
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id,
+            UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg",
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, pkg.Name, "1.0.0", "amd64"));
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, pkg.Name, "1.0.0", "arm64"));
+        _db.SaveChanges();
+
+        // Revision 2: amd64 v2.0 (arm64 not included — still v1.0 from rev1 is latest)
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id,
+            UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg",
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, pkg.Name, "2.0.0", "amd64"));
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync($"/ApkgPackages/Details/{pkg.Id}?tab=overview");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        // Effective list: amd64 v2.0 (latest) + arm64 v1.0 (only version)
+        Assert.IsTrue(html.Contains("2.0.0"), "Effective list must show amd64 v2.0.");
+        Assert.IsTrue(html.Contains("1.0.0"), "Effective list must show arm64 v1.0.");
+        Assert.IsTrue(html.Contains("amd64"), "Effective list must show amd64 arch.");
+        Assert.IsTrue(html.Contains("arm64"), "Effective list must show arm64 arch.");
+        Assert.IsTrue(html.Contains("Effective Packages"), "Should show Effective Packages heading.");
+    }
+
+    [TestMethod]
+    public async Task Details_UploadHistoryTab_ShowsEachRevision()
+    {
+        var pkg = new ApkgPackage
+        {
+            Name = $"uhl-{Guid.NewGuid():N}",
+            Distro = "ubuntu",
+            Component = "main",
+            OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id,
+            UploadedByUserId = _adminUserId,
+            FileName = "first-push.apkg",
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, pkg.Name, "1.0.0", "amd64"));
+        _db.SaveChanges();
+
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id,
+            UploadedByUserId = _adminUserId,
+            FileName = "second-push.apkg",
+            IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, pkg.Name, "2.0.0", "arm64"));
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync($"/ApkgPackages/Details/{pkg.Id}?tab=history");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(html.Contains("first-push.apkg"), "Upload history must show first revision filename.");
+        Assert.IsTrue(html.Contains("second-push.apkg"), "Upload history must show second revision filename.");
+        Assert.IsTrue(html.Contains("1.0.0"), "Upload history must show v1.0.0 deb.");
+        Assert.IsTrue(html.Contains("2.0.0"), "Upload history must show v2.0.0 deb.");
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -477,7 +580,7 @@ public class ApkgPackagesControllerTests : TestBase
                 { "__RequestVerificationToken", token }
             }));
 
-        AssertRedirect(response, $"/ApkgPackages/Details/{revision.Id}");
+        AssertRedirect(response, $"/ApkgPackages/Details/{revision.ApkgPackageId}");
 
         _db.Entry(revision).Reload();
         Assert.IsTrue(revision.IsListed, "Upload must be listed again after Relist.");
@@ -1176,11 +1279,10 @@ public class ApkgPackagesControllerTests : TestBase
     {
         var revision = AddApkgPackageAndRevision(vaultPath: "apkg-upload/unpub-test.apkg");
 
-        var response = await Http.GetAsync($"/ApkgPackages/Details/{revision.Id}");
+        var response = await Http.GetAsync($"/ApkgPackages/Details/{revision.ApkgPackageId}");
         var html = await response.Content.ReadAsStringAsync();
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        // Unpublished details should show the Publish affordance
         Assert.IsTrue(html.Contains(revision.ApkgPackage!.Name),
             "Details must show the package name.");
     }
