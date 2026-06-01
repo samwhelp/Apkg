@@ -101,7 +101,7 @@
                                         <small class="text-muted">—</small>
                                     }
                                 </td>
-                                <td><small class="text-muted">@revision.UploadedAt.ToString("yyyy/M/d HH:mm")</small></td>
+                                <td><small class="text-muted">@(revision!.UploadedAt.ToString("yyyy/M/d HH:mm"))</small></td>
                                 <td class="text-end">
                                     <div class="btn-group">
                                         <a asp-action="Details" asp-route-id="@revision.Id" asp-route-tab="versions" class="btn btn-sm btn-outline-info" title="@Localizer["Version History"]">

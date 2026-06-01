@@ -137,7 +137,7 @@ public class RepositorySyncJob(
         // 2b. Merge ApkgDebPackages: override all upstream (Package, Architecture) pairs
         var localPackages = await db.ApkgDebPackages
             .AsNoTracking()
-            .Include(lp => lp.ApkgRevision).ThenInclude(r => r.ApkgPackage)
+            .Include(lp => lp.ApkgRevision).ThenInclude(r => r!.ApkgPackage)
             .Where(lp => lp.RepositoryId == repo.Id && lp.IsEnabled)
             .ToListAsync();
 
