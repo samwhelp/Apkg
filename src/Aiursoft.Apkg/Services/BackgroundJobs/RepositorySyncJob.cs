@@ -137,6 +137,7 @@ public class RepositorySyncJob(
         // 2b. Merge LocalPackages: override all upstream (Package, Architecture) pairs
         var localPackages = await db.LocalPackages
             .AsNoTracking()
+            .Include(lp => lp.ApkgUpload)
             .Where(lp => lp.RepositoryId == repo.Id && lp.IsEnabled)
             .ToListAsync();
 
@@ -157,12 +158,13 @@ public class RepositorySyncJob(
             // Insert LocalPackages as AptPackages in the new bucket
             foreach (var lp in localPackages)
             {
+                var component = lp.ApkgUpload?.Component ?? "main";
                 db.AptPackages.Add(new AptPackage
                 {
                     BucketId = newBucketId,
-                    Component = lp.Component,
+                    Component = component,
                     OriginSuite = repo.Suite,
-                    OriginComponent = lp.Component,
+                    OriginComponent = component,
                     Package = lp.Package,
                     Version = lp.Version,
                     Architecture = lp.Architecture,

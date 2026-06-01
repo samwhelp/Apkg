@@ -9,4 +9,6 @@ public class ApkgUploadIndexItem
     public int TotalPackageCount { get; init; }
     public List<string> LiveVersions { get; init; } = [];
     public UploadSyncStatus SyncStatus { get; init; }
+    public int? NextVersionUploadId { get; init; }
+    public string? NextVersionSummary { get; init; }
 }

@@ -538,13 +538,12 @@ public class ApkgUploadsControllerTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>test-pkg</Name>
-              <Version>1.0.0</Version>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>test-pkg_1.0.0_amd64.deb</DebFile>
-                  <Distro>anduinos</Distro>
                   <Suite>questing</Suite>
-                  <Component>main</Component>
                   <Architecture>amd64</Architecture>
                 </Entry>
               </Entries>
@@ -583,13 +582,12 @@ public class ApkgUploadsControllerTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>test-pkg</Name>
-              <Version>2.0.0</Version>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>test-pkg_2.0.0_amd64.deb</DebFile>
-                  <Distro>anduinos</Distro>
                   <Suite>questing</Suite>
-                  <Component>main</Component>
                   <Architecture>amd64</Architecture>
                 </Entry>
               </Entries>
@@ -688,13 +686,12 @@ public class ApkgUploadsControllerTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>preview-pkg</Name>
-              <Version>1.0.0</Version>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>pkg_1.0.0_amd64.deb</DebFile>
-                  <Distro>anduinos</Distro>
                   <Suite>questing</Suite>
-                  <Component>main</Component>
                   <Architecture>amd64</Architecture>
                 </Entry>
               </Entries>
@@ -767,13 +764,12 @@ public class ApkgUploadsControllerTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>orphan-pkg</Name>
-              <Version>1.0.0</Version>
+              <Distro>nonexistent</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>orphan.deb</DebFile>
-                  <Distro>nonexistent</Distro>
                   <Suite>nonexistent</Suite>
-                  <Component>main</Component>
                   <Architecture>amd64</Architecture>
                 </Entry>
               </Entries>

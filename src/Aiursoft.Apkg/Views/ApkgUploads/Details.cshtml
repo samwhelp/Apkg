@@ -117,7 +117,7 @@
                     }
                     <div class="row g-3 mb-3">
                         @{
-                            var distro = Model.Packages.FirstOrDefault()?.Package.Repository?.Distro ?? "—";
+                            var distro = Model.Upload.Distro;
                         }
                         <div class="col-md-3">
                             <label class="form-label text-muted">Package</label>
@@ -202,7 +202,6 @@
                                         <th>Package</th>
                                         <th>Version</th>
                                         <th>Architecture</th>
-                                        <th>Distro</th>
                                         <th>Suite</th>
                                         <th>Sync Status</th>
                                         <th class="text-end">Actions</th>
@@ -216,7 +215,6 @@
                                             <td><strong>@pkg.Package</strong></td>
                                             <td><span class="badge bg-info">@pkg.Version</span></td>
                                             <td><span class="badge bg-dark">@pkg.Architecture</span></td>
-                                            <td><small>@(pkg.Repository?.Distro ?? "—")</small></td>
                                             <td><small>@(pkg.Repository?.Suite ?? "—")</small></td>
                                             <td>
                                                 @switch (info.Status)

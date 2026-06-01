@@ -59,7 +59,6 @@ public class InstallHandler : ExecutableCommandHandlerBuilder
         var manifest = serializer.DeserializePackageManifest(manifestContent);
 
         var entry = manifest.Entries.FirstOrDefault(e =>
-            string.Equals(e.Distro, distro, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(e.Suite, suite, StringComparison.OrdinalIgnoreCase) &&
             (string.Equals(e.Architecture, architecture, StringComparison.OrdinalIgnoreCase) ||
              string.Equals(e.Architecture, "all", StringComparison.OrdinalIgnoreCase)));
@@ -67,7 +66,7 @@ public class InstallHandler : ExecutableCommandHandlerBuilder
         if (entry == null)
         {
             var available = string.Join(Environment.NewLine, manifest.Entries.Select(e =>
-                $"- {e.Distro} {e.Suite} ({e.Architecture}) => {e.DebFile}"));
+                $"- {manifest.Distro} {e.Suite} ({e.Architecture}) => {e.DebFile}"));
             var message = $"No matching entry found in {apkgPath} for {distro} {suite} ({architecture}).{Environment.NewLine}Available entries:{Environment.NewLine}{available}";
             logger.LogError(message);
             throw new InvalidOperationException(message);

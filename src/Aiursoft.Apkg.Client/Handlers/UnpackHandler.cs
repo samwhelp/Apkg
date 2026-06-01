@@ -91,7 +91,6 @@ public class UnpackHandler : ExecutableCommandHandlerBuilder
         var manifest = await ReadManifestAsync(filePath, serializer);
         var matchingDebFiles = manifest.Entries
             .Where(e =>
-                string.Equals(e.Distro, currentDistro, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(e.Suite, currentSuite, StringComparison.OrdinalIgnoreCase) &&
                 (string.Equals(e.Architecture, currentArch, StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(e.Architecture, "all", StringComparison.OrdinalIgnoreCase)))
@@ -102,7 +101,7 @@ public class UnpackHandler : ExecutableCommandHandlerBuilder
         if (matchingDebFiles.Count == 0)
         {
             var available = string.Join(Environment.NewLine, manifest.Entries.Select(e =>
-                $"- {e.Distro} {e.Suite} ({e.Architecture}) => {e.DebFile}"));
+                $"- {manifest.Distro} {e.Suite} ({e.Architecture}) => {e.DebFile}"));
             throw new InvalidOperationException(
                 $"No matching entry found in {filePath} for {currentDistro} {currentSuite} ({currentArch}).{Environment.NewLine}Available entries:{Environment.NewLine}{available}");
         }

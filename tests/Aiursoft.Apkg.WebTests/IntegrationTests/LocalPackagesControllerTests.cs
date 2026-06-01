@@ -47,7 +47,6 @@ public class LocalPackagesControllerTests : TestBase
         {
             UploadedByUserId = _adminUserId,
             RepositoryId = _repo.Id,
-            Component = "main",
             Package = name,
             Version = version,
             Architecture = arch,

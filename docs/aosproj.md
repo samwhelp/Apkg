@@ -458,101 +458,92 @@ gnome-shell (>= 42), gir1.2-glib-2.0, libssl3t64
 
 `manifest.xml` 是 `apkg publish` **自动生成**、嵌入 `.apkg` 归档的分发清单，**不需要手写**。Apkg 服务器读取它来决定把哪个 `.deb` 放进哪个 APT 仓库。
 
+### 设计原则：六属性铁律
+
+一个 `.apkg` 包包含**两类属性**：
+
+| 类别 | 属性 | 位置 | 语义 |
+|------|------|------|------|
+| **死属性** | `Name`, `Distro`, `Component` | manifest 根 | 唯一确定一个 APKG 包。三要素一旦设定即不可变。改变任意一个即为全新包。 |
+| **活属性** | `Version`, `Suite`, `Architecture` | manifest Entry | 每次上传可混合。一个 apkg 内可包含多个 `(Version, Suite, Arch)` 组合的 .deb 文件。 |
+
+- **Version 不在 manifest XML 中**。服务端直接从 `.deb` 文件内部解析版本号 — deb 本身是版本号的唯一真实来源。
+- 所有 Entry 共享同一个根层的 `Distro` 和 `Component`。一个 apkg 只面向一个发行版的一个组件。
+- `(Name, Distro, Component)` 三元组在数据库中全局唯一。第一个上传该三元组的用户拥有其所有权，其他用户上传相同三元组会被拒绝（403）。
+
 ### 结构示例（对应上面的完整 `.aosproj`）
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  FormatVersion="2" 是版本标识。
-  服务器通过此属性区分新旧格式，拒绝识别不含该属性的旧格式文件。
--->
 <ApkgPackage FormatVersion="2">
 
-  <!-- 包的元信息，直接从 .aosproj 的 PropertyGroup 映射而来 -->
+  <!-- ═══ 3 个死属性 — 包的唯一身份 ═══ -->
   <Name>anduinos-shell-ext</Name>
-  <Version>2.1.0</Version>
+  <Distro>anduinos</Distro>
+  <Component>main</Component>
+
+  <!-- 包元信息（从 .aosproj PropertyGroup 映射） -->
   <Maintainer>AnduinOS Team &lt;dev@anduinos.com&gt;</Maintainer>
   <Description>AnduinOS GNOME Shell extensions</Description>
   <Homepage>https://anduinos.com</Homepage>
   <License>GPL-2.0</License>
 
   <!--
-    Entries 是构建矩阵展开后的结果。
-    每个 Entry 对应一个 suite × arch 组合，即一个 .deb 文件。
-    服务器按 Distro + Suite + Architecture + Component 四元组
-    定位目标仓库，找不到则跳过并记录警告。
+    Entries — 构建矩阵展开结果。
+    每个 Entry = 一个 (Suite, Architecture) 组合 = 一个 .deb 文件。
+    服务端按 (Distro, Suite, Architecture) 三元组定位目标仓库。
+    Version 从 .deb 文件内部解析，不出现在 manifest 中。
   -->
   <Entries>
-
-    <!--
-      Entry 1：resolute suite，amd64 架构
-      DebFile 是 .apkg 归档内的文件名，命名规则：
-        <PackageName>_<Version>_<Suite>_<Architecture>.deb
-    -->
     <Entry>
       <DebFile>anduinos-shell-ext_2.1.0_resolute_amd64.deb</DebFile>
-      <Distro>anduinos</Distro>   <!-- 对应服务器仓库的 Distro 字段 -->
-      <Suite>resolute</Suite>     <!-- 对应服务器仓库的 Suite 字段  -->
-      <Component>main</Component> <!-- 对应服务器仓库的 Component   -->
+      <Suite>resolute</Suite>
       <Architecture>amd64</Architecture>
     </Entry>
 
-    <!-- Entry 2：resolute suite，arm64 架构 -->
     <Entry>
       <DebFile>anduinos-shell-ext_2.1.0_resolute_arm64.deb</DebFile>
-      <Distro>anduinos</Distro>
       <Suite>resolute</Suite>
-      <Component>main</Component>
       <Architecture>arm64</Architecture>
     </Entry>
 
-    <!-- Entry 3：questing suite，amd64 架构 -->
     <Entry>
       <DebFile>anduinos-shell-ext_2.1.0_questing_amd64.deb</DebFile>
-      <Distro>anduinos</Distro>
       <Suite>questing</Suite>
-      <Component>main</Component>
       <Architecture>amd64</Architecture>
     </Entry>
 
-    <!-- Entry 4：questing suite，arm64 架构 -->
     <Entry>
       <DebFile>anduinos-shell-ext_2.1.0_questing_arm64.deb</DebFile>
-      <Distro>anduinos</Distro>
       <Suite>questing</Suite>
-      <Component>main</Component>
       <Architecture>arm64</Architecture>
     </Entry>
-
   </Entries>
 </ApkgPackage>
 ```
 
-### 顶层字段
+### 根层字段（死属性 — 包身份）
 
-| 字段 | 来源（对应 `.aosproj`） | 说明 |
-|------|------------------------|------|
-| `FormatVersion` | 固定为 `2` | 格式版本标识，服务器用于区分新旧格式 |
-| `Name` | `PackageName` | 包名 |
-| `Version` | `PackageVersion` | 版本号 |
+| 字段 | 来源（`.aosproj`） | 说明 |
+|------|-------------------|------|
+| `FormatVersion` | 固定 `2` | 格式版本标识 |
+| `Name` | `PackageName` | 包名。三元组之一，不可变。 |
+| `Distro` | `TargetDistro` | 目标发行版。三元组之一，不可变。 |
+| `Component` | `Component` | APT 组件。三元组之一，不可变。 |
 | `Maintainer` | `Maintainer` 或 `PackageAuthors` | 维护者 |
 | `Description` | `PackageDescription` | 简介 |
 | `Homepage` | `PackageHomepage` | 主页 |
 | `License` | `LicenseType` | 许可证 |
 
-### `<Entry>` 字段
-
-每个 `Entry` 对应构建矩阵中的一个 `suite × arch` 组合。
+### `<Entry>` 字段（活属性 — 每次上传可变）
 
 | 字段 | 说明 |
 |------|------|
-| `DebFile` | `.apkg` 归档内的 `.deb` 文件名，格式为 `pkgname_version_suite_arch.deb` |
-| `Distro` | 目标发行版，与服务器仓库的 `Distro` 字段匹配 |
+| `DebFile` | `.apkg` 归档内 `.deb` 文件名。命名规则：`{Name}_{Version}_{Suite}_{Arch}.deb` |
 | `Suite` | APT suite 名（如 `resolute`、`questing`） |
-| `Component` | APT 组件（如 `main`） |
-| `Architecture` | CPU 架构（如 `amd64`、`arm64`、`all`） |
+| `Architecture` | CPU 架构（`amd64`、`arm64`、`all`）。`all` 匹配任意架构仓库。 |
 
-服务器根据 `Distro + Suite + Architecture + Component` 四元组定位目标仓库。若找不到匹配仓库，该 `Entry` 会被跳过并记录警告。
+服务端根据 `(Distro, Suite, Architecture)` 元组定位目标仓库（`Distro` 来自根节点，`Suite` 和 `Architecture` 来自 Entry）。找不到匹配仓库时跳过该 Entry 并记录警告。
 
 > ⚠️ **静默跳过陷阱**：如果 `TargetDistro`、`TargetSuites` 或 `Component` 与服务器上配置的仓库不完全匹配，`apkg push` 会成功返回，但那个 `.deb` 不会出现在任何 APT 仓库里。打包者不会收到任何错误——包是静默丢失的。
 > 排查方法：检查服务器日志，或在目标机器上执行 `apt-cache show <pkgname>` 确认包是否可见。

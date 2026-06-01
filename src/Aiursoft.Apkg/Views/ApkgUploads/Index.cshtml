@@ -28,10 +28,12 @@
                     <thead>
                         <tr>
                             <th>@Localizer["Package"]</th>
+                            <th>@Localizer["Distro"]</th>
                             <th>@Localizer["Component"]</th>
                             <th>@Localizer["Published"]</th>
                             <th>@Localizer["Active Versions"]</th>
                             <th>@Localizer["Status"]</th>
+                            <th>@Localizer["Next Version"]</th>
                             <th>@Localizer["Uploaded"]</th>
                             <th class="text-end">@Localizer["Actions"]</th>
                         </tr>
@@ -62,10 +64,11 @@
                                 publishBadgeClass = "bg-danger";
                             <tr>
                                 <td>
-                                    <a asp-action="Details" asp-route-id="@upload.Id" class="text-decoration-none">
+                                    <a asp-action="PackageHistory" asp-route-name="@upload.Package" asp-route-distro="@upload.Distro" asp-route-component="@upload.Component" class="text-decoration-none">
                                         <strong>@upload.Package</strong>
                                     </a>
                                 </td>
+                                <td><span class="badge bg-dark">@upload.Distro</span></td>
                                 <td><span class="badge bg-dark">@upload.Component</span></td>
                                 <td>
                                     <span class="badge @publishBadgeClass">
@@ -86,6 +89,18 @@
                                     }
                                 </td>
                                 <td><span class="badge @statusClass">@statusText</span></td>
+                                <td>
+                                    @if (item.NextVersionUploadId.HasValue)
+                                    {
+                                        <a asp-action="Details" asp-route-id="@item.NextVersionUploadId.Value" class="badge bg-warning text-dark text-decoration-none">
+                                            @item.NextVersionSummary
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">—</small>
+                                    }
+                                </td>
                                 <td><small class="text-muted">@upload.UploadedAt.ToString("yyyy/M/d HH:mm")</small></td>
                                 <td class="text-end">
                                     <div class="btn-group">

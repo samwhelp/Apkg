@@ -173,7 +173,7 @@ bin/pkgname.apkg
 - **ItemGroup 条目**：`IncludeFile`、`IncludeFolder`、`IncludeScript`（自动 0755）、`ConfFile`（dpkg conffile 保护）、`SystemdUnit`（自动生成 postinst/prerm/postrm）、`Dependency`（合并为 Depends）
 - **Condition 语法**：MSBuild 风格 — `'$(Suite)' == 'resolute'`，可用 `$(Distro)`、`$(Suite)`、`$(Arch)`（别名 `$(Architecture)`）、`$(Component)`、`$(UpstreamDistro)`、`$(UpstreamSuite)`、`$(UpstreamArch)`（别名 `$(UpstreamArchitecture)`）
 - **版本模板变量**：`$(UpstreamVersion)` 可在 `PackageVersion` 中使用，构建时自动替换为上游包的实际版本号
-- **manifest.xml v2**：`apkg publish` 自动生成，声明 `Name/Version/Entries`，服务器按 `Distro+Suite+Architecture+Component` 四元组路由到目标仓库
+- **manifest.xml v2**：`apkg publish` 自动生成。根层声明 `Name/Distro/Component`（三死属性，唯一确定包身份）和 `Entries`。每个 Entry 声明 `DebFile/Suite/Architecture`（三活属性）。Version 从 .deb 文件内部解析，不出现在 manifest 中。服务器按 `(Distro, Suite, Architecture)` 三元组路由到目标仓库。详见 **[aosproj.md](aosproj.md)**
 
 构建中间使用 `dpkg-deb --build --root-owner-group`，在 obj/ 目录下完成。全程不出现 DEBIAN/control 手工操作。
 
@@ -364,7 +364,7 @@ Pin-Priority: 100
 上传时服务器必须执行的关键检查：
 
 - **SHA256 冲突检测**：相同 SHA256 的 .deb 已存在则拒绝。
-- ** (Package, Version, Arch, Component) 槽位冲突**：已有同槽位包则拒绝，除非使用覆盖模式。
+- ** (Package, Version, Arch) 槽位冲突**：同仓库内已有同 (Package, Version, Arch) 的已启用包则拒绝，除非使用覆盖模式。（Component 属于 ApkgUpload 层，不在 LocalPackage 上。）
 - **DEBIAN/control 解析**：从已上传 .deb 内部提取包名、版本、架构、维护者、依赖项等 APT 元数据字段，存入数据库。
 - **AptRepository 匹配**：包的 Distro/Suite/Component/Arch 必须匹配目标 Repository 配置。可使用 `--skip-duplicate` 在上传已存在包时跳过而非报错。
 

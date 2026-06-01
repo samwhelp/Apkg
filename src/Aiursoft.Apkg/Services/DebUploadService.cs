@@ -112,7 +112,6 @@ public class DebUploadService(
                             && lp.Package == pkgName
                             && lp.Version == pkgVersion
                             && lp.Architecture == pkgArch
-                            && lp.Component == component
                             && lp.IsEnabled);
         if (slotConflict)
         {
@@ -164,7 +163,6 @@ public class DebUploadService(
             UploadedByUserId = uploadedByUserId,
             RepositoryId = repo.Id,
             ApkgUploadId = apkgUploadId,
-            Component = component,
             Package = pkgName,
             Version = pkgVersion,
             Architecture = pkgArch,

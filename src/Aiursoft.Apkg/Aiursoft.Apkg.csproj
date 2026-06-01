@@ -30,7 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Aiursoft.Apkg.WebTests<</_Parameter1>
+      <_Parameter1>Aiursoft.Apkg.WebTests</_Parameter1>
       </AssemblyAttribute>
     </ItemGroup>
     <ItemGroup>

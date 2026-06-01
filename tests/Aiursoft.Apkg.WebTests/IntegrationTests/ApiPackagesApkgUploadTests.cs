@@ -152,13 +152,12 @@ public class ApiPackagesApkgUploadTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>test-pkg</Name>
-              <Version>1.0.0</Version>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>test-pkg_1.0.0_noble_amd64.deb</DebFile>
-                  <Distro>anduinos</Distro>
                   <Suite>noble-addon</Suite>
-                  <Component>main</Component>
                   <Architecture>all</Architecture>
                 </Entry>
               </Entries>
@@ -194,13 +193,12 @@ public class ApiPackagesApkgUploadTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>test-pkg</Name>
-              <Version>1.0.0</Version>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>missing.deb</DebFile>
-                  <Distro>anduinos</Distro>
                   <Suite>noble</Suite>
-                  <Component>main</Component>
                   <Architecture>amd64</Architecture>
                 </Entry>
               </Entries>
@@ -247,13 +245,12 @@ public class ApiPackagesApkgUploadTests : TestBase
             <?xml version="1.0" encoding="utf-8"?>
             <ApkgPackage>
               <Name>test-pkg</Name>
-              <Version>1.0.0</Version>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
               <Entries>
                 <Entry>
                   <DebFile>test-pkg_1.0.0_noble_all.deb</DebFile>
-                  <Distro>anduinos</Distro>
                   <Suite>noble</Suite>
-                  <Component>main</Component>
                   <Architecture>all</Architecture>
                 </Entry>
               </Entries>
@@ -275,6 +272,161 @@ public class ApiPackagesApkgUploadTests : TestBase
         var responseJson = await response.Content.ReadAsStringAsync();
         Assert.IsFalse(responseJson.Contains("No repository found"),
             "arch:all entry should match an amd64 repo — no warning about missing repo.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Ownership (Name, Distro, Component triplet)
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task ApkgUpload_Ownership_SameTripletDifferentUser_Returns403()
+    {
+        // Arrange: create User A who "owns" the (Name, Distro, Component) triplet
+        var userAKey = await CreateApiKeyAsync(withManageRepos: true);
+        var userManager = GetService<UserManager<User>>();
+
+        var emailB = $"apkgupload-{Guid.NewGuid():N}@test.com";
+        var userB = new User
+        {
+            UserName = emailB,
+            Email = emailB,
+            EmailConfirmed = true,
+            DisplayName = "User B"
+        };
+        await userManager.CreateAsync(userB, "Test@123456!");
+
+        // Persist an upload record for User A via the API endpoint
+        var manifestXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <ApkgPackage>
+              <Name>owned-pkg</Name>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
+              <Entries>
+                <Entry>
+                  <DebFile>owned-pkg.deb</DebFile>
+                  <Suite>noble</Suite>
+                  <Architecture>amd64</Architecture>
+                </Entry>
+              </Entries>
+            </ApkgPackage>
+            """;
+
+        // Insert an upload record directly into the DB for User A
+        // (avoid relying on real .deb processing to create a persistent record)
+        var userARecord = _db.Users.First(u => u.Email!.StartsWith("apkgupload-"));
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = userARecord.Id,
+            FileName = "owned-pkg.apkg",
+            Package = "owned-pkg",
+            Distro = "anduinos",
+            Component = "main",
+            IsPublished = true,
+            IsListed = true
+        });
+        await _db.SaveChangesAsync();
+
+        // Act: User B tries to upload the same (Name, Distro, Component) triplet
+        var rawKeyB = $"apkgkey{Guid.NewGuid():N}";
+        _db.UserApiKeys.Add(new UserApiKey
+        {
+            UserId = userB.Id,
+            Name = "User B Key",
+            KeyHash = ApiKeyAuthenticationHandler.ComputeSha256Hex(rawKeyB),
+            KeyPrefix = rawKeyB[..8]
+        });
+        await _db.SaveChangesAsync();
+
+        var apkgBytes = CreateApkgArchive(manifestXml,
+            ("owned-pkg.deb", new byte[64]));
+        using var apkgContent = CreateOctetStreamContent(apkgBytes);
+        using var form = new MultipartFormDataContent();
+        form.Add(apkgContent, "apkg", "owned-pkg.apkg");
+        using var request = CreateAuthedUploadRequest(rawKeyB, form);
+
+        var response = await Http.SendAsync(request);
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode,
+            "User B must be rejected with 403 when (Name, Distro, Component) is owned by another user.");
+        var responseJson = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(responseJson.Contains("already owned"),
+            "Response must mention the triplet is already owned.");
+    }
+
+    [TestMethod]
+    public async Task ApkgUpload_Ownership_SameTripletSameUser_Allowed()
+    {
+        // Same user uploading the same triplet should succeed (not be rejected)
+        var rawKey = await CreateApiKeyAsync(withManageRepos: true);
+
+        // First, directly insert an upload record in the DB
+        var userEmail = $"apkgupload-{Guid.NewGuid():N}@test.com";
+        var userManager = GetService<UserManager<User>>();
+        var user = new User
+        {
+            UserName = userEmail,
+            Email = userEmail,
+            EmailConfirmed = true,
+            DisplayName = "Test Owner"
+        };
+        await userManager.CreateAsync(user, "Test@123456!");
+
+        _db.ApkgUploads.Add(new ApkgUpload
+        {
+            UploadedByUserId = user.Id,
+            FileName = "mypkg.apkg",
+            Package = "mypkg",
+            Distro = "anduinos",
+            Component = "main",
+            IsPublished = true,
+            IsListed = true
+        });
+        await _db.SaveChangesAsync();
+
+        // Give the user an API key
+        var rawKeyB = $"apkgkey{Guid.NewGuid():N}";
+        _db.UserApiKeys.Add(new UserApiKey
+        {
+            UserId = user.Id,
+            Name = "Owner Key",
+            KeyHash = ApiKeyAuthenticationHandler.ComputeSha256Hex(rawKeyB),
+            KeyPrefix = rawKeyB[..8]
+        });
+        await _db.SaveChangesAsync();
+
+        var manifestXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <ApkgPackage>
+              <Name>mypkg</Name>
+              <Distro>anduinos</Distro>
+              <Component>main</Component>
+              <Entries>
+                <Entry>
+                  <DebFile>mypkg.deb</DebFile>
+                  <Suite>noble</Suite>
+                  <Architecture>amd64</Architecture>
+                </Entry>
+              </Entries>
+            </ApkgPackage>
+            """;
+
+        var apkgBytes = CreateApkgArchive(manifestXml,
+            ("mypkg.deb", new byte[64]));
+        using var apkgContent = CreateOctetStreamContent(apkgBytes);
+        using var form = new MultipartFormDataContent();
+        form.Add(apkgContent, "apkg", "mypkg.apkg");
+        using var request = CreateAuthedUploadRequest(rawKeyB, form);
+
+        var response = await Http.SendAsync(request);
+
+        // Should NOT be 403. May be 400 (fake deb) or OK — not 403 and not "already owned"
+        Assert.AreNotEqual(HttpStatusCode.Forbidden, response.StatusCode,
+            "The same user re-uploading the same triplet must NOT get 403.");
+        var responseJson = await response.Content.ReadAsStringAsync();
+        Assert.IsFalse(responseJson.Contains("already owned"),
+            "Must not mention 'already owned' when the user owns the triplet.");
     }
 
     // ──────────────────────────────────────────────────────────────────────

@@ -182,7 +182,6 @@ public class GarbageCollectionCasTests : TestBase
         {
             UploadedByUserId = admin!.Id,
             RepositoryId = repo.Id,
-            Component = "main",
             Package = $"local-{sha256[..8]}",
             Version = "1.0",
             Architecture = "amd64",

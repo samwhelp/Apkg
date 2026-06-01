@@ -159,9 +159,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
                 entries.Add(new ApkgPackageEntry
                 {
                     DebFile = debFileName,
-                    Distro = project.TargetDistro,
                     Suite = result.Suite,
-                    Component = project.Component,
                     Architecture = result.Arch
                 });
                 logger.LogInformation("  + {File} → {Distro}/{Suite}", debFileName, project.TargetDistro, result.Suite);
@@ -199,9 +197,7 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
                 entries.Add(new ApkgPackageEntry
                 {
                     DebFile = debFileName,
-                    Distro = project.TargetDistro,
                     Suite = suite,
-                    Component = project.Component,
                     Architecture = arch
                 });
 
@@ -212,6 +208,8 @@ public class PublishHandler : ExecutableCommandHandlerBuilder
         var manifest = new ApkgPackageManifest
         {
             Name = project.PackageName,
+            Distro = project.TargetDistro,
+            Component = project.Component,
             Maintainer = string.IsNullOrWhiteSpace(project.Maintainer) ? project.PackageAuthors : project.Maintainer,
             Description = project.PackageDescription,
             Homepage = project.PackageHomepage,

@@ -27,65 +27,6 @@ public class ApiPackagesController(
     ManifestSerializer manifestSerializer,
     ILogger<ApiPackagesController> logger) : ControllerBase
 {
-    [HttpPost("upload")]
-    [RequestSizeLimit(2L * 1024 * 1024 * 1024)]
-    [RequestFormLimits(MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024)]
-    public async Task<IActionResult> Upload(
-        [FromQuery] int repositoryId,
-        [FromQuery] string component,
-        IFormFile? deb,
-        [FromQuery] bool allowDowngrade = false)
-    {
-        if (deb == null || deb.Length == 0)
-            return BadRequest(new { error = "No file provided. Send the .deb as a multipart/form-data field named 'deb'." });
-
-        if (string.IsNullOrWhiteSpace(component))
-            return BadRequest(new { error = "Query parameter 'component' is required." });
-
-        component = component.Trim().ToLowerInvariant();
-
-        var repo = await db.AptRepositories.FindAsync(repositoryId);
-        if (repo == null)
-            return NotFound(new { error = $"Repository {repositoryId} not found." });
-
-        var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
-        var canUploadRestricted = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanUploadToRestrictedRepositories);
-        if (!CanUploadToRepository(repo, isAdmin, canUploadRestricted))
-            return StatusCode(403, new { error = "You do not have permission to upload to this restricted repository." });
-
-        var tempPath = CreateWorkspaceTempFilePath(".deb");
-        try
-        {
-            await using (var fs = System.IO.File.Create(tempPath))
-                await deb.CopyToAsync(fs);
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, tempPath, userId,
-                allowDowngrade: allowDowngrade);
-            if (result.Package == null)
-                return StatusCode(result.StatusCode, new { error = result.Error });
-
-            var lp = result.Package;
-            return Ok(new
-            {
-                lp.Id,
-                lp.Package,
-                lp.Version,
-                lp.Architecture,
-                lp.Component,
-                lp.RepositoryId,
-                lp.SHA256,
-                lp.Size,
-                lp.Filename,
-                lp.CreatedAt
-            });
-        }
-        finally
-        {
-            DeleteIfExists(tempPath);
-        }
-    }
-
     [HttpPost("apkg-upload")]
     [RequestSizeLimit(2L * 1024 * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024)]
@@ -121,10 +62,22 @@ public class ApiPackagesController(
                 return BadRequest(summary);
             }
 
-            var component = manifest.Entries.FirstOrDefault()?.Component.Trim().ToLowerInvariant() ?? string.Empty;
+            var distro = manifest.Distro.Trim().ToLowerInvariant();
+            var component = manifest.Component.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(distro))
+            {
+                summary.Errors.Add("manifest.xml: <Distro> is required.");
+                return BadRequest(summary);
+            }
             if (string.IsNullOrWhiteSpace(component))
             {
-                summary.Errors.Add("manifest.xml: <Component> is required in at least one entry.");
+                summary.Errors.Add("manifest.xml: <Component> is required.");
+                return BadRequest(summary);
+            }
+            if (string.IsNullOrWhiteSpace(manifest.Name))
+            {
+                summary.Errors.Add("manifest.xml: <Name> is required.");
                 return BadRequest(summary);
             }
 
@@ -134,13 +87,24 @@ public class ApiPackagesController(
                 return BadRequest(summary);
             }
 
+            // Ownership check: (Name, Distro, Component) triplet is unique
+            var ownedByOther = await db.ApkgUploads
+                .AnyAsync(u => u.Package == manifest.Name && u.Distro == distro && u.Component == component
+                               && u.UploadedByUserId != userId);
+            if (ownedByOther)
+            {
+                summary.Errors.Add(
+                    $"Package '{manifest.Name}' for distro '{distro}' component '{component}' is already owned by another user.");
+                return StatusCode(StatusCodes.Status403Forbidden, summary);
+            }
+
             // ── Pre-flight: validate all entries exist before creating any record ──
             foreach (var entry in manifest.Entries)
             {
                 var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
                 if (!extractedEntries.ContainsKey(archiveDebPath))
                 {
-                    summary.Errors.Add($"Archive entry '{entry.DebFile}' was not found for target {entry.Distro} {entry.Suite} {entry.Architecture}.");
+                    summary.Errors.Add($"Archive entry '{entry.DebFile}' was not found for target {distro} {entry.Suite} {entry.Architecture}.");
                     return BadRequest(summary);
                 }
             }
@@ -150,6 +114,7 @@ public class ApiPackagesController(
                 UploadedByUserId = userId,
                 FileName = Path.GetFileName(apkg.FileName),
                 Package = manifest.Name,
+                Distro = distro,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
                 Maintainer = NullIfEmpty(manifest.Maintainer),
@@ -167,18 +132,17 @@ public class ApiPackagesController(
 
             foreach (var entry in manifest.Entries)
             {
-                var entryComponent = entry.Component.Trim().ToLowerInvariant();
                 var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
                 var extractedDebSource = extractedEntries[archiveDebPath];
 
                 // KEEP IN SYNC with ArchitectureMatches helper below and ApkgUploadsController
                 var matchingRepositories = (await db.AptRepositories
-                        .Where(r => r.Distro == entry.Distro
+                        .Where(r => r.Distro == distro
                                     && r.Suite == entry.Suite)
                         .ToListAsync())
                     .Where(r => r.Components
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Contains(entryComponent, StringComparer.OrdinalIgnoreCase)
+                        .Contains(component, StringComparer.OrdinalIgnoreCase)
                         && (r.Architecture
                                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                                 .Any(a => string.Equals(a, entry.Architecture, StringComparison.OrdinalIgnoreCase))
@@ -187,7 +151,7 @@ public class ApiPackagesController(
 
                 if (matchingRepositories.Count == 0)
                 {
-                    var warning = $"No repository found for {entry.Distro} {entry.Suite} {entry.Architecture} with component '{entryComponent}'.";
+                    var warning = $"No repository found for {distro} {entry.Suite} {entry.Architecture} with component '{component}'.";
                     logger.LogWarning("{Warning}", warning);
                     summary.Warnings.Add(warning);
                     continue;
@@ -210,7 +174,7 @@ public class ApiPackagesController(
                         await using (var destination = System.IO.File.Create(uploadTempPath))
                             await source.CopyToAsync(destination);
 
-                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, entryComponent, uploadTempPath, userId, uploadRecord.Id,
+                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, uploadTempPath, userId, uploadRecord.Id,
                             allowDowngrade: allowDowngrade);
                         if (result.Package != null)
                         {

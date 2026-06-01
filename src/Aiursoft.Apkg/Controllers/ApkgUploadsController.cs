@@ -24,6 +24,7 @@ public class ApkgUploadsController(
     DebUploadService debUploadService,
     FeatureFoldersProvider folders,
     UserManager<User> userManager,
+    AptVersionComparisonService versionComparer,
     ILogger<ApkgUploadsController> logger) : Controller
 {
     [HttpGet]
@@ -52,21 +53,15 @@ public class ApkgUploadsController(
             .OrderByDescending(u => u.UploadedAt)
             .ToListAsync();
 
-        // Group by package name, show only the latest upload per package (by UploadedAt)
-        var latestUploads = allUploads
-            .GroupBy(u => u.Package)
-            .Select(g => g.OrderByDescending(u => u.UploadedAt).First())
-            .OrderByDescending(u => u.UploadedAt)
+        // Group by (Package, Distro, Component) — the unique package identity
+        var groups = allUploads
+            .GroupBy(u => (u.Package, u.Distro, u.Component))
+            .OrderByDescending(g => g.Max(u => u.UploadedAt))
             .ToList();
 
-        var uploadStatuses = await ComputeUploadStatusesAsync(latestUploads);
-
-        // Determine which LocalPackages are live (in primary buckets) for Published N/M and Active Versions display
-        var allRepoIds = latestUploads
-            .SelectMany(u => u.Packages)
-            .Select(p => p.RepositoryId)
-            .Distinct()
-            .ToList();
+        // Collect all packages across all uploads for live-status computation
+        var allPackages = allUploads.SelectMany(u => u.Packages).ToList();
+        var allRepoIds = allPackages.Select(p => p.RepositoryId).Distinct().ToList();
 
         var repoPrimaryBuckets = await db.AptRepositories
             .Where(r => allRepoIds.Contains(r.Id) && r.PrimaryBucketId != null)
@@ -90,25 +85,63 @@ public class ApkgUploadsController(
                 liveKeySet.Add((ap.BucketId, ap.Package, ap.Version, ap.Architecture));
         }
 
-        var indexItems = latestUploads.Select(upload =>
+        var indexItems = new List<ApkgUploadIndexItem>();
+
+        foreach (var group in groups)
         {
-            var totalCount = upload.Packages.Count;
-            var livePackages = upload.Packages
+            var orderedUploads = group.OrderByDescending(u => u.UploadedAt).ToList();
+            var latestUpload = orderedUploads.First();
+
+            // Find the latest published upload that has live packages
+            ApkgUpload? liveUpload = null;
+            foreach (var upload in orderedUploads.Where(u => u.IsPublished))
+            {
+                var hasLive = upload.Packages.Any(lp =>
+                    lp.IsEnabled &&
+                    repoPrimaryMap.TryGetValue(lp.RepositoryId, out var bucketId) &&
+                    liveKeySet.Contains((bucketId, lp.Package, lp.Version, lp.Architecture)));
+                if (hasLive)
+                {
+                    liveUpload = upload;
+                    break;
+                }
+            }
+
+            // If no live upload, use the latest published upload (or the latest draft for the owner)
+            var displayUpload = liveUpload ?? orderedUploads.FirstOrDefault(u => u.IsPublished) ?? latestUpload;
+
+            var totalCount = displayUpload.Packages.Count;
+            var livePackages = displayUpload.Packages
                 .Where(lp =>
                     lp.IsEnabled &&
                     repoPrimaryMap.TryGetValue(lp.RepositoryId, out var bucketId) &&
                     liveKeySet.Contains((bucketId, lp.Package, lp.Version, lp.Architecture)))
                 .ToList();
 
-            return new ApkgUploadIndexItem
+            int? nextVersionUploadId = null;
+            string? nextVersionSummary = null;
+            if (liveUpload != null && latestUpload.Id != liveUpload.Id && latestUpload.IsPublished)
             {
-                Upload = upload,
+                nextVersionUploadId = latestUpload.Id;
+                nextVersionSummary = latestUpload.Packages
+                    .Select(p => p.Version)
+                    .Distinct()
+                    .FirstOrDefault();
+            }
+
+            indexItems.Add(new ApkgUploadIndexItem
+            {
+                Upload = displayUpload,
                 PublishedCount = livePackages.Count,
                 TotalPackageCount = totalCount,
                 LiveVersions = livePackages.Select(lp => lp.Version).Distinct().ToList(),
-                SyncStatus = uploadStatuses.GetValueOrDefault(upload.Id, UploadSyncStatus.Draft)
-            };
-        }).ToList();
+                SyncStatus = liveUpload != null ? UploadSyncStatus.Live
+                    : displayUpload.IsPublished ? UploadSyncStatus.Syncing
+                    : UploadSyncStatus.Draft,
+                NextVersionUploadId = nextVersionUploadId,
+                NextVersionSummary = nextVersionSummary
+            });
+        }
 
         return this.StackView(new ApkgUploadsIndexViewModel
         {
@@ -118,7 +151,7 @@ public class ApkgUploadsController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> PackageHistory(string name, string? versionsFilter = null)
+    public async Task<IActionResult> PackageHistory(string name, string? distro = null, string? component = null, string? versionsFilter = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest();
@@ -132,6 +165,11 @@ public class ApkgUploadsController(
                 .ThenInclude(p => p.Repository)
             .Where(u => u.Package == name)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(distro))
+            query = query.Where(u => u.Distro == distro);
+        if (!string.IsNullOrWhiteSpace(component))
+            query = query.Where(u => u.Component == component);
 
         if (!isAdmin)
             query = query.Where(u => u.UploadedByUserId == userId && u.IsListed);
@@ -209,14 +247,20 @@ public class ApkgUploadsController(
         if (manifest.Entries.Count == 0)
             ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: at least one <Entry> is required.");
 
-        var component = manifest.Entries.FirstOrDefault()?.Component.Trim().ToLowerInvariant() ?? string.Empty;
+        var distro = manifest.Distro.Trim().ToLowerInvariant();
+        var component = manifest.Component.Trim().ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(distro))
+            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: <Distro> is required.");
         if (string.IsNullOrWhiteSpace(component))
-            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: <Component> is required in at least one entry.");
+            ModelState.AddModelError(nameof(model.ApkgFilePath), "manifest.xml: <Component> is required.");
 
         if (!ModelState.IsValid)
             return this.StackView(model);
 
         var userId = userManager.GetUserId(User)!;
+        await EnsurePackageOwnershipAsync(manifest.Name, distro, component, userId);
+
         var pendingUpload = await db.ApkgUploads
             .FirstOrDefaultAsync(u => u.UploadedByUserId == userId
                                       && u.VaultPath == model.ApkgFilePath
@@ -232,6 +276,7 @@ public class ApkgUploadsController(
                 UploadedByUserId = userId,
                 FileName = fileName,
                 Package = manifest.Name,
+                Distro = distro,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
                 Maintainer = NullIfEmpty(manifest.Maintainer),
@@ -246,6 +291,7 @@ public class ApkgUploadsController(
         {
             pendingUpload.FileName = fileName;
             pendingUpload.Package = manifest.Name;
+            pendingUpload.Distro = distro;
             pendingUpload.Component = component;
             pendingUpload.Description = NullIfEmpty(manifest.Description);
             pendingUpload.Maintainer = NullIfEmpty(manifest.Maintainer);
@@ -341,11 +387,14 @@ public class ApkgUploadsController(
             return BadRequest();
         }
 
-        var component = manifest.Entries.FirstOrDefault()?.Component.Trim().ToLowerInvariant() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(component) || manifest.Entries.Count == 0)
+        var distro = manifest.Distro.Trim().ToLowerInvariant();
+        var component = manifest.Component.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(distro) || string.IsNullOrWhiteSpace(component) || manifest.Entries.Count == 0)
             return BadRequest();
 
         var userId = userManager.GetUserId(User)!;
+        await EnsurePackageOwnershipAsync(manifest.Name, distro, component, userId);
+
         var upload = await db.ApkgUploads
             .Include(u => u.Packages)
             .FirstOrDefaultAsync(u => u.UploadedByUserId == userId
@@ -359,6 +408,7 @@ public class ApkgUploadsController(
                 UploadedByUserId = userId,
                 FileName = fileName,
                 Package = manifest.Name,
+                Distro = distro,
                 Component = component,
                 Description = NullIfEmpty(manifest.Description),
                 Maintainer = NullIfEmpty(manifest.Maintainer),
@@ -379,23 +429,22 @@ public class ApkgUploadsController(
         {
             foreach (var entry in manifest.Entries)
             {
-                var entryComponent = entry.Component.Trim().ToLowerInvariant();
                 var archiveDebPath = NormalizeArchiveEntryName(entry.DebFile);
                 if (!extractedEntries.TryGetValue(archiveDebPath, out var extractedDebSource))
                 {
-                    ModelState.AddModelError(string.Empty, $"Archive entry '{entry.DebFile}' was not found for target {entry.Distro} {entry.Suite} {entry.Architecture}.");
+                    ModelState.AddModelError(string.Empty, $"Archive entry '{entry.DebFile}' was not found for target {distro} {entry.Suite} {entry.Architecture}.");
                     var previewModel = await BuildPreviewModelAsync(manifest, vaultPath, fileName);
                     return this.StackView(previewModel, "Preview");
                 }
 
                 // KEEP IN SYNC with ArchitectureMatches helper below and ApiPackagesController line 165
                 var matchingRepositories = (await db.AptRepositories
-                        .Where(r => r.Distro == entry.Distro
+                        .Where(r => r.Distro == distro
                                     && r.Suite == entry.Suite)
                         .ToListAsync())
                     .Where(r => r.Components
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Contains(entryComponent, StringComparer.OrdinalIgnoreCase)
+                        .Contains(component, StringComparer.OrdinalIgnoreCase)
                         && (r.Architecture
                                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                                 .Any(a => string.Equals(a, entry.Architecture, StringComparison.OrdinalIgnoreCase))
@@ -406,10 +455,10 @@ public class ApkgUploadsController(
                 {
                     logger.LogWarning(
                         "No repository found for {Distro} {Suite} {Architecture} with component {Component}.",
-                        entry.Distro,
+                        distro,
                         entry.Suite,
                         entry.Architecture,
-                        entryComponent);
+                        component);
                     continue;
                 }
 
@@ -433,7 +482,7 @@ public class ApkgUploadsController(
                         await using (var destination = System.IO.File.Create(uploadTempPath))
                             await source.CopyToAsync(destination);
 
-                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, entryComponent, uploadTempPath, userId, upload.Id);
+                        var result = await debUploadService.UploadDebToRepositoryAsync(repo, component, uploadTempPath, userId, upload.Id);
                         if (result.Package != null)
                             continue;
 
@@ -494,7 +543,7 @@ public class ApkgUploadsController(
             .Include(u => u.UploadedByUser)
             .Include(u => u.Packages)
                 .ThenInclude(p => p.Repository)
-            .Where(u => u.Package == upload.Package)
+            .Where(u => u.Package == upload.Package && u.Distro == upload.Distro && u.Component == upload.Component)
             .AsQueryable();
 
         if (!isAdmin)
@@ -675,17 +724,18 @@ public class ApkgUploadsController(
 
     private async Task<List<ApkgPreviewTargetInfo>> BuildTargetInfosAsync(ApkgPackageManifest manifest)
     {
+        var distro = manifest.Distro.Trim().ToLowerInvariant();
+        var component = manifest.Component.Trim().ToLowerInvariant();
         var targets = new List<ApkgPreviewTargetInfo>();
         foreach (var entry in manifest.Entries)
         {
-            var entryComponent = entry.Component.Trim();
             var matchingRepos = (await db.AptRepositories
-                    .Where(r => r.Distro == entry.Distro
+                    .Where(r => r.Distro == distro
                                 && r.Suite == entry.Suite)
                     .ToListAsync())
                 .Where(r => r.Components
                     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Contains(entryComponent, StringComparer.OrdinalIgnoreCase)
+                    .Contains(component, StringComparer.OrdinalIgnoreCase)
                     && (r.Architecture
                             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                             .Any(a => string.Equals(a, entry.Architecture, StringComparison.OrdinalIgnoreCase))
@@ -777,65 +827,6 @@ public class ApkgUploadsController(
         return Path.Combine(folders.GetWorkspaceFolder(), $"apkg-upload-{Guid.NewGuid()}{extension}");
     }
 
-    private async Task<Dictionary<int, UploadSyncStatus>> ComputeUploadStatusesAsync(
-        IReadOnlyList<ApkgUpload> uploads)
-    {
-        var result = new Dictionary<int, UploadSyncStatus>(uploads.Count);
-
-        // Handle non-package statuses immediately
-        var toCompute = new List<ApkgUpload>();
-        foreach (var upload in uploads)
-        {
-            if (!upload.IsListed)
-                result[upload.Id] = UploadSyncStatus.Unlisted;
-            else if (!upload.IsPublished)
-                result[upload.Id] = UploadSyncStatus.Draft;
-            else
-                toCompute.Add(upload);
-        }
-
-        if (toCompute.Count == 0)
-            return result;
-
-        var allPackages = toCompute.SelectMany(u => u.Packages).ToList();
-
-        // Uploads with no packages yet are still syncing
-        foreach (var upload in toCompute.Where(u => !u.Packages.Any()))
-            result[upload.Id] = UploadSyncStatus.Syncing;
-
-        if (allPackages.Count == 0)
-            return result;
-
-        var packageStatuses = await BuildPackageStatusAsync(allPackages);
-
-        // Group computed statuses by ApkgUploadId
-        var statusesByUpload = packageStatuses
-            .Where(ps => ps.Package.ApkgUploadId.HasValue)
-            .GroupBy(ps => ps.Package.ApkgUploadId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        foreach (var upload in toCompute.Where(u => u.Packages.Any()))
-        {
-            var statuses = statusesByUpload.GetValueOrDefault(upload.Id, []);
-            if (statuses.Count == 0)
-            {
-                result[upload.Id] = UploadSyncStatus.Syncing;
-                continue;
-            }
-
-            var hasLive = statuses.Any(s => s.Status == LocalPackageStatus.Live);
-            var hasStaged = statuses.Any(s => s.Status == LocalPackageStatus.StagedForSigning);
-            var allSuperseded = statuses.All(s => s.Status is LocalPackageStatus.Superseded or LocalPackageStatus.Disabled);
-
-            result[upload.Id] = hasLive ? UploadSyncStatus.Live
-                : hasStaged ? UploadSyncStatus.Signing
-                : allSuperseded ? UploadSyncStatus.Superseded
-                : UploadSyncStatus.Syncing;
-        }
-
-        return result;
-    }
-
     private async Task<List<PackageStatusInfo>> BuildPackageStatusAsync(List<LocalPackage> packages)
     {
         if (packages.Count == 0)
@@ -866,14 +857,14 @@ public class ApkgUploadsController(
                 g => g.GroupBy(x => (x.Package, x.Version, x.Architecture))
                     .ToDictionary(x => x.Key, x => x.First().Id));
 
-        // Secondary lookup: for each bucket, which (Package, Architecture) pairs exist
-        // at ANY version. Used to detect superseded packages.
+        // Secondary lookup: for each bucket, map (Package, Architecture) → live Version.
+        // Used to compare versions for superseded vs pending-sync detection.
         var anyVersionLookup = existingInBuckets
             .GroupBy(x => x.BucketId)
             .ToDictionary(
                 g => g.Key,
-                g => g.Select(x => (x.Package, x.Architecture))
-                    .ToHashSet());
+                g => g.GroupBy(x => (x.Package, x.Architecture))
+                    .ToDictionary(x => x.Key, x => x.First().Version));
 
         var repoLookup = repoBuckets.ToDictionary(r => r.Id, r => r);
 
@@ -914,10 +905,19 @@ public class ApkgUploadsController(
                     }
                     else if (repoInfo?.PrimaryBucketId != null
                              && anyVersionLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryByArch)
-                             && primaryByArch.Contains((lp.Package, lp.Architecture)))
+                             && primaryByArch.TryGetValue((lp.Package, lp.Architecture), out var liveVersion))
                     {
-                        status = LocalPackageStatus.Superseded;
-                        message = "A different version of this package is live. This version will not be synced.";
+                        var cmp = versionComparer.Compare(lp.Version, liveVersion);
+                        if (cmp > 0)
+                        {
+                            status = LocalPackageStatus.PendingSync;
+                            message = $"Newer version waiting to replace {liveVersion}. Waiting for the next Repository Sync job (runs every 20 minutes).";
+                        }
+                        else
+                        {
+                            status = LocalPackageStatus.Superseded;
+                            message = $"A newer version ({liveVersion}) is live. This version will not be synced.";
+                        }
                     }
                 }
             }
@@ -949,6 +949,16 @@ public class ApkgUploadsController(
     private static string? NullIfEmpty(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private async Task EnsurePackageOwnershipAsync(string package, string distro, string component, string userId)
+    {
+        var ownedByOther = await db.ApkgUploads
+            .AnyAsync(u => u.Package == package && u.Distro == distro && u.Component == component
+                           && u.UploadedByUserId != userId);
+        if (ownedByOther)
+            throw new InvalidOperationException(
+                $"Package '{package}' for distro '{distro}' component '{component}' is already owned by another user. Only the original uploader may add versions to this package.");
     }
 
     // KEEP IN SYNC with inline conditions and ApiPackagesController.ArchitectureMatches.

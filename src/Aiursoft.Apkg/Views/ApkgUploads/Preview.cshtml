@@ -45,8 +45,12 @@ else if (Model.HasWarnings)
                 <div><strong>@Model.Manifest.Name</strong></div>
             </div>
             <div class="col-md-4">
+                <label class="form-label text-muted">Distro</label>
+                <div><span class="badge bg-dark">@Model.Manifest.Distro</span></div>
+            </div>
+            <div class="col-md-4">
                 <label class="form-label text-muted">Component</label>
-                <div><span class="badge bg-dark">@(Model.Targets.FirstOrDefault()?.Entry.Component ?? "—")</span></div>
+                <div><span class="badge bg-dark">@Model.Manifest.Component</span></div>
             </div>
             <div class="col-md-6">
                 <label class="form-label text-muted">Maintainer</label>
@@ -97,7 +101,7 @@ else if (Model.HasWarnings)
                     {
                         <tr>
                             <td><code>@item.Entry.DebFile</code></td>
-                            <td>@item.Entry.Distro</td>
+                            <td>@Model.Manifest.Distro</td>
                             <td>@item.Entry.Suite</td>
                             <td><span class="badge bg-dark">@item.Entry.Architecture</span></td>
                             <td>

@@ -276,18 +276,19 @@ public class IntegrationTests
     {
         Directory.CreateDirectory(outputDir);
 
+        var distro = targets[0].distro;
         var manifest = new ApkgPackageManifest
         {
             Name = packageName,
+            Distro = distro,
+            Component = component,
             Maintainer = "Test <test@example.com>",
             Description = "Test package",
             License = "MIT",
             Entries = targets.Select(t => new ApkgPackageEntry
             {
-                Distro = t.distro,
                 Suite = t.suite,
                 Architecture = t.arch,
-                Component = component,
                 DebFile = t.debPath
             }).ToList()
         };

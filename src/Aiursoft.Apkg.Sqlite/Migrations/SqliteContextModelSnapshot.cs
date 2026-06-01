@@ -31,6 +31,11 @@ namespace Aiursoft.Apkg.Sqlite.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Distro")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -486,11 +491,6 @@ namespace Aiursoft.Apkg.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Breaks")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Component")
-                        .IsRequired()
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Conflicts")

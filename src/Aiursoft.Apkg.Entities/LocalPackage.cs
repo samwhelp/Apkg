@@ -33,10 +33,6 @@ public class LocalPackage
 
     public bool IsEnabled { get; set; } = true;
 
-    [Required]
-    [MaxLength(100)]
-    public required string Component { get; set; }
-
     // APT metadata (extracted from .deb control file)
     [Required]
     [MaxLength(128)]

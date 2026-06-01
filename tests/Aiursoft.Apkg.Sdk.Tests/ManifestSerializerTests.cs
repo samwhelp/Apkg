@@ -8,8 +8,6 @@ public class ManifestSerializerTests
 {
     private readonly ManifestSerializer _serializer = new();
 
-    // ── Commit de829ad: v2 (ApkgPackageManifest) ──────────────────────────────
-
     [TestMethod]
     public void DeserializePackageManifest_BasicRoundTrip()
     {
@@ -17,6 +15,8 @@ public class ManifestSerializerTests
         {
             FormatVersion = 2,
             Name = "my-pkg",
+            Distro = "ubuntu",
+            Component = "universe",
             Maintainer = "Team <team@example.com>",
             Description = "A superb package",
             Homepage = "https://example.com",
@@ -26,29 +26,26 @@ public class ManifestSerializerTests
                 new ApkgPackageEntry
                 {
                     DebFile = "my-pkg_3.2.1_jammy_amd64.deb",
-                    Distro = "ubuntu",
                     Suite = "jammy",
-                    Component = "universe",
                     Architecture = "amd64"
                 }
             }
         };
 
-        // Serialize v2
         var xml = SerializeV2(original);
         var roundTripped = _serializer.DeserializePackageManifest(xml);
 
         Assert.AreEqual(original.Name, roundTripped.Name);
-                Assert.AreEqual(original.Maintainer, roundTripped.Maintainer);
+        Assert.AreEqual(original.Distro, roundTripped.Distro);
+        Assert.AreEqual(original.Component, roundTripped.Component);
+        Assert.AreEqual(original.Maintainer, roundTripped.Maintainer);
         Assert.AreEqual(original.Description, roundTripped.Description);
         Assert.AreEqual(original.Homepage, roundTripped.Homepage);
         Assert.AreEqual(original.License, roundTripped.License);
         Assert.AreEqual(original.FormatVersion, roundTripped.FormatVersion);
         Assert.AreEqual(1, roundTripped.Entries.Count);
         Assert.AreEqual(original.Entries[0].DebFile, roundTripped.Entries[0].DebFile);
-        Assert.AreEqual(original.Entries[0].Distro, roundTripped.Entries[0].Distro);
         Assert.AreEqual(original.Entries[0].Suite, roundTripped.Entries[0].Suite);
-        Assert.AreEqual(original.Entries[0].Component, roundTripped.Entries[0].Component);
         Assert.AreEqual(original.Entries[0].Architecture, roundTripped.Entries[0].Architecture);
     }
 
@@ -81,30 +78,26 @@ public class ManifestSerializerTests
         var original = new ApkgPackageManifest
         {
             Name = "multi-arch",
+            Distro = "ubuntu",
+            Component = "main",
             Entries =
             {
                 new ApkgPackageEntry
                 {
                     DebFile = "multi-arch_1.0.0_jammy_amd64.deb",
-                    Distro = "ubuntu",
                     Suite = "jammy",
-                    Component = "main",
                     Architecture = "amd64"
                 },
                 new ApkgPackageEntry
                 {
                     DebFile = "multi-arch_1.0.0_jammy_arm64.deb",
-                    Distro = "ubuntu",
                     Suite = "jammy",
-                    Component = "main",
                     Architecture = "arm64"
                 },
                 new ApkgPackageEntry
                 {
                     DebFile = "multi-arch_1.0.0_noble_amd64.deb",
-                    Distro = "ubuntu",
                     Suite = "noble",
-                    Component = "main",
                     Architecture = "amd64"
                 }
             }
@@ -130,7 +123,6 @@ public class ManifestSerializerTests
                 new ApkgPackageEntry
                 {
                     DebFile = "file-test_4.0.0_plucky_amd64.deb",
-                    Distro = "ubuntu",
                     Suite = "plucky",
                     Architecture = "amd64"
                 }
@@ -145,7 +137,7 @@ public class ManifestSerializerTests
             var result = await _serializer.DeserializePackageManifestFromFileAsync(path);
 
             Assert.AreEqual(original.Name, result.Name);
-                        Assert.AreEqual(1, result.Entries.Count);
+            Assert.AreEqual(1, result.Entries.Count);
         }
         finally
         {
@@ -159,7 +151,7 @@ public class ManifestSerializerTests
         var manifest = new ApkgPackageManifest
         {
             Name = "test",
-                    };
+        };
 
         var xml = SerializeV2(manifest);
         var result = _serializer.DeserializePackageManifest(xml);
@@ -168,17 +160,19 @@ public class ManifestSerializerTests
     }
 
     [TestMethod]
-    public void DeserializePackageManifest_Defaults()
+    public void DeserializePackageManifest_RootDefaults()
     {
         var manifest = new ApkgPackageManifest
         {
             Name = "test",
-                    };
+        };
 
         var xml = SerializeV2(manifest);
         var result = _serializer.DeserializePackageManifest(xml);
 
         Assert.AreEqual("MIT", result.License);
+        Assert.AreEqual("ubuntu", result.Distro);
+        Assert.AreEqual("main", result.Component);
     }
 
     [TestMethod]
@@ -200,12 +194,8 @@ public class ManifestSerializerTests
         var result = _serializer.DeserializePackageManifest(xml);
 
         var entry = result.Entries[0];
-        Assert.AreEqual("ubuntu", entry.Distro);
-        Assert.AreEqual("main", entry.Component);
         Assert.AreEqual("amd64", entry.Architecture);
     }
-
-    // ── Field mapping vs v1: Package → Name, Suites → Suite ───────────────────
 
     [TestMethod]
     public void V2_UsesNameNotPackage()
@@ -213,10 +203,9 @@ public class ManifestSerializerTests
         var v2 = new ApkgPackageManifest
         {
             Name = "name-field",
-                    };
+        };
 
         var xml = SerializeV2(v2);
-        // v2 uses <Name>, NOT <Package>
         Assert.IsTrue(xml.Contains("<Name>name-field</Name>"));
     }
 
@@ -254,33 +243,25 @@ public class ManifestSerializerTests
         };
 
         var xml = SerializeV2(v2);
-        // v2 uses <Entries> and <Entry>, not <Targets> and <Target>
         Assert.IsTrue(xml.Contains("<Entries>"));
         Assert.IsTrue(xml.Contains("<Entry>"));
     }
 
-    /// <summary>
-    /// Each entry has its own Component in v2 (was global in v1).
-    /// </summary>
     [TestMethod]
-    public void V2_ComponentPerEntry()
+    public void V2_DistroAndComponentAtRootLevel()
     {
         var v2 = new ApkgPackageManifest
         {
             Name = "test",
+            Distro = "anduinos",
+            Component = "webapps",
             Entries =
             {
                 new ApkgPackageEntry
                 {
                     DebFile = "test_1.0_jammy_amd64.deb",
                     Suite = "jammy",
-                    Component = "universe"
-                },
-                new ApkgPackageEntry
-                {
-                    DebFile = "test_1.0_noble_amd64.deb",
-                    Suite = "noble",
-                    Component = "restricted"
+                    Architecture = "amd64"
                 }
             }
         };
@@ -288,11 +269,14 @@ public class ManifestSerializerTests
         var xml = SerializeV2(v2);
         var result = _serializer.DeserializePackageManifest(xml);
 
-        Assert.AreEqual("universe", result.Entries[0].Component);
-        Assert.AreEqual("restricted", result.Entries[1].Component);
+        Assert.AreEqual("anduinos", result.Distro);
+        Assert.AreEqual("webapps", result.Component);
+        // Distro and Component are at root, not per-entry
+        Assert.IsTrue(xml.Contains("<Distro>anduinos</Distro>"));
+        Assert.IsTrue(xml.Contains("<Component>webapps</Component>"));
     }
 
-    // ── Helper: serialize v2 via XmlSerializer ────────────────────────────────
+    // ── Helper ────────────────────────────────────────────────────────
 
     private static string SerializeV2(ApkgPackageManifest manifest)
     {

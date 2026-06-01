@@ -302,7 +302,6 @@ public class LocalPackagesController(
             {
                 UploadedByUserId = userId,
                 RepositoryId = model.RepositoryId,
-                Component = model.Component,
                 Package = pkgName,
                 Version = pkgVersion,
                 Architecture = pkgArch,

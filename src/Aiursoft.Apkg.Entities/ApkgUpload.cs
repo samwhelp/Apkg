@@ -27,6 +27,10 @@ public class ApkgUpload
     public required string Package { get; set; }
 
     [Required]
+    [MaxLength(100)]
+    public string Distro { get; set; } = "ubuntu";
+
+    [Required]
     [MaxLength(128)]
     public required string Component { get; set; }
 

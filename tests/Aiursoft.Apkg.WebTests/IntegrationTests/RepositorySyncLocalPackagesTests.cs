@@ -155,7 +155,6 @@ public class RepositorySyncLocalPackagesTests : TestBase
         {
             UploadedByUserId = _adminUserId,
             RepositoryId = _repo.Id,
-            Component = component,
             Package = name,
             Version = version,
             Architecture = arch,

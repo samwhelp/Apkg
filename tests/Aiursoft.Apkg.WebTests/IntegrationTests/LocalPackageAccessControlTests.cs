@@ -46,7 +46,6 @@ public class LocalPackageAccessControlTests : TestBase
         {
             UploadedByUserId = userId,
             RepositoryId = _repo.Id,
-            Component = "main",
             Package = name,
             Version = version,
             Architecture = "amd64",
