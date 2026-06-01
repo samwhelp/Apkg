@@ -13,10 +13,12 @@ public class ApkgUploadsDetailsViewModel : UiStackLayoutViewModel
 
     public required ApkgUpload Upload { get; init; }
     public required List<PackageStatusInfo> Packages { get; init; }
+    public List<PackageStatusInfo> AllPackageStatuses { get; init; } = [];
     public required List<ApkgUpload> VersionHistory { get; init; }
     public int? LatestVersionId { get; init; }
     public HashSet<string> LiveVersions { get; init; } = new();
     public required string ActiveTab { get; init; } = "overview";
+    public string VersionsFilter { get; init; } = "latest";
     public bool IsAdmin { get; init; }
     public bool IsOwner { get; init; }
 }

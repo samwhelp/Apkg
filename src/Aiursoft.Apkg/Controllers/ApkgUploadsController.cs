@@ -425,7 +425,7 @@ public class ApkgUploadsController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> Details(int id, string? tab = null)
+    public async Task<IActionResult> Details(int id, string? tab = null, string? versionsFilter = null)
     {
         var upload = await db.ApkgUploads
             .Include(u => u.UploadedByUser)
@@ -441,11 +441,10 @@ public class ApkgUploadsController(
         if (!isAdmin && !isOwner)
             return Forbid();
 
-        var packages = await BuildPackageStatusAsync(upload.Packages.ToList());
-
         var historyQuery = db.ApkgUploads
             .Include(u => u.UploadedByUser)
             .Include(u => u.Packages)
+                .ThenInclude(p => p.Repository)
             .Where(u => u.Package == upload.Package)
             .AsQueryable();
 
@@ -456,31 +455,34 @@ public class ApkgUploadsController(
             .OrderByDescending(v => v.UploadedAt)
             .ToListAsync();
 
-        int? latestVersionId = null;
-        if (versionHistory.Count > 0)
-            latestVersionId = versionHistory.First().Id;
+        int? latestVersionId = versionHistory.Count > 0 ? versionHistory.First().Id : null;
 
-        // Determine which version strings are currently live in primary buckets.
-        var liveVersions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (versionHistory.Count > 0)
+        // Gather ALL packages across all uploads for the Versions tab
+        var allHistoryPackages = versionHistory.SelectMany(v => v.Packages).ToList();
+
+        // Always include current upload's packages (handles unlisted edge-case where
+        // the current upload may not appear in historyQuery results)
+        var historyPackageIds = allHistoryPackages.Select(p => p.Id).ToHashSet();
+        foreach (var pkg in upload.Packages)
         {
-            var repoIds = versionHistory
-                .SelectMany(v => v.Packages)
-                .Select(lp => lp.RepositoryId)
-                .Distinct()
-                .ToList();
-            var primaryBucketIds = await db.AptRepositories
-                .Where(r => repoIds.Contains(r.Id) && r.PrimaryBucketId != null)
-                .Select(r => r.PrimaryBucketId!.Value)
-                .Distinct()
-                .ToListAsync();
-            liveVersions = (await db.AptPackages
-                .Where(p => primaryBucketIds.Contains(p.BucketId) && p.Package == upload.Package)
-                .Select(p => p.Version)
-                .Distinct()
-                .ToListAsync())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (!historyPackageIds.Contains(pkg.Id))
+                allHistoryPackages.Add(pkg);
         }
+
+        var allPackageStatuses = await BuildPackageStatusAsync(allHistoryPackages);
+
+        // Overview tab needs only this upload's packages
+        var currentPackageIds = upload.Packages.Select(p => p.Id).ToHashSet();
+        var packages = allPackageStatuses
+            .Where(ps => currentPackageIds.Contains(ps.Package.Id))
+            .ToList();
+
+        var normalizedFilter = versionsFilter?.ToLowerInvariant() switch
+        {
+            "live" => "live",
+            "all"  => "all",
+            _      => "latest"
+        };
 
         var activeTab = tab == "versions" ? "versions" : "overview";
 
@@ -488,12 +490,14 @@ public class ApkgUploadsController(
         {
             Upload = upload,
             Packages = packages,
+            AllPackageStatuses = allPackageStatuses,
             VersionHistory = versionHistory,
             LatestVersionId = latestVersionId,
-            LiveVersions = liveVersions,
+            LiveVersions = [],
             ActiveTab = activeTab,
             IsAdmin = isAdmin,
-            IsOwner = isOwner
+            IsOwner = isOwner,
+            VersionsFilter = normalizedFilter
         });
     }
 
