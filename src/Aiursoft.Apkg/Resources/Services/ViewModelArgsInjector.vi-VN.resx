@@ -267,11 +267,14 @@
   <data name="Unauthorized" xml:space="preserve">
     <value>Không được ủy quyền</value>
   </data>
-  <data name="Upload APKG Package" xml:space="preserve">
+  <data name="Upload apkg mixed package" xml:space="preserve">
     <value>Tải lên Gói APKG</value>
   </data>
   <data name="Upload Package" xml:space="preserve">
     <value>Tải gói lên</value>
+  </data>
+  <data name="Upload deb package" xml:space="preserve">
+    <value>Upload deb package</value>
   </data>
   <data name="Upstream Mirrors" xml:space="preserve">
     <value>Các bản sao upstream</value>

@@ -264,11 +264,14 @@
   <data name="Unauthorized" xml:space="preserve">
     <value>Неавторизованный</value>
   </data>
-  <data name="Upload APKG Package" xml:space="preserve">
+  <data name="Upload apkg mixed package" xml:space="preserve">
     <value>Загрузить пакет APKG</value>
   </data>
   <data name="Upload Package" xml:space="preserve">
     <value>Загрузить пакет</value>
+  </data>
+  <data name="Upload deb package" xml:space="preserve">
+    <value>Upload deb package</value>
   </data>
   <data name="Upstream Mirrors" xml:space="preserve">
     <value>Верхние зеркала</value>

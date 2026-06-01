@@ -8,7 +8,7 @@
     <div class="col-auto ms-auto">
         <a asp-action="Upload" class="btn btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="upload" class="lucide lucide-upload align-middle me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
-            @Localizer["Upload Package"]
+            @Localizer["Upload deb package"]
         </a>
     </div>
 </div>
@@ -150,9 +150,9 @@
                 <div class="text-center mb-3">
                     <i data-lucide="folder-archive" style="width:48px;height:48px;"></i>
                 </div>
-                <h6 class="mb-2">@Localizer["What is a LocalPackage?"]</h6>
-                <p class="text-muted small mb-2">@Localizer["LocalPackages are .deb files extracted from .apkg uploads. They sit in a staging area before being synced to APT repositories."]</p>
-                <p class="text-muted small mb-0"><strong>@Localizer["Tip:"]</strong> @Localizer["Each LocalPackage maps to one repo+suite+arch combination. The Repository Sync job copies them into live buckets."]</p>
+                <h6 class="mb-2">@Localizer["What is a deb package?"]</h6>
+                <p class="text-muted small mb-2">@Localizer["A .deb package is the standard Debian binary package format used by Debian, Ubuntu, and other APT-based Linux distributions. It contains compiled application binaries, metadata, and installation scripts."]</p>
+                <p class="text-muted small mb-0"><strong>@Localizer["Tip:"]</strong> @Localizer["Each deb package maps to one repo+suite+arch combination. The Repository Sync job copies them into live buckets."]</p>
             </div>
         </div>
     </div>

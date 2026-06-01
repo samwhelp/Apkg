@@ -110,6 +110,7 @@ public class ViewModelArgsInjector(
 
         _ = localizer["My Packages"];
         _ = localizer["Upload Package"];
+        _ = localizer["Upload deb package"];
 
         _ = localizer["Primary Bucket Missing"];
 
@@ -123,7 +124,7 @@ public class ViewModelArgsInjector(
         _ = localizer["APKG Upload Details"];
         _ = localizer["My Packages (APKG)"];
         _ = localizer["Preview APKG Upload"];
-        _ = localizer["Upload APKG Package"];
+        _ = localizer["Upload apkg mixed package"];
     
         _ = localizer["Apkg Hybrid"];
         _ = localizer["Deb Standalone"];

@@ -45,7 +45,7 @@
   <data name="Disabled" xml:space="preserve">
     <value>已禁用</value>
   </data>
-  <data name="Each LocalPackage maps to one repo+suite+arch combination. The Repository Sync job copies them into live buckets." xml:space="preserve">
+  <data name="Each deb package maps to one repo+suite+arch combination. The Repository Sync job copies them into live buckets." xml:space="preserve">
     <value>每个 LocalPackage 对应一个 repo+suite+arch 组合。仓库同步任务会将它们复制到实时存储桶中。</value>
   </data>
   <data name="Enabled" xml:space="preserve">
@@ -63,7 +63,7 @@
   <data name="Live" xml:space="preserve">
     <value>已发布</value>
   </data>
-  <data name="LocalPackages are .deb files extracted from .apkg uploads. They sit in a staging area before being synced to APT repositories." xml:space="preserve">
+  <data name="A .deb package is the standard Debian binary package format used by Debian, Ubuntu, and other APT-based Linux distributions. It contains compiled application binaries, metadata, and installation scripts." xml:space="preserve">
     <value>LocalPackages 是从 .apkg 上传文件中提取的 .deb 文件。在同步到 APT 仓库之前，它们会存放在暂存区中。</value>
   </data>
   <data name="My Packages" xml:space="preserve">
@@ -102,6 +102,9 @@
   <data name="Upload Package" xml:space="preserve">
     <value>上传软件包</value>
   </data>
+  <data name="Upload deb package" xml:space="preserve">
+    <value>Upload deb package</value>
+  </data>
   <data name="Uploaded" xml:space="preserve">
     <value>上传时间</value>
   </data>
@@ -114,7 +117,7 @@
   <data name="View Details &amp; Install Instructions" xml:space="preserve">
     <value>查看详细信息和安装说明</value>
   </data>
-  <data name="What is a LocalPackage?" xml:space="preserve">
+  <data name="What is a deb package?" xml:space="preserve">
     <value>什么是 LocalPackage？</value>
   </data>
 
