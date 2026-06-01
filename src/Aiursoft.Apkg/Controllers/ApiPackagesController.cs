@@ -28,7 +28,8 @@ public class ApiPackagesController(
     ILogger<ApiPackagesController> logger) : ControllerBase
 {
     [HttpPost("upload")]
-    [RequestSizeLimit(500 * 1024 * 1024)]
+    [RequestSizeLimit(2L * 1024 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024)]
     public async Task<IActionResult> Upload(
         [FromQuery] int repositoryId,
         [FromQuery] string component,
@@ -87,6 +88,7 @@ public class ApiPackagesController(
 
     [HttpPost("apkg-upload")]
     [RequestSizeLimit(2L * 1024 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024)]
     public async Task<IActionResult> UploadApkg(
         [FromQuery] bool skipDuplicate = false,
         [FromQuery] bool allowDowngrade = false,
