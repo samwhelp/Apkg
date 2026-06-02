@@ -202,10 +202,15 @@
                                                             <i class="align-middle me-1" data-lucide="slash" style="width:12px; height:12px;"></i> Disabled
                                                         </span>
                                                         break;
+                                                    case LocalPackageStatus.Disabling:
+                                                        <span class="badge bg-warning text-dark" title="@info.StatusMessage">
+                                                            <i class="align-middle me-1" data-lucide="alert-circle" style="width:12px; height:12px;"></i> Disabling
+                                                        </span>
+                                                        break;
                                                 }
                                             </td>
                                             <td class="text-end">
-                                                @if (info.Status == LocalPackageStatus.Live && info.LivePackageId.HasValue)
+                                                @if ((info.Status == LocalPackageStatus.Live || info.Status == LocalPackageStatus.Disabling) && info.LivePackageId.HasValue)
                                                 {
                                                     <a asp-controller="Repositories" asp-action="PackageDetails" asp-route-id="@info.LivePackageId.Value" class="btn btn-sm btn-outline-info">
                                                         <i class="align-middle" data-lucide="external-link"></i>
@@ -306,6 +311,9 @@
                                                                     break;
                                                                 case LocalPackageStatus.Disabled:
                                                                     <span class="badge bg-secondary">Disabled</span>
+                                                                    break;
+                                                                case LocalPackageStatus.Disabling:
+                                                                    <span class="badge bg-warning text-dark">Disabling</span>
                                                                     break;
                                                             }
                                                         </td>
@@ -418,6 +426,9 @@
                                                         break;
                                                     case LocalPackageStatus.Disabled:
                                                         <span class="badge bg-secondary">Disabled</span>
+                                                        break;
+                                                    case LocalPackageStatus.Disabling:
+                                                        <span class="badge bg-warning text-dark">Disabling</span>
                                                         break;
                                                 }
                                             </td>

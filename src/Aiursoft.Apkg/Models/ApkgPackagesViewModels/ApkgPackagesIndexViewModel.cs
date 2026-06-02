@@ -6,6 +6,8 @@ public enum UploadSyncStatus
 {
     /// <summary>Upload is unlisted and hidden from APT clients.</summary>
     Unlisted,
+    /// <summary>Unlisted but packages are still live in the primary bucket (pending next sync).</summary>
+    Unlisting,
     /// <summary>Published; packages are waiting for the RepositorySyncJob.</summary>
     Syncing,
     /// <summary>Published; packages are in a SecondaryBucket awaiting signing.</summary>

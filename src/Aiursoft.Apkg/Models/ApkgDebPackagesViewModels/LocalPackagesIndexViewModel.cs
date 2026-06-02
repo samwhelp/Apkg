@@ -10,6 +10,12 @@ public enum LocalPackageStatus
     Disabled,
 
     /// <summary>
+    /// Package has been unlisted/disabled but is still present in the current PrimaryBucket.
+    /// It will disappear from APT clients on the next sync + sign cycle (up to 20 minutes).
+    /// </summary>
+    Disabling,
+
+    /// <summary>
     /// Package is enabled but not yet picked up by RepositorySyncJob.
     /// It is waiting for the next sync cycle (up to 20 minutes).
     /// </summary>

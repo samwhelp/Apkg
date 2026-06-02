@@ -50,6 +50,7 @@
                                 UploadSyncStatus.Syncing    => ("Syncing",    "bg-info"),
                                 UploadSyncStatus.Superseded => ("Superseded", "bg-secondary"),
                                 UploadSyncStatus.Unlisted   => ("Unlisted",   "bg-secondary"),
+                                UploadSyncStatus.Unlisting => ("Unlisting", "bg-warning text-dark"),
                                 _                           => ("Syncing",    "bg-info"),
                             };
 
@@ -116,38 +117,23 @@
                                         </a>
                                         @if (revision.IsListed)
                                         {
-                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#unlistUpload-@revision.Id" title="@Localizer["Unlist"]">
+                                            <a asp-action="Unlist" asp-route-id="@revision.Id" class="btn btn-sm btn-outline-warning" title="@Localizer["Unlist"]">
                                                 <i class="align-middle" data-lucide="archive-x"></i>
-                                            </button>
+                                            </a>
+                                        }
+                                        else if (Model.IsAdmin)
+                                        {
+                                            <form method="post" asp-action="Relist" asp-route-id="@revision.Id" class="d-inline" title="@Localizer["Relist"]">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                                    <i class="align-middle" data-lucide="archive-restore"></i>
+                                                </button>
+                                            </form>
                                         }
                                         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePackage-@item.Package.Id" title="@Localizer["Delete Package"]">
                                             <i class="align-middle" data-lucide="folder-x"></i>
                                         </button>
                                     </div>
-
-                                    @if (revision.IsListed)
-                                    {
-                                        <div class="modal fade" id="unlistUpload-@revision.Id" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content text-start">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">@Localizer["Confirm Unlist"]</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        @Localizer["Unlist"] <strong>@item.Package.Name</strong>? @Localizer["Generated packages will be disabled."]
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <form method="post" asp-action="Unlist" asp-route-id="@revision.Id">
-                                                            @Html.AntiForgeryToken()
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
-                                                            <button type="submit" class="btn btn-warning">@Localizer["Unlist"]</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
 
                                     <div class="modal fade" id="deletePackage-@item.Package.Id" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog">

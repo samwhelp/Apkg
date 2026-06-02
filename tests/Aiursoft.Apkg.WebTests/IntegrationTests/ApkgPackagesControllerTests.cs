@@ -555,6 +555,123 @@ public class ApkgPackagesControllerTests : TestBase
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // Unlist confirmation page (GET)
+    // ──────────────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task UnlistConfirmation_ShowDowngradeWarning_WhenLowerVersionReplacesUnlisted()
+    {
+        // Arrange: two revisions for the same package.
+        // Rev1 (to unlist) has v2.0 → Rev2 (stays) has v1.0 → downgrade.
+        var repo = new AptRepository
+        {
+            Name = "test-repo", Distro = "ubuntu", Suite = "focal",
+            Components = "main", Architecture = "amd64"
+        };
+        _db.AptRepositories.Add(repo);
+        _db.SaveChanges();
+
+        var pkg = new ApkgPackage
+        {
+            Name = $"unlist-downgrade-{Guid.NewGuid():N}",
+            Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        // Revision with v2.0 (this is what we'll unlist — the CURRENT winner)
+        var revHigh = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg", IsListed = true
+        };
+        _db.ApkgRevisions.Add(revHigh);
+        _db.ApkgDebPackages.Add(new ApkgDebPackage
+        {
+            ApkgRevisionId = revHigh.Id, RepositoryId = repo.Id,
+            UploadedByUserId = _adminUserId, Package = "downgrade-pkg",
+            Version = "2.0.0", Architecture = "amd64",
+            Maintainer = "test", Filename = "pool/main/d/downgrade-pkg/downgrade-pkg_2.0.0_amd64.deb",
+            Size = "100", SHA256 = $"sha-{Guid.NewGuid():N}", IsEnabled = true
+        });
+        _db.SaveChanges();
+
+        // Revision with v1.0 (stays — will replace v2.0 after unlist)
+        var revLow = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg", IsListed = true
+        };
+        _db.ApkgRevisions.Add(revLow);
+        _db.ApkgDebPackages.Add(new ApkgDebPackage
+        {
+            ApkgRevisionId = revLow.Id, RepositoryId = repo.Id,
+            UploadedByUserId = _adminUserId, Package = "downgrade-pkg",
+            Version = "1.0.0", Architecture = "amd64",
+            Maintainer = "test", Filename = "pool/main/d/downgrade-pkg/downgrade-pkg_1.0.0_amd64.deb",
+            Size = "100", SHA256 = $"sha-{Guid.NewGuid():N}", IsEnabled = true
+        });
+        _db.SaveChanges();
+
+        // Act: GET the unlist confirmation page for the high-version revision
+        var response = await Http.GetAsync($"/ApkgPackages/Unlist/{revHigh.Id}");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(body.Contains("Downgrade"), "Must warn about downgrade when lower version replaces unlisted.");
+        Assert.IsTrue(body.Contains("1.0.0"), "Replacement version should appear.");
+        Assert.IsTrue(body.Contains("2.0.0"), "Current version being unlisted should appear.");
+    }
+
+    [TestMethod]
+    public async Task UnlistConfirmation_ShowDisappearsWarning_WhenNoReplacementExists()
+    {
+        // Arrange: single revision with a deb. No other revision has this slot.
+        var repo = new AptRepository
+        {
+            Name = "solo-repo", Distro = "ubuntu", Suite = "noble",
+            Components = "main", Architecture = "amd64"
+        };
+        _db.AptRepositories.Add(repo);
+        _db.SaveChanges();
+
+        var pkg = new ApkgPackage
+        {
+            Name = $"unlist-disappear-{Guid.NewGuid():N}",
+            Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        var rev = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "only.apkg", IsListed = true
+        };
+        _db.ApkgRevisions.Add(rev);
+        _db.ApkgDebPackages.Add(new ApkgDebPackage
+        {
+            ApkgRevisionId = rev.Id, RepositoryId = repo.Id,
+            UploadedByUserId = _adminUserId, Package = "solo-pkg",
+            Version = "1.0.0", Architecture = "arm64",
+            Maintainer = "test", Filename = "pool/main/s/solo-pkg/solo-pkg_1.0.0_arm64.deb",
+            Size = "100", SHA256 = $"sha-{Guid.NewGuid():N}", IsEnabled = true
+        });
+        _db.SaveChanges();
+
+        // Act: GET the unlist confirmation page
+        var response = await Http.GetAsync($"/ApkgPackages/Unlist/{rev.Id}");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(body.Contains("DISAPPEARS"), "Must warn about disappearance when no replacement exists.");
+        Assert.IsTrue(body.Contains("no other version available"), "Should explain why it disappears.");
+        Assert.IsTrue(body.Contains("1.0.0"), "Current version should appear.");
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Relist (admin-only)
     // ──────────────────────────────────────────────────────────────────────
 

@@ -94,6 +94,8 @@ public class ApkgPackagesController(
 
             // Find the latest published revision that has live packages
             ApkgRevision? liveRevision = null;
+            // Check if any unlisted (disabled) packages are still in PrimaryBucket (pending removal)
+            bool hasUnlisting = false;
             foreach (var revision in orderedRevisions.Where(r => r.TempApkgFileInVaultPath == null))
             {
                 var hasLive = revision.ApkgDebPackages.Any(lp =>
@@ -104,6 +106,13 @@ public class ApkgPackagesController(
                 {
                     liveRevision = revision;
                     break;
+                }
+                if (!hasUnlisting)
+                {
+                    hasUnlisting = revision.ApkgDebPackages.Any(lp =>
+                        !lp.IsEnabled &&
+                        repoPrimaryMap.TryGetValue(lp.RepositoryId, out var bucketId) &&
+                        liveKeySet.Contains((bucketId, lp.Package, lp.Version, lp.Architecture)));
                 }
             }
 
@@ -137,6 +146,7 @@ public class ApkgPackagesController(
                 TotalPackageCount = totalCount,
                 LiveVersions = livePackages.Select(lp => lp.Version).Distinct().ToList(),
                 SyncStatus = liveRevision != null ? UploadSyncStatus.Live
+                    : hasUnlisting ? UploadSyncStatus.Unlisting
                     : UploadSyncStatus.Syncing,
                 NextVersionRevisionId = nextVersionRevisionId,
                 NextVersionSummary = nextVersionSummary,
@@ -625,9 +635,66 @@ public class ApkgPackagesController(
         });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Unlist(int id)
+    {
+        var revision = await db.ApkgRevisions
+            .Include(r => r.UploadedByUser)
+            .Include(r => r.ApkgPackage)
+            .Include(r => r.ApkgDebPackages).ThenInclude(lp => lp.Repository)
+            .FirstOrDefaultAsync(r => r.Id == id);
+        if (revision == null)
+            return NotFound();
+
+        var userId = userManager.GetUserId(User)!;
+        var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
+        if (!isAdmin && revision.UploadedByUserId != userId)
+            return Forbid();
+
+        // Build impact analysis: for each deb in this revision, find what replaces it
+        var allEnabled = await db.ApkgDebPackages
+            .Include(lp => lp.Repository)
+            .Where(lp => lp.ApkgRevision!.ApkgPackageId == revision.ApkgPackageId && lp.IsEnabled)
+            .ToListAsync();
+
+        var currentDebs = revision.ApkgDebPackages.ToList();
+        var winningAfterRemoval = debResolution.ResolveWinningDebs(
+            allEnabled.Where(d => d.ApkgRevisionId != revision.Id).ToList());
+
+        var impacts = currentDebs.Select(deb =>
+        {
+            var replacement = winningAfterRemoval.FirstOrDefault(w =>
+                w.Package == deb.Package &&
+                w.Architecture == deb.Architecture &&
+                w.RepositoryId == deb.RepositoryId);
+            string? replacementVersion = null;
+            bool isDowngrade = false;
+            if (replacement != null)
+            {
+                replacementVersion = replacement.Version;
+                isDowngrade = versionComparer.Compare(replacement.Version, deb.Version) < 0;
+            }
+            return new UnlistImpactItem
+            {
+                ReplacedDeb = deb,
+                RepositoryDescription = DebUploadService.GetRepositoryDisplayName(deb.Repository!),
+                ReplacementVersion = replacementVersion,
+                IsDowngrade = isDowngrade
+            };
+        }).ToList();
+
+        return this.StackView(new UnlistConfirmationViewModel
+        {
+            Revision = revision,
+            Package = revision.ApkgPackage!,
+            Impacts = impacts
+        });
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Unlist(int id)
+    [ActionName("Unlist")]
+    public async Task<IActionResult> UnlistPost(int id)
     {
         var revision = await db.ApkgRevisions
             .Include(r => r.ApkgDebPackages)
@@ -899,54 +966,66 @@ public class ApkgPackagesController(
             var message = "Waiting for the next Repository Sync job (runs every 20 minutes).";
             int? liveId = null;
 
+            var repoInfo = repoLookup.GetValueOrDefault(lp.RepositoryId);
+            int? foundId = null;
+            bool isInPrimary = false;
+            if (repoInfo?.PrimaryBucketId != null
+                && bucketLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryDict)
+                && primaryDict.TryGetValue((lp.Package, lp.Version, lp.Architecture), out var fid))
+            {
+                isInPrimary = true;
+                foundId = fid;
+            }
+
             if (!lp.IsEnabled)
             {
-                status = LocalPackageStatus.Disabled;
-                message = "This package is disabled and will not be included in future syncs.";
-            }
-            else
-            {
-                var repoInfo = repoLookup.GetValueOrDefault(lp.RepositoryId);
-                var primaryBucketPackages = repoInfo?.PrimaryBucketId != null
-                    ? bucketLookup.GetValueOrDefault(repoInfo.PrimaryBucketId.Value)
-                    : null;
-
-                if (primaryBucketPackages?.TryGetValue((lp.Package, lp.Version, lp.Architecture), out var foundId) == true)
+                if (isInPrimary)
                 {
-                    status = LocalPackageStatus.Live;
-                    message = "Package is live and available for APT clients.";
+                    status = LocalPackageStatus.Disabling;
+                    message = "Package has been unlisted but is still live. It will be removed on the next sync cycle (up to 20 minutes).";
                     liveId = foundId;
                 }
                 else
                 {
-                    var secondaryBucketPackages = repoInfo?.SecondaryBucketId != null
-                        ? bucketLookup.GetValueOrDefault(repoInfo.SecondaryBucketId.Value)
-                        : null;
+                    status = LocalPackageStatus.Disabled;
+                    message = "This package is disabled and will not be included in future syncs.";
+                }
+            }
+            else if (isInPrimary)
+            {
+                status = LocalPackageStatus.Live;
+                message = "Package is live and available for APT clients.";
+                liveId = foundId;
+            }
+            else
+            {
+                var secondaryBucketPackages = repoInfo?.SecondaryBucketId != null
+                    ? bucketLookup.GetValueOrDefault(repoInfo.SecondaryBucketId.Value)
+                    : null;
 
-                    if (secondaryBucketPackages?.ContainsKey((lp.Package, lp.Version, lp.Architecture)) == true)
+                if (secondaryBucketPackages?.ContainsKey((lp.Package, lp.Version, lp.Architecture)) == true)
+                {
+                    status = LocalPackageStatus.StagedForSigning;
+                    message = "Included in a pending bucket. Waiting for signing (up to 5 minutes).";
+                }
+                else if (winningIds != null && !winningIds.Contains(lp.Id))
+                {
+                    status = LocalPackageStatus.Superseded;
+                    message = "A newer version exists in another upload. This version will not be synced.";
+                }
+                else if (repoInfo?.PrimaryBucketId != null
+                         && anyVersionLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryByArch)
+                         && primaryByArch.TryGetValue((lp.Package, lp.Architecture), out var liveVersion))
+                {
+                    var cmp = versionComparer.Compare(lp.Version, liveVersion);
+                    if (cmp > 0)
                     {
-                        status = LocalPackageStatus.StagedForSigning;
-                        message = "Included in a pending bucket. Waiting for signing (up to 5 minutes).";
+                        status = LocalPackageStatus.PendingSync;
+                        message = $"Newer version waiting to replace {liveVersion}. Waiting for the next Repository Sync job (runs every 20 minutes).";
                     }
-                    else if (winningIds != null && !winningIds.Contains(lp.Id))
+                    else
                     {
-                        status = LocalPackageStatus.Superseded;
-                        message = "A newer version exists in another upload. This version will not be synced.";
-                    }
-                    else if (repoInfo?.PrimaryBucketId != null
-                             && anyVersionLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryByArch)
-                             && primaryByArch.TryGetValue((lp.Package, lp.Architecture), out var liveVersion))
-                    {
-                        var cmp = versionComparer.Compare(lp.Version, liveVersion);
-                        if (cmp > 0)
-                        {
-                            status = LocalPackageStatus.PendingSync;
-                            message = $"Newer version waiting to replace {liveVersion}. Waiting for the next Repository Sync job (runs every 20 minutes).";
-                        }
-                        else
-                        {
-                            status = LocalPackageStatus.PendingSync;
-                        }
+                        status = LocalPackageStatus.PendingSync;
                     }
                 }
             }

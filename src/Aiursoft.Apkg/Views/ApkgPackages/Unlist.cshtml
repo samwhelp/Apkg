@@ -1,0 +1,80 @@
+@model Aiursoft.Apkg.Models.ApkgPackagesViewModels.UnlistConfirmationViewModel
+
+<div class="row mb-2 mb-xl-3">
+    <div class="col-auto">
+        <h3>Confirm Unlist</h3>
+    </div>
+</div>
+
+<div class="alert alert-danger d-flex align-items-start" role="alert">
+    <div class="alert-icon me-3">
+        <i data-lucide="alert-triangle" style="width:24px;height:24px;"></i>
+    </div>
+    <div class="alert-message">
+        <strong>Warning:</strong> You are about to unlist <strong>@Model.Package.Name</strong> (version @Model.Revision.ApkgDebPackages.FirstOrDefault()?.Version).
+        This will remove the following packages from their repositories. Unlisting is reversible only by an administrator.
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <strong>Affected Repositories</strong>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Package</th>
+                    <th>Current Version</th>
+                    <th>Architecture</th>
+                    <th>Repository</th>
+                    <th>Replacement</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var impact in Model.Impacts)
+                {
+                    <tr>
+                        <td><strong>@impact.ReplacedDeb.Package</strong></td>
+                        <td><span class="badge bg-danger">@impact.ReplacedDeb.Version</span></td>
+                        <td><span class="badge bg-dark">@impact.ReplacedDeb.Architecture</span></td>
+                        <td>@impact.RepositoryDescription</td>
+                        <td>
+                            @if (impact.ReplacementVersion == null)
+                            {
+                                <span class="badge bg-danger">
+                                    <i class="align-middle me-1" data-lucide="alert-octagon" style="width:12px;height:12px;"></i>
+                                    DISAPPEARS — no other version available
+                                </span>
+                            }
+                            else if (impact.IsDowngrade)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    <i class="align-middle me-1" data-lucide="arrow-down" style="width:12px;height:12px;"></i>
+                                    Downgrade to @impact.ReplacementVersion
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">
+                                    Replaced by @impact.ReplacementVersion
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between">
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <form method="post" asp-action="Unlist" asp-route-id="@Model.Revision.Id">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-danger">
+            <i class="align-middle me-1" data-lucide="archive-x"></i>
+            I understand the consequences — Unlist
+        </button>
+    </form>
+</div>
