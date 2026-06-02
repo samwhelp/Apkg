@@ -62,6 +62,7 @@ public class Startup : IWebStartup
 
         // Explicitly register dependency check services
         services.AddTransient<AptVersionComparisonService>();
+        services.AddTransient<DebResolutionService>();
         services.AddTransient<RepositoryDependencyCheckJob>();
 
         // Background job infrastructure

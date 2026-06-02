@@ -13,7 +13,7 @@ public class RepositorySyncJob(
     AptMetadataService metadataService,
     FeatureFoldersProvider folders,
     ILogger<RepositorySyncJob> logger,
-    AptVersionComparisonService versionComparer) : IBackgroundJob
+    DebResolutionService debResolution) : IBackgroundJob
 {
     private string BucketsRoot => folders.GetBucketsFolder();
 
@@ -134,18 +134,23 @@ public class RepositorySyncJob(
             }
         }
 
-        // 2b. Merge ApkgDebPackages: override all upstream (Package, Architecture) pairs
-        var localPackages = await db.ApkgDebPackages
+        // 2b. Merge ApkgDebPackages: override all upstream (Package, Architecture) pairs.
+        // Only insert the winning (latest-version) deb per slot — debResolution handles dedup.
+        var allLocalPackages = await db.ApkgDebPackages
             .AsNoTracking()
             .Include(lp => lp.ApkgRevision).ThenInclude(r => r!.ApkgPackage)
             .Where(lp => lp.RepositoryId == repo.Id && lp.IsEnabled)
             .ToListAsync();
 
+        var localPackages = debResolution.ResolveWinningDebs(allLocalPackages);
+
         if (localPackages.Count > 0)
         {
-            logger.LogInformation("Merging {Count} local packages into Bucket {BucketId}...", localPackages.Count, newBucketId);
+            logger.LogInformation(
+                "Merging {Count} local packages (from {Total} total) into Bucket {BucketId}...",
+                localPackages.Count, allLocalPackages.Count, newBucketId);
 
-            // Remove all upstream packages that conflict with a ApkgDebPackage by (Package, Architecture)
+            // Remove upstream packages that conflict with a winning ApkgDebPackage by (Package, Architecture)
             foreach (var lp in localPackages)
             {
                 var toRemove = db.AptPackages
@@ -155,7 +160,7 @@ public class RepositorySyncJob(
             await db.SaveChangesAsync();
             db.ChangeTracker.Clear();
 
-            // Insert ApkgDebPackages as AptPackages in the new bucket
+            // Insert only the winning ApkgDebPackages as AptPackages in the new bucket
             foreach (var lp in localPackages)
             {
                 var component = lp.ApkgRevision?.ApkgPackage?.Component ?? "main";
@@ -199,61 +204,6 @@ public class RepositorySyncJob(
             }
             await db.SaveChangesAsync();
             db.ChangeTracker.Clear();
-        }
-
-        // 2c. Deduplicate by (Package, Architecture): keep only the latest version
-        {
-            var allPkgs = await db.AptPackages
-                .Where(p => p.BucketId == newBucketId)
-                .ToListAsync();
-
-            var versionCmp = Comparer<string>.Create((a, b) =>
-            {
-                try
-                {
-                    return versionComparer.Compare(a, b);
-                }
-                catch (ArgumentException ex)
-                {
-                    logger.LogWarning(ex,
-                        "Unparseable version string in Bucket {BucketId} — " +
-                        "cannot compare '{VersionA}' vs '{VersionB}'. Falling back to ordinal sort.",
-                        newBucketId, a, b);
-                    return string.CompareOrdinal(a, b);
-                }
-            });
-
-            var duplicates = allPkgs
-                .GroupBy(p => (p.Package, p.Architecture))
-                .Where(g => g.Count() > 1)
-                .SelectMany(g =>
-                {
-                    AptPackage latest;
-                    try
-                    {
-                        latest = g.OrderByDescending(p => p.Version, versionCmp).First();
-                    }
-                    catch (ArgumentException ex)
-                    {
-                        logger.LogWarning(ex,
-                            "Could not determine latest version for {Package}/{Arch} in Bucket {BucketId}. " +
-                            "Skipping deduplication for this group — all versions will be kept.",
-                            g.Key.Package, g.Key.Architecture, newBucketId);
-                        return Enumerable.Empty<AptPackage>();
-                    }
-                    return g.Where(p => p.Id != latest.Id);
-                })
-                .ToList();
-
-            if (duplicates.Count > 0)
-            {
-                db.AptPackages.RemoveRange(duplicates);
-                await db.SaveChangesAsync();
-                db.ChangeTracker.Clear();
-                logger.LogInformation(
-                    "Bucket {BucketId}: removed {Count} duplicate packages (older versions).",
-                    newBucketId, duplicates.Count);
-            }
         }
 
         // 3. Metadata Generation & Signing

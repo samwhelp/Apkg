@@ -25,6 +25,7 @@ public class ApkgPackagesController(
     FeatureFoldersProvider folders,
     UserManager<User> userManager,
     AptVersionComparisonService versionComparer,
+    DebResolutionService debResolution,
     ILogger<ApkgPackagesController> logger) : Controller
 {
     [HttpGet]
@@ -576,10 +577,17 @@ public class ApkgPackagesController(
 
         // All debs across ALL revisions
         var allDebs = revisions.SelectMany(r => r.ApkgDebPackages).ToList();
-        var allPackageStatuses = await BuildPackageStatusAsync(allDebs);
 
-        // Effective deb list: GroupBy (Package, Architecture, Suite, RepositoryId), Max(Version)
-        var effectiveDebs = ComputeEffectiveDebList(allPackageStatuses);
+        // Resolve winning debs first — only the latest per (Package, Arch, Suite, RepoId) slot
+        var winningDebs = debResolution.ResolveWinningDebs(allDebs);
+        var winningIds = winningDebs.Select(d => d.Id).ToHashSet();
+
+        var allPackageStatuses = await BuildPackageStatusAsync(allDebs, winningIds);
+
+        // Effective deb list: only winners with their status
+        var effectiveDebs = allPackageStatuses
+            .Where(ps => winningIds.Contains(ps.Package.Id))
+            .ToList();
 
         // Upload history: each Revision as an upload event
         var uploadHistory = revisions.Select(r => new UploadHistoryItem
@@ -615,30 +623,6 @@ public class ApkgPackagesController(
             IsOwner = isOwner,
             VersionsFilter = normalizedFilter
         });
-    }
-
-    private List<PackageStatusInfo> ComputeEffectiveDebList(List<PackageStatusInfo> allStatuses)
-    {
-        var enabled = allStatuses.Where(ps => ps.Package.IsEnabled).ToList();
-
-        var grouped = enabled
-            .GroupBy(ps => (
-                ps.Package.Package,
-                ps.Package.Architecture,
-                ps.Package.Repository?.Suite ?? "",
-                ps.Package.RepositoryId))
-            .ToList();
-
-        var effective = new List<PackageStatusInfo>();
-        foreach (var group in grouped)
-        {
-            var best = group.OrderByDescending(
-                ps => ps.Package.Version,
-                Comparer<string>.Create(versionComparer.Compare)).First();
-            effective.Add(best);
-        }
-
-        return effective;
     }
 
     [HttpPost]
@@ -870,7 +854,7 @@ public class ApkgPackagesController(
         return Path.Combine(folders.GetWorkspaceFolder(), $"apkg-upload-{Guid.NewGuid()}{extension}");
     }
 
-    private async Task<List<PackageStatusInfo>> BuildPackageStatusAsync(List<ApkgDebPackage> packages)
+    private async Task<List<PackageStatusInfo>> BuildPackageStatusAsync(List<ApkgDebPackage> packages, HashSet<int>? winningIds = null)
     {
         if (packages.Count == 0)
             return [];
@@ -944,6 +928,11 @@ public class ApkgPackagesController(
                         status = LocalPackageStatus.StagedForSigning;
                         message = "Included in a pending bucket. Waiting for signing (up to 5 minutes).";
                     }
+                    else if (winningIds != null && !winningIds.Contains(lp.Id))
+                    {
+                        status = LocalPackageStatus.Superseded;
+                        message = "A newer version exists in another upload. This version will not be synced.";
+                    }
                     else if (repoInfo?.PrimaryBucketId != null
                              && anyVersionLookup.TryGetValue(repoInfo.PrimaryBucketId.Value, out var primaryByArch)
                              && primaryByArch.TryGetValue((lp.Package, lp.Architecture), out var liveVersion))
@@ -956,8 +945,7 @@ public class ApkgPackagesController(
                         }
                         else
                         {
-                            status = LocalPackageStatus.Superseded;
-                            message = $"A newer version ({liveVersion}) is live. This version will not be synced.";
+                            status = LocalPackageStatus.PendingSync;
                         }
                     }
                 }
