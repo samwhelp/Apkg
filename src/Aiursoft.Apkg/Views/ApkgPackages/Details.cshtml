@@ -19,6 +19,14 @@
 <div class="row">
     <div class="col-xl-10">
         @{
+            var successMessage = TempData["SuccessMessage"] as string;
+            if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i data-lucide="check-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
+                    @successMessage
+                </div>
+            }
             var skippedWarnings = TempData["SkippedRepoWarnings"] as string;
             if (!string.IsNullOrWhiteSpace(skippedWarnings))
             {
@@ -277,10 +285,7 @@
                                         }
                                         @if (!isUnpublished && rev.IsListed && (Model.IsOwner || Model.IsAdmin))
                                         {
-                                            <form method="post" asp-action="Unlist" asp-route-id="@rev.Id" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-sm btn-outline-warning">Unlist</button>
-                                            </form>
+                                            <a asp-action="Unlist" asp-route-id="@rev.Id" class="btn btn-sm btn-outline-warning">Unlist</a>
                                         }
                                     </div>
                                 </div>

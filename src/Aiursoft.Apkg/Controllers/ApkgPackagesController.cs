@@ -173,28 +173,63 @@ public class ApkgPackagesController(
     public async Task<IActionResult> UploadHistory()
     {
         var userId = userManager.GetUserId(User)!;
-        var isAdmin = User.HasClaim(AppPermissions.Type, AppPermissionNames.CanManageRepositories);
 
-        var query = db.ApkgRevisions
+        var revisions = await db.ApkgRevisions
             .Include(r => r.ApkgPackage)
-            .Include(r => r.ApkgDebPackages)
-            .AsQueryable();
-
-        if (!isAdmin)
-            query = query.Where(r => r.UploadedByUserId == userId);
-
-        var revisions = await query
+            .Include(r => r.ApkgDebPackages).ThenInclude(d => d.Repository)
+            .Where(r => r.UploadedByUserId == userId)
             .OrderByDescending(r => r.UploadedAt)
             .ToListAsync();
 
-        var items = revisions.Select(r => new ApkgRevisionHistoryItem
+        var allDebs = revisions.SelectMany(r => r.ApkgDebPackages).ToList();
+        var allStatuses = await BuildPackageStatusAsync(allDebs);
+        var statusByDebId = allStatuses.ToDictionary(s => s.Package.Id, s => s);
+
+        // Priority: Live > StagedForSigning > Disabling > PendingSync > Superseded > Disabled
+        var statusPriority = new Dictionary<LocalPackageStatus, int>
         {
-            Revision = r,
-            PackageId = r.ApkgPackageId,
-            PackageName = r.ApkgPackage?.Name ?? "(deleted)",
-            Distro = r.ApkgPackage?.Distro ?? "—",
-            Component = r.ApkgPackage?.Component ?? "—",
-            PackageCount = r.ApkgDebPackages.Count
+            [LocalPackageStatus.Live] = 0,
+            [LocalPackageStatus.StagedForSigning] = 1,
+            [LocalPackageStatus.Disabling] = 2,
+            [LocalPackageStatus.PendingSync] = 3,
+            [LocalPackageStatus.Superseded] = 4,
+            [LocalPackageStatus.Disabled] = 5,
+        };
+
+        var items = revisions.Select(r =>
+        {
+            LocalPackageStatus? aggregate = null;
+            string? message = null;
+            var draft = !string.IsNullOrWhiteSpace(r.TempApkgFileInVaultPath);
+
+            if (!draft)
+            {
+                var debStatuses = r.ApkgDebPackages
+                    .Select(d => statusByDebId.GetValueOrDefault(d.Id))
+                    .Where(s => s != null)
+                    .ToList();
+
+                if (debStatuses.Count > 0)
+                {
+                    var best = debStatuses
+                        .OrderBy(s => statusPriority.GetValueOrDefault(s!.Status, 99))
+                        .First()!;
+                    aggregate = best.Status;
+                    message = best.StatusMessage;
+                }
+            }
+
+            return new ApkgRevisionHistoryItem
+            {
+                Revision = r,
+                PackageId = r.ApkgPackageId,
+                PackageName = r.ApkgPackage?.Name ?? "(deleted)",
+                Distro = r.ApkgPackage?.Distro ?? "—",
+                Component = r.ApkgPackage?.Component ?? "—",
+                PackageCount = r.ApkgDebPackages.Count,
+                AggregateStatus = aggregate,
+                StatusMessage = message
+            };
         }).ToList();
 
         return this.StackView(new ApkgRevisionHistoryViewModel
@@ -557,6 +592,8 @@ public class ApkgPackagesController(
 
             if (skippedRepos.Count > 0)
                 TempData["SkippedRepoWarnings"] = string.Join("|", skippedRepos.Distinct());
+
+            TempData["SuccessMessage"] = $"Package '{package.Name}' published successfully.";
 
             return RedirectToAction(nameof(Details), new { id = package.Id });
         }

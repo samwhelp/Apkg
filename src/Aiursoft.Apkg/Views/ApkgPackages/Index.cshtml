@@ -65,7 +65,7 @@
                                 publishBadgeClass = "bg-danger";
                             <tr>
                                 <td>
-                                    <a asp-action="PackageHistory" asp-route-name="@item.Package.Name" asp-route-distro="@item.Package.Distro" asp-route-component="@item.Package.Component" class="text-decoration-none">
+                                    <a asp-action="Details" asp-route-id="@item.Package.Id" class="text-decoration-none">
                                         <strong>@item.Package.Name</strong>
                                     </a>
                                 </td>

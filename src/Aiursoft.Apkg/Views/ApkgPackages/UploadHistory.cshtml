@@ -1,3 +1,4 @@
+@using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels
 @model Aiursoft.Apkg.Models.ApkgPackagesViewModels.ApkgRevisionHistoryViewModel
 
 <div class="row mb-2 mb-xl-3">
@@ -36,10 +37,8 @@
                                     var rev = item.Revision;
                                     <tr>
                                         <td>
-                                            <a asp-action="PackageHistory"
-                                               asp-route-name="@item.PackageName"
-                                               asp-route-distro="@item.Distro"
-                                               asp-route-component="@item.Component"
+                                            <a asp-action="Details"
+                                               asp-route-id="@item.PackageId"
                                                class="text-decoration-none">
                                                 <strong>@item.PackageName</strong>
                                             </a>
@@ -49,9 +48,29 @@
                                         <td><small class="text-muted">@rev.FileName</small></td>
                                         <td><span class="badge bg-secondary">@item.PackageCount</span></td>
                                         <td>
-                                            @if (rev.TempApkgFileInVaultPath == null)
+                                            @if (item.AggregateStatus.HasValue)
                                             {
-                                                <span class="badge bg-success">Published</span>
+                                                switch (item.AggregateStatus.Value)
+                                                {
+                                                    case LocalPackageStatus.Live:
+                                                        <span class="badge bg-success">Live</span>
+                                                        break;
+                                                    case LocalPackageStatus.StagedForSigning:
+                                                        <span class="badge bg-info">Staged for Signing</span>
+                                                        break;
+                                                    case LocalPackageStatus.PendingSync:
+                                                        <span class="badge bg-warning text-dark">Pending Sync</span>
+                                                        break;
+                                                    case LocalPackageStatus.Superseded:
+                                                        <span class="badge bg-danger">Superseded</span>
+                                                        break;
+                                                    case LocalPackageStatus.Disabling:
+                                                        <span class="badge bg-warning text-dark">Disabling</span>
+                                                        break;
+                                                    case LocalPackageStatus.Disabled:
+                                                        <span class="badge bg-secondary">Disabled</span>
+                                                        break;
+                                                }
                                             }
                                             else
                                             {
