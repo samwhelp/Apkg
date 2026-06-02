@@ -282,12 +282,31 @@ public class MirrorsController(ApkgDbContext dbContext) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var mirror = await dbContext.AptMirrors.FindAsync(id);
-        if (mirror != null)
+        var mirror = await dbContext.AptMirrors
+            .Include(m => m.PrimaryBucket)
+            .FirstOrDefaultAsync(m => m.Id == id);
+
+        if (mirror == null)
+            return RedirectToAction(nameof(Index));
+
+        var referencingRepos = await dbContext.AptRepositories
+            .Where(r => r.MirrorId == id)
+            .Select(r => r.Name)
+            .ToListAsync();
+
+        if (referencingRepos.Count > 0)
         {
-            dbContext.AptMirrors.Remove(mirror);
-            await dbContext.SaveChangesAsync();
+            TempData["ErrorMessage"] = $"Cannot delete this mirror because {referencingRepos.Count} " +
+                $"repositor{(referencingRepos.Count == 1 ? "y" : "ies")} " +
+                $"still reference{(referencingRepos.Count == 1 ? "s" : "")} it: " +
+                $"{string.Join(", ", referencingRepos)}. " +
+                $"Please remove or reassign the mirror from those repositor{(referencingRepos.Count == 1 ? "y" : "ies")} first.";
+            return RedirectToAction(nameof(Index));
         }
+
+        dbContext.AptMirrors.Remove(mirror);
+        await dbContext.SaveChangesAsync();
+
         return RedirectToAction(nameof(Index));
     }
 }
