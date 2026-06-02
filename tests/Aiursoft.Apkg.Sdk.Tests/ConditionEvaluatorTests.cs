@@ -165,4 +165,86 @@ public class ConditionEvaluatorTests
         var ctx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64", component: "addon");
         Assert.IsTrue(_evaluator.Evaluate("'$(Component)' == 'addon'", ctx));
     }
+
+    // ── Compound conditions (and / or) ──────────────────────────────────
+
+    [TestMethod]
+    public void Evaluate_And_BothTrue_ReturnsTrue()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64");
+        Assert.IsTrue(_evaluator.Evaluate("'$(Suite)' == 'jammy' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_And_SecondFalse_ReturnsFalse()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "arm64");
+        Assert.IsFalse(_evaluator.Evaluate("'$(Suite)' == 'jammy' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_And_FirstFalse_ReturnsFalse()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "noble", "amd64");
+        Assert.IsFalse(_evaluator.Evaluate("'$(Suite)' == 'jammy' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_And_BothFalse_ReturnsFalse()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "noble", "arm64");
+        Assert.IsFalse(_evaluator.Evaluate("'$(Suite)' == 'jammy' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_Or_BothTrue_ReturnsTrue()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64");
+        Assert.IsTrue(_evaluator.Evaluate("'$(Suite)' == 'jammy' or '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_Or_OneTrue_ReturnsTrue()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "arm64");
+        Assert.IsTrue(_evaluator.Evaluate("'$(Suite)' == 'jammy' or '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_Or_BothFalse_ReturnsFalse()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "noble", "arm64");
+        Assert.IsFalse(_evaluator.Evaluate("'$(Suite)' == 'jammy' or '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_And_WithInequality()
+    {
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "jammy", "amd64");
+        Assert.IsTrue(_evaluator.Evaluate("'$(Suite)' != 'noble' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_RealWorld_SuiteAndArch()
+    {
+        // Per-arch per-suite: questing-addon amd64 → both match
+        var ctx = ConditionEvaluator.BuildContext("anduinos", "questing-addon", "amd64");
+        Assert.IsTrue(_evaluator.Evaluate("'$(Suite)' == 'questing-addon' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_RealWorld_SuiteMatchArchMismatch()
+    {
+        // questing-addon arm64 → suite matches, arch doesn't → false
+        var ctx = ConditionEvaluator.BuildContext("anduinos", "questing-addon", "arm64");
+        Assert.IsFalse(_evaluator.Evaluate("'$(Suite)' == 'questing-addon' and '$(Arch)' == 'amd64'", ctx));
+    }
+
+    [TestMethod]
+    public void Evaluate_And_PreservesSingleQuotesInValues()
+    {
+        // Values with spaces or special chars inside quotes
+        var ctx = ConditionEvaluator.BuildContext("ubuntu", "noble-addon", "amd64");
+        Assert.IsTrue(_evaluator.Evaluate("'$(Suite)' == 'noble-addon' and '$(Arch)' == 'amd64'", ctx));
+    }
 }

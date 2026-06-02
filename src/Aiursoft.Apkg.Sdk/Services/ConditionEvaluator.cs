@@ -5,6 +5,8 @@ namespace Aiursoft.Apkg.Sdk.Services;
 /// Supported syntax:
 ///   '$(Property)' == 'value'
 ///   '$(Property)' != 'value'
+///   <expr> and <expr>
+///   <expr> or <expr>
 /// Absent condition (null/empty) always evaluates to true.
 /// </summary>
 public class ConditionEvaluator
@@ -12,39 +14,68 @@ public class ConditionEvaluator
     /// <summary>
     /// Evaluates a condition string against a set of build properties.
     /// </summary>
-    /// <param name="condition">The condition text, e.g. "'$(Suite)' == 'jammy'"</param>
+    /// <param name="condition">The condition text, e.g. "'$(Suite)' == 'jammy' and '$(Arch)' == 'amd64'"</param>
     /// <param name="properties">Key-value pairs for substitution, e.g. {"Suite","jammy"}</param>
     public bool Evaluate(string? condition, IReadOnlyDictionary<string, string> properties)
     {
         if (string.IsNullOrWhiteSpace(condition))
             return true;
 
+        // Substitute $(Property) references first
         var expr = condition.Trim();
-
-        // Substitute $(Property) references
         foreach (var (key, value) in properties)
             expr = expr.Replace($"$({key})", value, StringComparison.OrdinalIgnoreCase);
 
-        // Try == comparison
-        var eqIdx = expr.IndexOf("==", StringComparison.Ordinal);
-        if (eqIdx >= 0)
+        // Split by 'or' (lowest precedence)
+        var orIdx = FindOperator(expr, " or ");
+        if (orIdx >= 0)
+            return EvaluateOne(expr[..orIdx]) || EvaluateOne(expr[(orIdx + 4)..]);
+
+        // Split by 'and'
+        var andIdx = FindOperator(expr, " and ");
+        if (andIdx >= 0)
+            return EvaluateOne(expr[..andIdx]) && EvaluateOne(expr[(andIdx + 5)..]);
+
+        return EvaluateOne(expr);
+    }
+
+    private static bool EvaluateOne(string expr)
+    {
+        expr = expr.Trim();
+
+        if (expr.Contains("=="))
         {
-            var left = Unquote(expr[..eqIdx]);
-            var right = Unquote(expr[(eqIdx + 2)..]);
-            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+            var idx = expr.IndexOf("==", StringComparison.Ordinal);
+            return string.Equals(
+                Unquote(expr[..idx]),
+                Unquote(expr[(idx + 2)..]),
+                StringComparison.OrdinalIgnoreCase);
         }
 
-        // Try != comparison
-        var neqIdx = expr.IndexOf("!=", StringComparison.Ordinal);
-        if (neqIdx >= 0)
+        if (expr.Contains("!="))
         {
-            var left = Unquote(expr[..neqIdx]);
-            var right = Unquote(expr[(neqIdx + 2)..]);
-            return !string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+            var idx = expr.IndexOf("!=", StringComparison.Ordinal);
+            return !string.Equals(
+                Unquote(expr[..idx]),
+                Unquote(expr[(idx + 2)..]),
+                StringComparison.OrdinalIgnoreCase);
         }
 
         throw new InvalidOperationException(
-            $"Unsupported condition syntax: '{condition}'. Only '==' and '!=' are supported.");
+            $"Unsupported condition syntax: '{expr}'. Only '==', '!=', 'and', 'or' are supported.");
+    }
+
+    /// <summary>Finds the outermost operator, respecting single-quoted strings.</summary>
+    private static int FindOperator(string expr, string op)
+    {
+        var inQuote = false;
+        for (var i = 0; i < expr.Length - op.Length + 1; i++)
+        {
+            if (expr[i] == '\'') inQuote = !inQuote;
+            if (!inQuote && string.Compare(expr, i, op, 0, op.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                return i;
+        }
+        return -1;
     }
 
     private static string Unquote(string s) => s.Trim().Trim('\'', '"');
