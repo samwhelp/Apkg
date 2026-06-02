@@ -93,6 +93,9 @@
   <data name="Origin" xml:space="preserve">
     <value>Alkuperä</value>
   </data>
+  <data name="Origin Suite" xml:space="preserve">
+    <value>Alkuperän sarja</value>
+  </data>
   <data name="Original Maintainer" xml:space="preserve">
     <value>Alkuperäinen ylläpitäjä</value>
   </data>

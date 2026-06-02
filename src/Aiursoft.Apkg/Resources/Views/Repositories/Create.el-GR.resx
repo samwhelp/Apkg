@@ -39,6 +39,9 @@
   <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Ελέγχει ποια αρχεία ευρετηρίου binary-[arch]/Packages παράγονται. Τα πακέτα με μη συμβατές αρχιτεκτονικές (εκτός από &apos;all&apos;) αποθηκεύονται, αλλά είναι αόρατα στους πελάτες apt. Ορίζει επίσης τη γραμμή Architectures: στον οδηγό ρύθμισης του πελάτη. Οι αλλαγές λαμβάνουν ισχύ στην επόμενη εκτέλεση της εργασίας Συγχρονισμού Αποθετηρίου.</value>
   </data>
+  <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run. Separate multiple architectures with commas (e.g. &quot;amd64,arm64&quot;)." xml:space="preserve">
+    <value>Ελέγχει ποια αρχεία ευρετηρίου Packages των καταλόγων binary-[arch] δημιουργούνται. Τα πακέτα με μη ταιριάζουσες αρχιτεκτονικές (εκτός από την «all») αποθηκεύονται αλλά παραμένουν αόρατα για τους πελάτες apt. Ορίζει επίσης τη γραμμή Architectures: στον οδηγό ρύθμισης του πελάτη. Οι αλλαγές έχουν αποτέλεσμα την επόμενη εκτέλεση της εργασίας συγχρονισμού αποθετηρίου. Χωρίστε τις πολλαπλές αρχιτεκτονικές με κόμματα (π.χ. «amd64,arm64»).</value>
+  </data>
   <data name="Controls which component subdirectories are included when generating the Packages index. Packages in unlisted components are stored but invisible to apt clients. Also sets the Components: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Ελέγχει ποιους υποκαταλόγους συστατικών περιλαμβάνονται κατά τη δημιουργία του ευρετηρίου Packages. Τα πακέτα σε μη καταγεγραμμένα συστατικά αποθηκεύονται, αλλά είναι αόρατα για τους πελάτες apt. Ρυθμίζει επίσης τη γραμμή Components: στον οδηγό ρύθμισης του πελάτη. Οι αλλαγές τίθενται σε ισχύ κατά την επόμενη εκτέλεση της εργασίας Συγχρονισμού Αποθετηρίου.</value>
   </data>
@@ -53,6 +56,9 @@
   </data>
   <data name="If linked to a mirror, this repository will serve packages from that upstream source." xml:space="preserve">
     <value>Αν συνδεθεί με καθρέπτη, αυτό το αποθετήριο θα εξυπηρετεί πακέτα από την πηγή αυτή.</value>
+  </data>
+  <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version." xml:space="preserve">
+    <value>Αν συνδεθεί, ο κατάλογος Packages αυτού του αποθετηρίου δημιουργείται από το καθρέφτη κατά κάθε Συγχρονισμό Αποθετηρίου. Τα πακέτα ApkgDebPackages με το ίδιο όνομα πακέτου και αρχιτεκτονική υπεργράφουν την έκδοση του καθρέφτη.</value>
   </data>
   <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version." xml:space="preserve">
     <value>Εάν συνδεθεί, ο δείκτης Packages αυτού του αποθετηρίου τροφοδοτείται από το mirror κατά κάθε συγχρονισμό αποθετηρίου. Τα LocalPackages με το ίδιο όνομα πακέτου και αρχιτεκτονική υπερισχύουν της έκδοσης από το mirror.</value>

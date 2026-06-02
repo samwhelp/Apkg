@@ -93,6 +93,9 @@
   <data name="Origin" xml:space="preserve">
     <value>मूल</value>
   </data>
+  <data name="Origin Suite" xml:space="preserve">
+    <value>उद्गम सूट</value>
+  </data>
   <data name="Original Maintainer" xml:space="preserve">
     <value>मूल निर्माता</value>
   </data>

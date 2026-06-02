@@ -39,6 +39,9 @@
   <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Mengontrol file indeks binary-[arch]/Packages yang dihasilkan. Paket dengan arsitektur yang tidak cocok (kecuali &apos;all&apos;) disimpan tetapi tidak terlihat oleh klien apt. Juga menetapkan baris Architectures: dalam panduan pengaturan klien. Perubahan akan berlaku pada menjalankan tugas Sinkronisasi Repositori berikutnya.</value>
   </data>
+  <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run. Separate multiple architectures with commas (e.g. &quot;amd64,arm64&quot;)." xml:space="preserve">
+    <value>Mengontrol file indeks binary-[arch]/Packages mana yang dihasilkan. Paket dengan arsitektur yang tidak cocok (kecuali &apos;all&apos;) disimpan tetapi tidak terlihat oleh klien apt. Juga mengatur baris Architectures: di panduan penyiapan klien. Perubahan berlaku pada pekerjaan Repository Sync berikutnya. Pisahkan beberapa arsitektur dengan koma (misalnya &quot;amd64,arm64&quot;).</value>
+  </data>
   <data name="Controls which component subdirectories are included when generating the Packages index. Packages in unlisted components are stored but invisible to apt clients. Also sets the Components: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Mengontrol subdirektori komponen mana yang disertakan saat menghasilkan indeks Packages. Paket dalam komponen yang tidak terdaftar disimpan tetapi tidak terlihat oleh klien apt. Juga menetapkan baris Components: dalam panduan pengaturan klien. Perubahan akan berlaku pada pekerjaan Repository Sync berikutnya.</value>
   </data>
@@ -53,6 +56,9 @@
   </data>
   <data name="If linked to a mirror, this repository will serve packages from that upstream source." xml:space="preserve">
     <value>Jika ditautkan ke mirror, repositori ini akan menyediakan paket dari sumber hulu tersebut.</value>
+  </data>
+  <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version." xml:space="preserve">
+    <value>Jika ditautkan, indeks Packages repositori ini berasal dari cermin selama setiap Sinkronisasi Repositori. ApkgDebPackages untuk nama dan arsitektur paket yang sama akan menggantikan versi cermin.</value>
   </data>
   <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version." xml:space="preserve">
     <value>Jika terhubung, indeks Packages repositori ini akan disuntikkan dari cermin selama setiap Sinkronisasi Repositori. LocalPackages untuk nama paket dan arsitektur yang sama akan mengesampingkan versi cermin.</value>

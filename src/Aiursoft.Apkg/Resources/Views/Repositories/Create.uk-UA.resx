@@ -39,6 +39,9 @@
   <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Визначає, які індексні файли binary-[arch]/Packages генеруються. Пакети з несумісними архітектурами (окрім &apos;all&apos;) зберігаються, але є невидимими для клієнтів apt. Також встановлює рядок Architectures: у посібнику з налаштування клієнта. Зміни набувають чинності під час наступного запуску завдання синхронізації сховища.</value>
   </data>
+  <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run. Separate multiple architectures with commas (e.g. &quot;amd64,arm64&quot;)." xml:space="preserve">
+    <value>Керує тим, які файли індексу binary-[arch]/Packages генеруються. Пакети з несумісною архітектурою (крім &quot;all&quot;) зберігаються, але невідомі для клієнтів apt. Також встановлює рядок Architectures: у посібнику налаштування клієнта. Зміни набувають чинності під час наступного запуску завдання синхронізації репозиторію. Розділяйте кілька архітектур комами (наприклад, &quot;amd64,arm64&quot;).</value>
+  </data>
   <data name="Controls which component subdirectories are included when generating the Packages index. Packages in unlisted components are stored but invisible to apt clients. Also sets the Components: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Визначає, які підкаталоги компонентів включаються під час генерації індексу Packages. Пакети з неперелічених компонентів зберігаються, але стають невидимими для клієнтів apt. Також встановлює рядок Components: у посібнику з налаштування клієнта. Зміни набувають чинності під час наступного запуску завдання синхронізації сховища.</value>
   </data>
@@ -53,6 +56,9 @@
   </data>
   <data name="If linked to a mirror, this repository will serve packages from that upstream source." xml:space="preserve">
     <value>Якщо підключено до дзеркала, цей репозиторій надаватиме пакунки з цього первинного джерела.</value>
+  </data>
+  <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version." xml:space="preserve">
+    <value>Якщо пов’язано, індекс Packages цього репозиторію ініціалізується з дзеркала під час кожного синхронізування репозиторію. АпкDebPackages з тією ж назвою та архітектурою пакунка замінюють версію з дзеркала.</value>
   </data>
   <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version." xml:space="preserve">
     <value>Якщо пов’язано, індекс Packages цього сховища заповнюється з дзеркала під час кожного синхронізування сховища. LocalPackages з тим самим ім’ям пакета та архітектурою мають пріоритет над версією з дзеркала.</value>

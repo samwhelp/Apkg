@@ -39,14 +39,26 @@
   <data name="Client Configuration Guide" xml:space="preserve">
     <value>क्लाइंट कॉन्फ़िगरेशन गाइड</value>
   </data>
+  <data name="Components" xml:space="preserve">
+    <value>Components</value>
+  </data>
   <data name="Copy to clipboard" xml:space="preserve">
     <value>क्लिपबोर्ड पर कॉपी करें</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
   </data>
   <data name="Distro" xml:space="preserve">
     <value>वितरण</value>
   </data>
   <data name="Don&apos;t have &lt;code&gt;apkg&lt;/code&gt;?" xml:space="preserve">
     <value>क्या आपके पास &lt;code&gt;apkg&lt;/code&gt; नहीं है?</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="GPG Signing" xml:space="preserve">
+    <value>GPG Signing</value>
   </data>
   <data name="How to use:" xml:space="preserve">
     <value>कैसे उपयोग करें:</value>
@@ -69,17 +81,29 @@
   <data name="One-line Setup:" xml:space="preserve">
     <value>एक-पंक्ति स्थापना:</value>
   </data>
+  <data name="Open to all" xml:space="preserve">
+    <value>Open to all</value>
+  </data>
+  <data name="Packages" xml:space="preserve">
+    <value>Packages</value>
+  </data>
   <data name="Quick Setup with APKG CLI:" xml:space="preserve">
     <value>APKG CLI के साथ तेज़ सेटअप:</value>
   </data>
   <data name="Repository Details" xml:space="preserve">
     <value>रेपॉजिटरी विवरण</value>
   </data>
+  <data name="Restricted" xml:space="preserve">
+    <value>Restricted</value>
+  </data>
   <data name="Run the &lt;code&gt;sudo apkg add-source&lt;/code&gt; command on the right to configure this repo, then use &lt;code&gt;sudo apt install&lt;/code&gt; as usual." xml:space="preserve">
     <value>इस रिपॉजिटरी की कॉन्फ़िगरेशन के लिए दाईं ओर &lt;code&gt;sudo apkg add-source&lt;/code&gt; कमांड चलाएं, फिर जैसा कि आप आमतौर पर करते हैं, &lt;code&gt;sudo apt install&lt;/code&gt; का उपयोग करें।</value>
   </data>
   <data name="See how to install APKG CLI." xml:space="preserve">
     <value>देखें कि APKG CLI कैसे इंस्टॉल करें।</value>
+  </data>
+  <data name="Staging Bucket" xml:space="preserve">
+    <value>Staging Bucket</value>
   </data>
   <data name="Suite" xml:space="preserve">
     <value>सूट</value>
@@ -90,36 +114,11 @@
   <data name="This uses the modern DEB822 format and a scoped keyring for maximum security and reliability." xml:space="preserve">
     <value>यह अधिकतम सुरक्षा और विश्वसनीयता के लिए आधुनिक DEB822 प्रारूप और सीमित कुंजीरिंग का उपयोग करता है।</value>
   </data>
-  <data name="What is a Repository?" xml:space="preserve">
-    <value>रेपॉजिटरी क्या है?</value>
-  </data>
-
-  <data name="Components" xml:space="preserve">
-    <value>Components</value>
-  </data>
-  <data name="Packages" xml:space="preserve">
-    <value>Packages</value>
-  </data>
-  <data name="GPG Signing" xml:space="preserve">
-    <value>GPG Signing</value>
-  </data>
-  <data name="Enabled" xml:space="preserve">
-    <value>Enabled</value>
-  </data>
-  <data name="Disabled" xml:space="preserve">
-    <value>Disabled</value>
-  </data>
   <data name="Upload Permission" xml:space="preserve">
     <value>Upload Permission</value>
   </data>
-  <data name="Open to all" xml:space="preserve">
-    <value>Open to all</value>
-  </data>
-  <data name="Restricted" xml:space="preserve">
-    <value>Restricted</value>
-  </data>
-  <data name="Staging Bucket" xml:space="preserve">
-    <value>Staging Bucket</value>
+  <data name="What is a Repository?" xml:space="preserve">
+    <value>रेपॉजिटरी क्या है?</value>
   </data>
 
 </root>
