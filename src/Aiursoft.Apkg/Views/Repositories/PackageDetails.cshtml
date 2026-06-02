@@ -62,6 +62,21 @@
                     <dt class="col-sm-3">@Localizer["Origin"]</dt>
                     <dd class="col-sm-9">@pkg.Origin</dd>
 
+                    @if (!string.IsNullOrWhiteSpace(pkg.OriginSuite))
+                    {
+                        <dt class="col-sm-3">@Localizer["Origin Suite"]</dt>
+                        <dd class="col-sm-9"><code>@pkg.OriginSuite</code></dd>
+                    }
+
+                    <dt class="col-sm-3">@Localizer["Component"]</dt>
+                    <dd class="col-sm-9"><code>@pkg.Component</code></dd>
+
+                    @if (!string.IsNullOrWhiteSpace(pkg.MultiArch))
+                    {
+                        <dt class="col-sm-3">@Localizer["Multi-Arch"]</dt>
+                        <dd class="col-sm-9"><code>@pkg.MultiArch</code></dd>
+                    }
+
                     <dt class="col-sm-3">@Localizer["Maintainer"]</dt>
                     <dd class="col-sm-9">@pkg.Maintainer</dd>
 
@@ -234,11 +249,6 @@ sudo apt update</code></pre>
                 @if (!string.IsNullOrWhiteSpace(pkg.InstalledSize))
                 {
                     <p><strong>@Localizer["Installed Size"]:</strong> @pkg.InstalledSize B</p>
-                }
-                <p><strong>@Localizer["Component"]:</strong> @pkg.Component</p>
-                @if (!string.IsNullOrWhiteSpace(pkg.MultiArch))
-                {
-                    <p><strong>@Localizer["Multi-Arch"]:</strong> @pkg.MultiArch</p>
                 }
                 <hr />
                 <h6>@Localizer["Hashes"]</h6>
