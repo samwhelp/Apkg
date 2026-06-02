@@ -202,7 +202,20 @@
 
 ### ItemGroup 条目类型
 
-所有条目都支持 MSBuild 风格的 `Condition` 属性，可用 `$(Distro)`、`$(Suite)`、`$(Arch)`（别名 `$(Architecture)`）、`$(Component)`、`$(UpstreamDistro)`、`$(UpstreamSuite)`、`$(UpstreamArch)`（别名 `$(UpstreamArchitecture)`）在构建矩阵中做条件分支。此外 `$(UpstreamVersion)` 可在 `PackageVersion` 中用作模板变量，构建时自动替换为上游版本号。
+所有条目都支持 MSBuild 风格的 `Condition` 属性，支持以下运算符和变量。
+
+**变量**：`$(Distro)`、`$(Suite)`、`$(Arch)`（别名 `$(Architecture)`）、`$(Component)`、`$(UpstreamDistro)`、`$(UpstreamSuite)`、`$(UpstreamArch)`（别名 `$(UpstreamArchitecture)`）。此外 `$(UpstreamVersion)` 可在 `PackageVersion` 中用作模板变量，构建时自动替换为上游版本号。
+
+**运算符**：
+
+| 运算符 | 说明 | 示例 |
+|--------|------|------|
+| `==` | 等于 | `'$(Arch)' == 'amd64'` |
+| `!=` | 不等于 | `'$(Suite)' != 'noble-addon'` |
+| `and` | 逻辑与 | `'$(Suite)' == 'questing-addon' and '$(Arch)' == 'amd64'` |
+| `or` | 逻辑或 | `'$(Suite)' == 'noble-addon' or '$(Suite)' == 'questing-addon'` |
+
+`and` 优先级高于 `or`，字符串比较大小写不敏感。未指定 `Condition` 属性（或为空）表示该条目始终生效。
 
 #### IncludeFile — 安装单个文件
 
