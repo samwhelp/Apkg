@@ -27,6 +27,9 @@
   <data name="Allow Anyone to Upload" xml:space="preserve">
     <value>कोई भी अपलोड करने की अनुमति दें</value>
   </data>
+  <data name="Allows any logged-in user to upload ApkgDebPackages to this repository." xml:space="preserve">
+    <value>यह किसी भी लॉग इन किए गए उपयोगकर्ता को इस रेपॉजिटरी में ApkgDebPackages अपलोड करने की अनुमति देता है।</value>
+  </data>
   <data name="Allows any logged-in user to upload LocalPackages to this repository." xml:space="preserve">
     <value>इस रिपॉजिटरी में किसी भी लॉग-इन उपयोगकर्ता को स्थानीय पैकेज अपलोड करने की अनुमति देता है।</value>
   </data>
@@ -38,6 +41,12 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>रद्द करें</value>
+  </data>
+  <data name="Comma-separated list. Each value becomes a component subdirectory in the APT repository (e.g. &apos;main,universe,multiverse&apos;)." xml:space="preserve">
+    <value>Comma-separated list. Each value becomes a component subdirectory in the APT repository (e.g. &apos;main,universe,multiverse&apos;).</value>
+  </data>
+  <data name="Comma-separated list. Use Debian architecture names (e.g. &apos;amd64,arm64,i386&apos;). &apos;all&apos; packages are always included regardless of this setting." xml:space="preserve">
+    <value>Comma-separated list. Use Debian architecture names (e.g. &apos;amd64,arm64,i386&apos;). &apos;all&apos; packages are always included regardless of this setting.</value>
   </data>
   <data name="Components" xml:space="preserve">
     <value>घटक</value>
@@ -51,6 +60,9 @@
   <data name="Create New Repository" xml:space="preserve">
     <value>नया रिपॉजिटरी बनाएं</value>
   </data>
+  <data name="Distro" xml:space="preserve">
+    <value>Distro</value>
+  </data>
   <data name="Edit Repository" xml:space="preserve">
     <value>रेपॉजिटरी संपादित करें</value>
   </data>
@@ -59,6 +71,9 @@
   </data>
   <data name="If linked to a mirror, this repository will serve packages from that upstream source." xml:space="preserve">
     <value>यदि यह किसी मिरर से लिंक किया गया है, तो यह रेपॉजिटरी उस अपस्ट्रीम स्रोत से पैकेज प्रदान करेगी।</value>
+  </data>
+  <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version." xml:space="preserve">
+    <value>यदि लिंक किया गया है, तो इस रिपॉजिटरी का पैकेज इंडेक्स हर रिपॉजिटरी सिंक के दौरान मिरर से ली जाती है। समान पैकेज नाम और आर्किटेक्चर के लिए ApkgDebPackages मिरर संस्करण को ओवरराइड कर देते हैं।</value>
   </data>
   <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version." xml:space="preserve">
     <value>यदि लिंक किया गया है, तो प्रति प्रत्येक रिपॉजिटरी सिंक के दौरान इस रिपॉजिटरी के Packages इंडेक्स को मिरर से सीड किया जाता है। समान पैकेज नाम और आर्किटेक्चर के लिए LocalPackages, मिरर संस्करण को ओवरराइड करते हैं।</value>
@@ -69,11 +84,26 @@
   <data name="Mirror" xml:space="preserve">
     <value>मिरर</value>
   </data>
+  <data name="Multiple values" xml:space="preserve">
+    <value>Multiple values</value>
+  </data>
+  <data name="Repository Name" xml:space="preserve">
+    <value>Repository Name</value>
+  </data>
   <data name="Save Repository" xml:space="preserve">
     <value>रेपॉजिटरी सहेजें</value>
   </data>
+  <data name="Single value" xml:space="preserve">
+    <value>Single value</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>Suite</value>
+  </data>
   <data name="The APT suite name (e.g. jammy, stable)." xml:space="preserve">
     <value>APT सूट का नाम (जैसे jammy, stable)।</value>
+  </data>
+  <data name="The APT suite name. Must be a single identifier (e.g. &apos;noble&apos;, &apos;stable&apos;, &apos;bookworm&apos;)." xml:space="preserve">
+    <value>The APT suite name. Must be a single identifier (e.g. &apos;noble&apos;, &apos;stable&apos;, &apos;bookworm&apos;).</value>
   </data>
   <data name="The GPG key used to sign the Release files of this repository." xml:space="preserve">
     <value>इस रिपॉजिटरी के रिलीज़ फ़ाइलों को साइन करने के लिए उपयोग किया जाने वाला GPG कुंजी।</value>
@@ -84,42 +114,17 @@
   <data name="The URL prefix for this repository (e.g. &apos;ubuntu&apos;)." xml:space="preserve">
     <value>इस रिपॉजिटरी के लिए URL उपसर्ग (उदाहरण के लिए &apos;ubuntu&apos;)।</value>
   </data>
-  <data name="When enabled, the Release file is signed with the selected GPG key after every Repository Sync. Clients that use &apos;signed-by=&apos; in their sources.list will verify this signature and refuse unsigned or wrongly-signed repositories." xml:space="preserve">
-    <value>सक्षम होने पर, प्रत्येक रिपॉजिटरी सिंक के बाद रिलीज़ फ़ाइल का चयनित GPG कुंजी के साथ हस्ताक्षर किया जाता है। अपने sources.list में &apos;signed-by=&apos; का उपयोग करने वाले क्लाइंट इस हस्ताक्षर की पुष्टि करेंगे और बिना हस्ताक्षरित या गलत हस्ताक्षरित रिपॉजिटरीओं को अस्वीकार कर देंगे।</value>
-  </data>
-
-  <data name="Single value" xml:space="preserve">
-    <value>Single value</value>
-  </data>
-  <data name="This field accepts only a single value." xml:space="preserve">
-    <value>This field accepts only a single value.</value>
-  </data>
-  <data name="Multiple values" xml:space="preserve">
-    <value>Multiple values</value>
+  <data name="The URL prefix for this repository. Must be a single lowercase identifier (e.g. &apos;anduinos&apos;, &apos;ubuntu&apos;)." xml:space="preserve">
+    <value>The URL prefix for this repository. Must be a single lowercase identifier (e.g. &apos;anduinos&apos;, &apos;ubuntu&apos;).</value>
   </data>
   <data name="This field accepts multiple values. Separate them with commas." xml:space="preserve">
     <value>This field accepts multiple values. Separate them with commas.</value>
   </data>
-  <data name="The URL prefix for this repository. Must be a single lowercase identifier (e.g. &apos;anduinos&apos;, &apos;ubuntu&apos;)." xml:space="preserve">
-    <value>The URL prefix for this repository. Must be a single lowercase identifier (e.g. &apos;anduinos&apos;, &apos;ubuntu&apos;).</value>
+  <data name="This field accepts only a single value." xml:space="preserve">
+    <value>This field accepts only a single value.</value>
   </data>
-  <data name="The APT suite name. Must be a single identifier (e.g. &apos;noble&apos;, &apos;stable&apos;, &apos;bookworm&apos;)." xml:space="preserve">
-    <value>The APT suite name. Must be a single identifier (e.g. &apos;noble&apos;, &apos;stable&apos;, &apos;bookworm&apos;).</value>
-  </data>
-  <data name="Comma-separated list. Each value becomes a component subdirectory in the APT repository (e.g. &apos;main,universe,multiverse&apos;)." xml:space="preserve">
-    <value>Comma-separated list. Each value becomes a component subdirectory in the APT repository (e.g. &apos;main,universe,multiverse&apos;).</value>
-  </data>
-  <data name="Comma-separated list. Use Debian architecture names (e.g. &apos;amd64,arm64,i386&apos;). &apos;all&apos; packages are always included regardless of this setting." xml:space="preserve">
-    <value>Comma-separated list. Use Debian architecture names (e.g. &apos;amd64,arm64,i386&apos;). &apos;all&apos; packages are always included regardless of this setting.</value>
-  </data>
-  <data name="Repository Name" xml:space="preserve">
-    <value>Repository Name</value>
-  </data>
-  <data name="Distro" xml:space="preserve">
-    <value>Distro</value>
-  </data>
-  <data name="Suite" xml:space="preserve">
-    <value>Suite</value>
+  <data name="When enabled, the Release file is signed with the selected GPG key after every Repository Sync. Clients that use &apos;signed-by=&apos; in their sources.list will verify this signature and refuse unsigned or wrongly-signed repositories." xml:space="preserve">
+    <value>सक्षम होने पर, प्रत्येक रिपॉजिटरी सिंक के बाद रिलीज़ फ़ाइल का चयनित GPG कुंजी के साथ हस्ताक्षर किया जाता है। अपने sources.list में &apos;signed-by=&apos; का उपयोग करने वाले क्लाइंट इस हस्ताक्षर की पुष्टि करेंगे और बिना हस्ताक्षरित या गलत हस्ताक्षरित रिपॉजिटरीओं को अस्वीकार कर देंगे।</value>
   </data>
 
 </root>

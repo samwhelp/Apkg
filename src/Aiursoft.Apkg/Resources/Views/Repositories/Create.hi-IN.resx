@@ -39,6 +39,9 @@
   <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>यह नियंत्रित करता है कि कौन से binary-[arch]/Packages इंडेक्स फ़ाइलें उत्पन्न की जाती हैं। गैर-मेल खाती आर्किटेक्चर वाले पैकेज (सिवाय &apos;all&apos; के) संग्रहीत किए जाते हैं लेकिन apt क्लाइंट्स के लिए अदृश्य होते हैं। यह क्लाइंट सेटअप गाइड में Architectures: पंक्ति को भी सेट करता है। परिवर्तन अगले Repository Sync कार्य के चलाए जाने पर प्रभावी हो जाते हैं।</value>
   </data>
+  <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run. Separate multiple architectures with commas (e.g. &quot;amd64,arm64&quot;)." xml:space="preserve">
+    <value>निर्धारित करता है कि कौन से binary-[arch]/Packages अनुक्रमणिका फ़ाइलें बनाई जाएंगी। अनमेल वास्तुकलाओं (सिवाय &apos;all&apos; के) वाली पैकेजें संग्रहीत की जाती हैं, लेकिन apt क्लाइंट्स के लिए अदृश्य रहती हैं। साथ ही, क्लाइंट सेटअप गाइड में Architectures: पंक्ति भी सेट करता है। परिवर्तन अगली Repository Sync जॉब रन पर प्रभावी होते हैं। अनेक वास्तुकलाओं को कॉमा से अलग करें (जैसे &quot;amd64,arm64&quot;)।</value>
+  </data>
   <data name="Controls which component subdirectories are included when generating the Packages index. Packages in unlisted components are stored but invisible to apt clients. Also sets the Components: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Packages index बनाते समय कौन से घटक उपनिर्देशिकाएँ शामिल की जाएँगी, यह नियंत्रित करता है। अनु सूचीबद्ध घटकों में पैकेज संग्रहीत किए जाते हैं लेकिन apt क्लाइंटों के लिए अदृश्य होते हैं। यह क्लाइंट सेटअप गाइड में Components: पंक्ति को भी सेट करता है। परिवर्तन अगले Repository Sync कार्य चलाए जाने पर प्रभावी हो जाते हैं।</value>
   </data>
@@ -53,6 +56,9 @@
   </data>
   <data name="If linked to a mirror, this repository will serve packages from that upstream source." xml:space="preserve">
     <value>यदि किसी मिरर से जुड़ा है, तो यह रिपॉजिटरी उस अपस्ट्रीम स्रोत से पैकेज प्रदान करेगा।</value>
+  </data>
+  <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version." xml:space="preserve">
+    <value>यदि लिंक किया गया है, तो इस रेपोजिटरी का पैकेज इंडेक्स हर रेपोजिटरी सिंक के दौरान मिरर से सीड किया जाता है। एक ही पैकेज नाम और आर्किटेक्चर के लिए `ApkgDebPackages` मिरर वर्जन को ओवरराइड करते हैं।</value>
   </data>
   <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version." xml:space="preserve">
     <value>यदि लिंक किया गया है, तो इस संग्रह का Packages सूचकांक प्रत्येक Repository Sync के दौरान मिरर से बीजित होता है। समान पैकेज नाम और आर्किटेक्चर के लिए LocalPackages मिरर संस्करण को अधिलेखित कर देते हैं।</value>

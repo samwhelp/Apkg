@@ -39,6 +39,9 @@
   <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Määrittää, mitkä binary-[arch]/Packages-indeksitiedostot luodaan. Paketit, joiden arkkitehtuuri ei täsmää (paitsi &apos;all&apos;), tallennetaan mutta eivät näy apt-asiakkaille. Asettaa myös Architectures-rivin asiakkaan asetushakemistoon. Muutokset tulevat voimaan seuraavassa Repository Sync -työn suorituksessa.</value>
   </data>
+  <data name="Controls which binary-[arch]/Packages index files are generated. Packages with non-matching architectures (except &apos;all&apos;) are stored but invisible to apt clients. Also sets the Architectures: line in the client setup guide. Changes take effect on the next Repository Sync job run. Separate multiple architectures with commas (e.g. &quot;amd64,arm64&quot;)." xml:space="preserve">
+    <value>Määrittää, mitkä binary-[arch]/Packages-indeksitiedostot luodaan. Paketteja, joiden arkkitehtuuri ei täsmää (lukuun ottamatta &apos;all&apos;), tallennetaan, mutta ne ovat apt-asiakkaille näkymättömiä. Määrittää myös Architectures-rivin asiakasasetusoppaaseen. Muutokset tulevat voimaan seuraavan Repository Sync -tehtävän suoritettua. Erottele useammat arkkitehtuurit pilkulla (esim. &quot;amd64,arm64&quot;).</value>
+  </data>
   <data name="Controls which component subdirectories are included when generating the Packages index. Packages in unlisted components are stored but invisible to apt clients. Also sets the Components: line in the client setup guide. Changes take effect on the next Repository Sync job run." xml:space="preserve">
     <value>Määrittää, mitkä komponenttien alihakemistot sisällytetään Packages-indeksiä luotaessa. Luettelamattomissa komponenteissa olevat paketit tallennetaan, mutta ne ovat näkymättömiä apt-asiakasohjelmille. Asettaa myös Components-rivin asiakkaan asetustiedostoon. Muutokset tulevat voimaan seuraavassa Repository Sync -tehtävän suorituksessa.</value>
   </data>
@@ -53,6 +56,9 @@
   </data>
   <data name="If linked to a mirror, this repository will serve packages from that upstream source." xml:space="preserve">
     <value>Jos linkitetty peiliin, tämä arkisto tarjoaa paketteja kyseisestä ylävirran lähteestä.</value>
+  </data>
+  <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. ApkgDebPackages for the same package name and architecture override the mirror version." xml:space="preserve">
+    <value>Jos peilety, tämän varaston Packages-indeksi haetaan peilistä joka Repository Sync -työn yhteydessä. ApkgDebPackages-pakettien samannimiset ja saman arkkitehtuurin versiot korvaavat peilin version.</value>
   </data>
   <data name="If linked, this repository&apos;s Packages index is seeded from the mirror during every Repository Sync. LocalPackages for the same package name and architecture override the mirror version." xml:space="preserve">
     <value>Jos yhdistetty, tämän arkiston Packages-indeksi ladataan peilistä jokaisen Repository Sync -synkronoinnin yhteydessä. Saman paketin nimen ja arkkitehtuurin LocalPackages ohittaa peilin version.</value>
