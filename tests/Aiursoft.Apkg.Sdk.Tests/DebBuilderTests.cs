@@ -2104,19 +2104,6 @@ public class DebBuilderTests
         }
     }
 
-    private static async Task<string?> RunWhichAsync(string command)
-    {
-        var psi = new System.Diagnostics.ProcessStartInfo("which", command)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-        var proc = System.Diagnostics.Process.Start(psi)!;
-        var stdout = (await proc.StandardOutput.ReadToEndAsync()).Trim();
-        await proc.WaitForExitAsync();
-        return proc.ExitCode == 0 ? stdout : null;
-    }
-
     private static async Task RunAsync(string command, string[] args, string? workingDir = null)
     {
         var psi = new System.Diagnostics.ProcessStartInfo(command)
