@@ -23,7 +23,6 @@ public class AptMetadataService : ITransientDependency
         await WriteField(writer, "Maintainer", pkg.Maintainer);
         await WriteField(writer, "Original-Maintainer", pkg.OriginalMaintainer);
         await WriteField(writer, "Bugs", pkg.Bugs);
-        await WriteField(writer, "Installed-Size", pkg.InstalledSize);
         await WriteField(writer, "Depends", pkg.Depends);
         await WriteField(writer, "Recommends", pkg.Recommends);
         await WriteField(writer, "Suggests", pkg.Suggests);
