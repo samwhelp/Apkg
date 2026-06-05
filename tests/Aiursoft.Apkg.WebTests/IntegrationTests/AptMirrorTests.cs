@@ -18,6 +18,7 @@ public class AptMirrorTests : TestBase
         var bucket = new AptBucket
         {
             CreatedAt = DateTime.UtcNow,
+            SignedAt = DateTime.UtcNow,
             InReleaseContent = "SIGNED-TEST-CONTENT",
             ReleaseContent = "RAW-TEST-CONTENT"
         };
@@ -77,5 +78,112 @@ public class AptMirrorTests : TestBase
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(content.Contains("BEGIN PGP PUBLIC KEY BLOCK"));
+    }
+
+    [TestMethod]
+    public async Task TestInReleaseReturnsCacheHeaders()
+    {
+        await Server!.SeedMirrorsAsync(true);
+        var db = GetService<ApkgDbContext>();
+
+        var repo = db.AptRepositories.First();
+        var signedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        var bucket = new AptBucket
+        {
+            CreatedAt = DateTime.UtcNow,
+            SignedAt = signedAt,
+            InReleaseContent = "SIGNED-TEST-CONTENT"
+        };
+        db.AptBuckets.Add(bucket);
+        db.SaveChanges();
+        repo.PrimaryBucketId = bucket.Id;
+        db.SaveChanges();
+
+        var response = await Http.GetAsync($"/artifacts/{repo.Distro}/dists/{repo.Suite}/InRelease");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual("SIGNED-TEST-CONTENT", await response.Content.ReadAsStringAsync());
+        Assert.AreEqual(signedAt, response.Content.Headers.LastModified?.UtcDateTime);
+        Assert.AreEqual("no-cache", response.Headers.CacheControl?.ToString());
+    }
+
+    [TestMethod]
+    public async Task TestInReleaseReturns304WhenNotModified()
+    {
+        await Server!.SeedMirrorsAsync(true);
+        var db = GetService<ApkgDbContext>();
+
+        var repo = db.AptRepositories.First();
+        var signedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        var bucket = new AptBucket
+        {
+            CreatedAt = DateTime.UtcNow,
+            SignedAt = signedAt,
+            InReleaseContent = "SIGNED-TEST-CONTENT"
+        };
+        db.AptBuckets.Add(bucket);
+        db.SaveChanges();
+        repo.PrimaryBucketId = bucket.Id;
+        db.SaveChanges();
+
+        // Second request with If-Modified-Since matching SignedAt
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            $"/artifacts/{repo.Distro}/dists/{repo.Suite}/InRelease");
+        request.Headers.Add("If-Modified-Since", signedAt.ToString("R"));
+        var response = await Http.SendAsync(request);
+        Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task TestInReleaseReturns200WhenModified()
+    {
+        await Server!.SeedMirrorsAsync(true);
+        var db = GetService<ApkgDbContext>();
+
+        var repo = db.AptRepositories.First();
+        var signedAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        var bucket = new AptBucket
+        {
+            CreatedAt = DateTime.UtcNow,
+            SignedAt = signedAt,
+            InReleaseContent = "SIGNED-TEST-CONTENT"
+        };
+        db.AptBuckets.Add(bucket);
+        db.SaveChanges();
+        repo.PrimaryBucketId = bucket.Id;
+        db.SaveChanges();
+
+        // Request with an old If-Modified-Since date
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            $"/artifacts/{repo.Distro}/dists/{repo.Suite}/InRelease");
+        request.Headers.Add("If-Modified-Since",
+            new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToString("R"));
+        var response = await Http.SendAsync(request);
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual("SIGNED-TEST-CONTENT", await response.Content.ReadAsStringAsync());
+    }
+
+    [TestMethod]
+    public async Task TestReleaseReturns304WhenNotModified()
+    {
+        await Server!.SeedMirrorsAsync(true);
+        var db = GetService<ApkgDbContext>();
+
+        var repo = db.AptRepositories.First();
+        var createdAt = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        var bucket = new AptBucket
+        {
+            CreatedAt = createdAt,
+            ReleaseContent = "RAW-TEST-CONTENT"
+        };
+        db.AptBuckets.Add(bucket);
+        db.SaveChanges();
+        repo.PrimaryBucketId = bucket.Id;
+        db.SaveChanges();
+
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            $"/artifacts/{repo.Distro}/dists/{repo.Suite}/Release");
+        request.Headers.Add("If-Modified-Since", createdAt.ToString("R"));
+        var response = await Http.SendAsync(request);
+        Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
     }
 }

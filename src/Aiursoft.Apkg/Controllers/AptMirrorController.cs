@@ -46,8 +46,10 @@ public class AptMirrorController(
 
         var bucket = repo.PrimaryBucket;
 
-        if (path.EndsWith("InRelease")) return Content(bucket.InReleaseContent ?? string.Empty, "text/plain");
-        if (path.EndsWith("Release")) return Content(bucket.ReleaseContent ?? string.Empty, "text/plain");
+        if (path.EndsWith("InRelease") && bucket.InReleaseContent != null)
+            return ConditionalContent(bucket.InReleaseContent, bucket.SignedAt!.Value, "text/plain");
+        if (path.EndsWith("Release") && bucket.ReleaseContent != null)
+            return ConditionalContent(bucket.ReleaseContent, bucket.CreatedAt, "text/plain");
 
         if (path.Contains("Packages"))
         {
@@ -107,5 +109,22 @@ public class AptMirrorController(
         if (localPath == null) return NotFound();
 
         return PhysicalFile(localPath, "application/vnd.debian.binary-package", true);
+    }
+
+    private IActionResult ConditionalContent(string content, DateTime lastModified, string contentType)
+    {
+        Response.Headers.LastModified = lastModified.ToString("R");
+        Response.Headers.CacheControl = "no-cache";
+
+        if (DateTime.TryParse(Request.Headers.IfModifiedSince, out var ifModifiedSince))
+        {
+            // Truncate to second precision — HTTP-date has no sub-second resolution
+            if (lastModified <= ifModifiedSince.AddSeconds(1))
+            {
+                return StatusCode(304);
+            }
+        }
+
+        return Content(content, contentType);
     }
 }
