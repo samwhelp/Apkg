@@ -237,11 +237,33 @@
   Condition="'$(Arch)' == 'amd64'" />
 ```
 
+**`Mode` 属性（可选）：**
+
+`IncludeFile`、`IncludeScript`、`ConfFile` 支持可选的 `Mode` 属性，用于设置文件的 Unix 权限。
+值为 3 位八进制字符串，如 `"755"`、`"644"`、`"600"`。
+
+- 对 `IncludeFile` 和 `ConfFile`：不设 `Mode` 时保留源文件原始权限
+- 对 `IncludeScript`：不设 `Mode` 时默认为 `755`（可执行）
+
+```xml
+<!-- 二进制文件设为 755（可执行） -->
+<IncludeFile Include="build/my-binary" Target="/usr/bin/my-binary" Mode="755" />
+
+<!-- 配置文件设为 644（仅 owner 可写） -->
+<IncludeFile Include="config/defaults.json" Target="/etc/myapp/defaults.json" Mode="644" />
+
+<!-- 不设 Mode，保留源文件原始权限 -->
+<IncludeFile Include="data/logo.svg" Target="/usr/share/pixmaps/logo.svg" />
+```
+
 #### IncludeScript — 安装可执行脚本或二进制
 
 ```xml
 <!--
   与 IncludeFile 相同，但安装后自动将目标文件权限设为 0755（可执行）。
+  可通过 Mode 属性覆盖默认权限：
+    <IncludeScript Include="bin/readonly-script" Target="/usr/bin/readonly-script" Mode="644" />
+  不设 Mode 时默认 755。
   适合放在 /usr/bin/、/usr/sbin/、/usr/lib/xxx/bin/ 下的脚本或二进制。
 -->
 <IncludeScript Include="bin/my-tool" Target="/usr/bin/my-tool" />

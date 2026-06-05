@@ -168,6 +168,14 @@ public abstract class BaseItem
 {
     public string Source { get; set; } = string.Empty;
     public string? Condition { get; set; }
+
+    /// <summary>
+    /// Optional Unix permission mode (octal string like "755", "644").
+    /// When set, the copied file will have these permissions applied.
+    /// When null, source permissions are preserved (IncludeFile) or default
+    /// to 0755 (IncludeScript).
+    /// </summary>
+    public UnixFileMode? Mode { get; set; }
 }
 
 /// <summary>Copies a single file to a fixed target path inside the package.</summary>

@@ -2446,4 +2446,215 @@ public class DebBuilderTests
         await proc.WaitForExitAsync();
         return stdout;
     }
+
+    // ── Mode attribute support ─────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task BuildAsync_IncludeFile_WithMode_AppliesPermissions()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            File.WriteAllText(Path.Combine(projectDir, "readme.txt"), "content");
+
+            var project = new AosprojProject
+            {
+                PackageName = "mode-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Mode test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                IncludeFiles =
+                {
+                    new IncludeFileItem
+                    {
+                        Source = "readme.txt",
+                        Target = "/usr/share/doc/mode-pkg/readme.txt",
+                        Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                               UnixFileMode.GroupRead | UnixFileMode.OtherRead
+                    }
+                }
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+            var dest = Path.Combine(projectDir, "obj", "jammy_amd64", "usr", "share", "doc", "mode-pkg", "readme.txt");
+            Assert.IsTrue(File.Exists(dest));
+
+#pragma warning disable CA1416
+            try
+            {
+                var mode = File.GetUnixFileMode(dest);
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserWrite));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.UserExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupRead));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupWrite));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherRead));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherWrite));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherExecute));
+            }
+            catch (PlatformNotSupportedException) { }
+#pragma warning restore CA1416
+        }
+        finally { Directory.Delete(tempDir, recursive: true); }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_IncludeFile_WithMode755()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            File.WriteAllText(Path.Combine(projectDir, "script.sh"), "#!/bin/sh\necho ok");
+
+            var project = new AosprojProject
+            {
+                PackageName = "mode755-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Mode 755 test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                IncludeFiles =
+                {
+                    new IncludeFileItem
+                    {
+                        Source = "script.sh",
+                        Target = "/usr/bin/script",
+                        Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                               UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                               UnixFileMode.OtherRead | UnixFileMode.OtherExecute
+                    }
+                }
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+            var dest = Path.Combine(projectDir, "obj", "jammy_amd64", "usr", "bin", "script");
+            Assert.IsTrue(File.Exists(dest));
+
+#pragma warning disable CA1416
+            try
+            {
+                var mode = File.GetUnixFileMode(dest);
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserWrite));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupRead));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherRead));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherExecute));
+            }
+            catch (PlatformNotSupportedException) { }
+#pragma warning restore CA1416
+        }
+        finally { Directory.Delete(tempDir, recursive: true); }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_IncludeScript_WithCustomMode()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            File.WriteAllText(Path.Combine(projectDir, "helper.sh"), "#!/bin/sh\necho helper");
+
+            var project = new AosprojProject
+            {
+                PackageName = "script-mode-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Script custom mode test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                IncludeScripts =
+                {
+                    new IncludeScriptItem
+                    {
+                        Source = "helper.sh",
+                        Target = "/usr/lib/pkg/helper.sh",
+                        Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                               UnixFileMode.GroupRead | UnixFileMode.OtherRead
+                    }
+                }
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+            var dest = Path.Combine(projectDir, "obj", "jammy_amd64", "usr", "lib", "pkg", "helper.sh");
+            Assert.IsTrue(File.Exists(dest));
+
+#pragma warning disable CA1416
+            try
+            {
+                var mode = File.GetUnixFileMode(dest);
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserWrite));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.UserExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupRead));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherRead));
+                Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherExecute));
+            }
+            catch (PlatformNotSupportedException) { }
+#pragma warning restore CA1416
+        }
+        finally { Directory.Delete(tempDir, recursive: true); }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_IncludeScript_WithoutMode_DefaultsTo0755()
+    {
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+            File.WriteAllText(Path.Combine(projectDir, "run.sh"), "#!/bin/sh\necho run");
+
+            var project = new AosprojProject
+            {
+                PackageName = "default-mode-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Default mode test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                IncludeScripts =
+                {
+                    new IncludeScriptItem
+                    {
+                        Source = "run.sh",
+                        Target = "/usr/bin/run"
+                    }
+                }
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+            var dest = Path.Combine(projectDir, "obj", "jammy_amd64", "usr", "bin", "run");
+            Assert.IsTrue(File.Exists(dest));
+
+#pragma warning disable CA1416
+            try
+            {
+                var mode = File.GetUnixFileMode(dest);
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.UserExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupExecute));
+                Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherExecute));
+            }
+            catch (PlatformNotSupportedException) { }
+#pragma warning restore CA1416
+        }
+        finally { Directory.Delete(tempDir, recursive: true); }
+    }
 }

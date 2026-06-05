@@ -737,4 +737,196 @@ public class AosprojSerializerTests
         var element = doc.Descendants("IncludeFile").First();
         Assert.IsNull(element.Attribute("Condition"));
     }
+
+    // ── Mode attribute support ─────────────────────────────────────────────────
+
+    [TestMethod]
+    public void Deserialize_IncludeFile_WithMode()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+              </PropertyGroup>
+              <ItemGroup>
+                <IncludeFile Include="src/app" Target="/usr/bin/app" Mode="755" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+        Assert.AreEqual(1, project.IncludeFiles.Count);
+        var item = project.IncludeFiles[0];
+        Assert.IsTrue(item.Mode.HasValue);
+        var mode = item.Mode.Value;
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserWrite));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserExecute));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupRead));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupExecute));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherRead));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherExecute));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupWrite));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherWrite));
+    }
+
+    [TestMethod]
+    public void Deserialize_IncludeFile_WithoutMode_IsNull()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+              </PropertyGroup>
+              <ItemGroup>
+                <IncludeFile Include="src/logo.svg" Target="/opt/logo.svg" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+        Assert.AreEqual(1, project.IncludeFiles.Count);
+        Assert.IsNull(project.IncludeFiles[0].Mode);
+    }
+
+    [TestMethod]
+    public void Deserialize_IncludeFile_Mode600()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+              </PropertyGroup>
+              <ItemGroup>
+                <IncludeFile Include="src/secret" Target="/etc/secret" Mode="600" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+        var item = project.IncludeFiles[0];
+        var mode = item.Mode!.Value;
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserWrite));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.UserExecute));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupRead));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupWrite));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupExecute));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherRead));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherWrite));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherExecute));
+    }
+
+    [TestMethod]
+    public void Serialize_IncludeFile_WithMode()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            IncludeFiles =
+            {
+                new IncludeFileItem
+                {
+                    Source = "src/app",
+                    Target = "/usr/bin/app",
+                    Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                           UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                           UnixFileMode.OtherRead | UnixFileMode.OtherExecute
+                }
+            }
+        };
+
+        var doc = _serializer.Serialize(project);
+        var element = doc.Descendants("IncludeFile").First();
+        Assert.AreEqual("755", element.Attribute("Mode")?.Value);
+    }
+
+    [TestMethod]
+    public void Serialize_IncludeFile_WithoutMode_OmitsAttribute()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            IncludeFiles =
+            {
+                new IncludeFileItem
+                {
+                    Source = "src/app",
+                    Target = "/usr/bin/app"
+                }
+            }
+        };
+
+        var doc = _serializer.Serialize(project);
+        var element = doc.Descendants("IncludeFile").First();
+        Assert.IsNull(element.Attribute("Mode"));
+    }
+
+    [TestMethod]
+    public void RoundTrip_IncludeFile_WithMode()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            IncludeFiles =
+            {
+                new IncludeFileItem
+                {
+                    Source = "src/app",
+                    Target = "/usr/bin/app",
+                    Mode = UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                           UnixFileMode.GroupRead | UnixFileMode.OtherRead
+                }
+            }
+        };
+
+        var doc = _serializer.Serialize(project);
+        var deserialized = _serializer.Deserialize(doc);
+        var item = deserialized.IncludeFiles[0];
+        Assert.IsTrue(item.Mode.HasValue);
+        var mode = item.Mode.Value;
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.UserExecute));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.GroupExecute));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.OtherExecute));
+    }
+
+    [TestMethod]
+    public void Deserialize_ConfFile_WithMode()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+              </PropertyGroup>
+              <ItemGroup>
+                <ConfFile Include="cfg.json" Target="/etc/app/cfg.json" Mode="644" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+        var item = project.ConfFiles[0];
+        Assert.IsTrue(item.Mode.HasValue);
+        var mode = item.Mode!.Value;
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserRead));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.UserWrite));
+        Assert.IsFalse(mode.HasFlag(UnixFileMode.UserExecute));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupRead));
+        Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherRead));
+    }
 }

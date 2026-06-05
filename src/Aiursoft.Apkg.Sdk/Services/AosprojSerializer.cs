@@ -97,7 +97,8 @@ public class AosprojSerializer
                     {
                         Source = (string?)el.Attribute("Include")  ?? string.Empty,
                         Target = (string?)el.Attribute("Target") ?? string.Empty,
-                        Condition = condition
+                        Condition = condition,
+                        Mode = ReadModeAttribute(el)
                     });
                     break;
                 case "IncludeFolder":
@@ -105,7 +106,8 @@ public class AosprojSerializer
                     {
                         Source = (string?)el.Attribute("Include")  ?? string.Empty,
                         Target = (string?)el.Attribute("Target") ?? string.Empty,
-                        Condition = condition
+                        Condition = condition,
+                        Mode = ReadModeAttribute(el)
                     });
                     break;
                 case "IncludeScript":
@@ -113,7 +115,8 @@ public class AosprojSerializer
                     {
                         Source = (string?)el.Attribute("Include")  ?? string.Empty,
                         Target = (string?)el.Attribute("Target") ?? string.Empty,
-                        Condition = condition
+                        Condition = condition,
+                        Mode = ReadModeAttribute(el)
                     });
                     break;
                 case "ConfFile":
@@ -121,7 +124,8 @@ public class AosprojSerializer
                     {
                         Source = (string?)el.Attribute("Include")  ?? string.Empty,
                         Target = (string?)el.Attribute("Target") ?? string.Empty,
-                        Condition = condition
+                        Condition = condition,
+                        Mode = ReadModeAttribute(el)
                     });
                     break;
                 case "Dependency":
@@ -245,20 +249,16 @@ public class AosprojSerializer
         var fileItems = new List<object>();
         fileItems.AddRange(project.IncludeFiles.Select(f =>
             (object)ItemElem("IncludeFile", f.Condition,
-                new XAttribute("Include", f.Source),
-                new XAttribute("Target", f.Target))));
+                FileItemAttrs(f.Source, f.Target, f))));
         fileItems.AddRange(project.IncludeFolders.Select(f =>
             (object)ItemElem("IncludeFolder", f.Condition,
-                new XAttribute("Include", f.Source),
-                new XAttribute("Target", f.Target))));
+                FileItemAttrs(f.Source, f.Target, f))));
         fileItems.AddRange(project.IncludeScripts.Select(f =>
             (object)ItemElem("IncludeScript", f.Condition,
-                new XAttribute("Include", f.Source),
-                new XAttribute("Target", f.Target))));
+                FileItemAttrs(f.Source, f.Target, f))));
         fileItems.AddRange(project.ConfFiles.Select(f =>
             (object)ItemElem("ConfFile", f.Condition,
-                new XAttribute("Include", f.Source),
-                new XAttribute("Target", f.Target))));
+                FileItemAttrs(f.Source, f.Target, f))));
 
         if (fileItems.Count > 0)
             itemGroups.Add(new XElement("ItemGroup", fileItems));
@@ -313,6 +313,14 @@ public class AosprojSerializer
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private static UnixFileMode? ReadModeAttribute(XElement el)
+    {
+        var modeStr = (string?)el.Attribute("Mode");
+        if (string.IsNullOrWhiteSpace(modeStr))
+            return null;
+        return UnixFileModeHelper.ParseOctal(modeStr);
+    }
+
     // Returns null for empty/whitespace values so XElement silently skips them.
     private static XElement? Elem(string name, string value) =>
         string.IsNullOrWhiteSpace(value) ? null : new XElement(name, value);
@@ -323,6 +331,22 @@ public class AosprojSerializer
         if (!string.IsNullOrWhiteSpace(condition))
             el.Add(new XAttribute("Condition", condition));
         return el;
+    }
+
+    private static XAttribute[] FileItemAttrs(string include, string target, BaseItem item)
+    {
+        if (item.Mode.HasValue)
+            return
+            [
+                new XAttribute("Include", include),
+                new XAttribute("Target", target),
+                new XAttribute("Mode", UnixFileModeHelper.ToOctalString(item.Mode.Value))
+            ];
+        return
+        [
+            new XAttribute("Include", include),
+            new XAttribute("Target", target)
+        ];
     }
 
     // ── Find project file ─────────────────────────────────────────────────────

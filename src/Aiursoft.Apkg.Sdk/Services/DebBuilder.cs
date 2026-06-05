@@ -21,6 +21,12 @@ public class DebBuilder
         _logger = logger;
     }
 
+    /// <summary>Default permissions for executable files (0755, rwxr-xr-x).</summary>
+    private const UnixFileMode ExecutableMode =
+        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+        UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
+
     /// <summary>
     /// Builds a .deb for the given target and writes it to <paramref name="outputDir"/>.
     /// Returns the absolute path to the produced .deb file and the resolved version.
@@ -186,17 +192,19 @@ public class DebBuilder
             var dest = Path.Combine(stagingRoot, NormalizeTargetPath(item.Target));
             EnsureParentDirectory(dest);
             File.Copy(src, dest, overwrite: true);
+            if (item.Mode.HasValue)
+                SetFileMode(dest, item.Mode.Value);
             _logger.LogDebug("  + {Target}", item.Target);
         }
 
-        // ── Copy IncludeScript items (executable, 0755) ───────────────────────
+        // ── Copy IncludeScript items ───────────────────────────────────────
         foreach (var item in project.IncludeScripts.Where(f => Include(f.Condition)))
         {
             var src = Path.GetFullPath(Path.Combine(projectDir, item.Source));
             var dest = Path.Combine(stagingRoot, NormalizeTargetPath(item.Target));
             EnsureParentDirectory(dest);
             File.Copy(src, dest, overwrite: true);
-            MakeExecutable(dest);
+            SetFileMode(dest, item.Mode ?? ExecutableMode);
             _logger.LogDebug("  + {Target} [executable]", item.Target);
         }
 
@@ -216,6 +224,8 @@ public class DebBuilder
             var dest = Path.Combine(stagingRoot, NormalizeTargetPath(item.Target));
             EnsureParentDirectory(dest);
             File.Copy(src, dest, overwrite: true);
+            if (item.Mode.HasValue)
+                SetFileMode(dest, item.Mode.Value);
             var confPath = item.Target;
             if (confPath.StartsWith("./", StringComparison.Ordinal)) confPath = confPath[1..];
             if (!confPath.StartsWith('/')) confPath = "/" + confPath;
@@ -262,7 +272,7 @@ public class DebBuilder
         {
             var preinstPath = Path.Combine(debianDir, "preinst");
             await File.WriteAllTextAsync(preinstPath, preinstLines.ToString());
-            MakeExecutable(preinstPath);
+            SetFileMode(preinstPath, ExecutableMode);
         }
 
         // ── PostInstallScript → DEBIAN/postinst ───────────────────────────────
@@ -309,7 +319,7 @@ public class DebBuilder
         {
             var postinstPath = Path.Combine(debianDir, "postinst");
             await File.WriteAllTextAsync(postinstPath, postinstLines.ToString());
-            MakeExecutable(postinstPath);
+            SetFileMode(postinstPath, ExecutableMode);
         }
 
         // ── PreRemoveScript → DEBIAN/prerm ────────────────────────────────────
@@ -345,7 +355,7 @@ public class DebBuilder
         {
             var prermPath = Path.Combine(debianDir, "prerm");
             await File.WriteAllTextAsync(prermPath, prermLines.ToString());
-            MakeExecutable(prermPath);
+            SetFileMode(prermPath, ExecutableMode);
         }
 
         // ── DEBIAN/postrm ─────────────────────────────────────────────────────
@@ -381,7 +391,7 @@ public class DebBuilder
         {
             var postrmPath = Path.Combine(debianDir, "postrm");
             await File.WriteAllTextAsync(postrmPath, postrmLines.ToString());
-            MakeExecutable(postrmPath);
+            SetFileMode(postrmPath, ExecutableMode);
         }
 
         // ── Compute installed-size (kibibytes) ────────────────────────────────
@@ -718,17 +728,15 @@ public class DebBuilder
         }
     }
 
-    private static void MakeExecutable(string path)
+    private static void SetFileMode(string path, UnixFileMode mode)
     {
 #pragma warning disable CA1416
         try
         {
-            File.SetUnixFileMode(path,
-                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            File.SetUnixFileMode(path, mode);
         }
         catch (PlatformNotSupportedException) { }
+#pragma warning restore CA1416
     }
 
     internal static async Task<long> ComputeDirectorySizeKbAsync(string dir)

@@ -52,12 +52,20 @@ public class AddHandler : ExecutableCommandHandlerBuilder
             DefaultValueFactory = _ => "."
         };
 
+    private static readonly Option<string?> ModeOption =
+        new(name: "--mode")
+        {
+            Description = "Unix permission mode in octal (e.g. 755, 644, 600). Sets Mode attribute on the item.",
+            DefaultValueFactory = _ => (string?)null
+        };
+
     protected override IEnumerable<Option> GetCommandOptions() =>
     [
         TargetOption,
         ConfigOption,
         ConditionOption,
         PathOption,
+        ModeOption,
     ];
 
     public override Command BuildAsCommand()
@@ -78,6 +86,7 @@ public class AddHandler : ExecutableCommandHandlerBuilder
         var isConfig = context.GetValue(ConfigOption);
         var condition = context.GetValue(ConditionOption)!;
         var pathArg = context.GetValue(PathOption)!;
+        var modeStr = context.GetValue(ModeOption);
 
         var services = ServiceBuilder
             .CreateCommandHostBuilder<Startup>(verbose)
@@ -108,6 +117,15 @@ public class AddHandler : ExecutableCommandHandlerBuilder
             new XAttribute("Target", target));
         if (!string.IsNullOrWhiteSpace(condition))
             newItem.Add(new XAttribute("Condition", condition));
+        if (!string.IsNullOrWhiteSpace(modeStr))
+        {
+            if (modeStr.Length != 3 || modeStr.Any(c => c < '0' || c > '7'))
+            {
+                logger.LogError("Invalid --mode value '{Mode}'. Must be exactly 3 octal digits (e.g. 755, 644).", modeStr);
+                return;
+            }
+            newItem.Add(new XAttribute("Mode", modeStr));
+        }
 
         // Load and modify the XML directly to preserve formatting and comments
         var doc = XDocument.Load(projectFile);
