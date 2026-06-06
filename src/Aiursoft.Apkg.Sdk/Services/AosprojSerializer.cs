@@ -65,6 +65,7 @@ public class AosprojSerializer
                 case "UpstreamSuite":      project.UpstreamSuite = el.Value; break;
                 case "UpstreamComponent":  project.UpstreamComponent = el.Value; break;
                 case "UpstreamArch":       project.UpstreamArch = el.Value; break;
+                case "UpstreamSignedBy":  project.UpstreamSignedBy = el.Value; break;
                 case "SuppressUpstreamScripts":
                     project.SuppressUpstreamScripts = bool.TryParse(el.Value, out var s) && s;
                     break;
@@ -231,6 +232,7 @@ public class AosprojSerializer
             Elem("UpstreamSuite", project.UpstreamSuite),
             Elem("UpstreamComponent", project.UpstreamComponent),
             Elem("UpstreamArch", project.UpstreamArch),
+            Elem("UpstreamSignedBy", project.UpstreamSignedBy),
             Elem("UpstreamSuiteMapping", project.UpstreamSuiteMapping),
             Elem("SuppressUpstreamDependencies", project.SuppressUpstreamDependencies),
             Elem("DependencyCheckUrl", project.DependencyCheckUrl),

@@ -83,6 +83,13 @@ public class AosprojProject
     /// <summary>Architecture of the upstream package, e.g. "all", "amd64".</summary>
     public string UpstreamArch { get; set; } = "all";
     /// <summary>
+    /// Path to a GPG keyring file used to verify the upstream APT repository
+    /// via the [signed-by=…] apt source option. The path is relative to the
+    /// project root. When set, the keyring is copied into the isolated apt
+    /// temp directory during build and automatically cleaned up afterwards.
+    /// </summary>
+    public string UpstreamSignedBy { get; set; } = string.Empty;
+    /// <summary>
     /// When true, upstream maintainer scripts (postinst, prerm, postrm) are NOT
     /// prepended to the package's own scripts. Use this when deriving from an
     /// upstream .deb solely for its data payload and you want full control over

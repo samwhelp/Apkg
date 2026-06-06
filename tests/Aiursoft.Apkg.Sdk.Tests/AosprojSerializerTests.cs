@@ -929,4 +929,57 @@ public class AosprojSerializerTests
         Assert.IsTrue(mode.HasFlag(UnixFileMode.GroupRead));
         Assert.IsTrue(mode.HasFlag(UnixFileMode.OtherRead));
     }
+
+    // ── UpstreamSignedBy round-trip ───────────────────────────────────────────
+
+    [TestMethod]
+    public void RoundTrip_UpstreamSignedBy()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0.0",
+            PackageDescription = "desc",
+            UpstreamSignedBy = "keys/anduinos-archive-keyring.gpg"
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual("keys/anduinos-archive-keyring.gpg", roundTripped.UpstreamSignedBy);
+    }
+
+    [TestMethod]
+    public void Serialize_UpstreamSignedBy_OmittedWhenEmpty()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0.0",
+            PackageDescription = "desc"
+        };
+
+        var doc = _serializer.Serialize(project);
+        var xml = doc.ToString();
+
+        Assert.IsFalse(xml.Contains("UpstreamSignedBy"), "Empty UpstreamSignedBy should be omitted.");
+    }
+
+    [TestMethod]
+    public void Deserialize_UpstreamSignedBy_FromXml()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+                <UpstreamSignedBy>keys/anduinos-archive-keyring.gpg</UpstreamSignedBy>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+        Assert.AreEqual("keys/anduinos-archive-keyring.gpg", project.UpstreamSignedBy);
+    }
 }

@@ -2657,4 +2657,53 @@ public class DebBuilderTests
         }
         finally { Directory.Delete(tempDir, recursive: true); }
     }
+
+    // ── UpstreamSignedBy ──────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task BuildAsync_UpstreamSignedBy_MissingFile_Throws()
+    {
+        // The keyring file existence check happens before any apt interaction,
+        // so we don't need a real upstream repo — just HasUpstreamSource=true.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            var project = new AosprojProject
+            {
+                PackageName = "my-derived-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "Derived package with missing keyring",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                UpstreamPackage = "base-files",
+                UpstreamUrl = "file:///nonexistent",
+                UpstreamDistro = "ubuntu",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = "main",
+                UpstreamArch = "all",
+                UpstreamSignedBy = "keys/nonexistent-keyring.gpg"
+            };
+
+            try
+            {
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "all", outputDir);
+                Assert.Fail("Expected InvalidOperationException was not thrown.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("UpstreamSignedBy"),
+                    $"Exception should mention UpstreamSignedBy. Actual: {ex.Message}");
+                Assert.IsTrue(ex.Message.Contains("not found"),
+                    $"Exception should say file not found. Actual: {ex.Message}");
+            }
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }

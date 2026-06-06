@@ -113,6 +113,7 @@
 | `UpstreamSuiteMapping` | — | 输出 suite → 上游 suite 的映射表。格式：`out1=up1, out2=up2`。当 `UpstreamSuite` 解析后的值命中了映射的 key，则替换为对应的上游 suite |
 | `UpstreamComponent` | — | 上游 APT 组件，默认为 `main`。支持 `$(Suite)` 等变量 |
 | `UpstreamArch` | — | 上游包架构，默认为 `all` |
+| `UpstreamSignedBy` | — | 上游 APT 仓库的 GPG 公钥文件路径（相对于 .aosproj 所在目录）。设置后，`apt-get update` 会通过 `[signed-by=…]` 选项用该公钥验证上游仓库签名；未设置时 `file://` URL 自动使用 `[trusted=yes]`，其他 URL 使用系统信任库。详见 [§上游派生-GPG 签名验证](#上游派生gpg-签名验证) |
 | `SuppressUpstreamScripts` | — | 设为 `true` 时，不继承上游包的 maintainer scripts（preinst/postinst/prerm/postrm），仅继承其数据载荷。适用于仅需上游文件但需完全自控安装脚本的场景。默认为 `false` |
 | `SuppressUpstreamDependencies` | — | 空格/逗号分隔的上游包名列表，在合并本地依赖前从上游继承的 `Depends` 中移除。例如 `"ubuntu-pro-client ubuntu-advantage-desktop-daemon"`。移除时仅匹配基础包名（忽略版本约束），大小写不敏感 |
 
@@ -181,6 +182,33 @@
 
 构建时，`$(Suite)` 先展开为 `noble-addon`，然后通过映射表查找到上游 suite `noble`，最终从 Ubuntu 的 `noble` 下载原包。不设映射时行为不变——解析后的 suite 直接用于上游下载。
 
+#### GPG 签名验证
+
+从 HTTPS 上游 APT 仓库下载包时，APT 默认依赖系统的信任库验证仓库签名。在某些环境中（如容器构建、未导入上游公钥的系统），签名验证会失败。Apkg 通过 `UpstreamSignedBy` 提供显式的公钥管理：
+
+```xml
+<PropertyGroup>
+  <!-- 指向项目仓库中的 GPG 公钥文件，相对于 .aosproj 所在目录 -->
+  <UpstreamSignedBy>keys/anduinos-archive-keyring.gpg</UpstreamSignedBy>
+</PropertyGroup>
+```
+
+**优先级**（从高到低）：
+
+| 配置 | apt 选项 | 说明 |
+|------|---------|------|
+| `UpstreamSignedBy` 已设置 | `[signed-by=/path/to/keyring.gpg]` | 用项目指定的公钥验证上游签名。公钥文件在构建时自动复制到隔离的 apt 临时目录，构建结束后自动清理 |
+| `UpstreamSignedBy` 未设置，`UpstreamUrl` 为 `file://` | `[trusted=yes]` | 本地文件仓库，跳过签名验证 |
+| `UpstreamSignedBy` 未设置，`UpstreamUrl` 为远程 URL | 无选项 | 使用系统信任库（如 `/etc/apt/trusted.gpg.d/`）验证 |
+
+**文件要求**：
+- 公钥文件必须是有效的 GPG keyring 格式（可用 `gpg --export --armor` 导出）
+- 文件必须提交到项目仓库中（`.aosproj` 同级或子目录）
+- 构建时会检查文件是否存在，不存在则抛出 `InvalidOperationException`
+- 文件名会被保留复制到临时目录，不会修改
+
+**与 PrebuildCommand 的协作**：如果公钥文件由 `PrebuildCommand` 动态生成，lint 阶段仅发出 Warning（不阻止构建）。构建时会做硬错误检查——文件缺失则中止。
+
 `apkg lint` 可单独执行，也由 `apkg build` 在构建前自动调用。Error 级别问题会中止构建，Warning 仅打印提示。以下是它检查的全部规则：
 
 | 规则 | 级别 |
@@ -199,6 +227,7 @@
 | `TargetSuites` 中某 suite 未出现在 `UpstreamSuiteMapping` 中 | Warning |
 | `TargetDistro` 未设（构建全部 target 时必须，默认回退 `ubuntu`） | Warning |
 | `TargetArchitectures` 未设（构建全部 target 时必须） | Warning |
+| `UpstreamSignedBy` 指向的公钥文件不存在（可能由 PrebuildCommand 生成，仅提示） | Warning |
 | 所有 `Include=` 指向的源文件/目录在磁盘上实际存在 | Warning |
 | 至少声明一个文件条目（`IncludeFile`/`IncludeScript`/`IncludeFolder`/`ConfFile`），否则包为空 | Warning |
 

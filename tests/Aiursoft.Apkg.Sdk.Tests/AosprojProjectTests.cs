@@ -325,4 +325,13 @@ public class AosprojProjectTests
         Assert.AreEqual(1, map.Count);
         Assert.AreEqual("", map["key"]);
     }
+
+    // ── UpstreamSignedBy ──────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void Defaults_UpstreamSignedBy_IsEmpty()
+    {
+        var project = new AosprojProject();
+        Assert.AreEqual("", project.UpstreamSignedBy);
+    }
 }

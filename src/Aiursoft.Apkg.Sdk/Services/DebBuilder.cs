@@ -443,9 +443,34 @@ public class DebBuilder
         try
         {
             var uri = project.UpstreamUrl.TrimEnd('/');
-            var trusted = uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase)
-                ? " [trusted=yes]" : "";
-            var sourceLine = $"deb{trusted} {uri} {resolvedUpstreamSuite} {resolvedUpstreamComponent}";
+
+            // Determine the apt option for this source.
+            // Priority: explicit keyring > implicit file:// trust > system trust store.
+            string aptOption;
+            if (!string.IsNullOrWhiteSpace(project.UpstreamSignedBy))
+            {
+                var keyringSrc = Path.GetFullPath(Path.Combine(projectDir, project.UpstreamSignedBy));
+                if (!File.Exists(keyringSrc))
+                    throw new InvalidOperationException(
+                        $"UpstreamSignedBy file not found: '{keyringSrc}'. " +
+                        "The keyring file must be committed alongside the .aosproj file.");
+
+                var keyringDest = Path.Combine(aptTempDir, Path.GetFileName(project.UpstreamSignedBy));
+                File.Copy(keyringSrc, keyringDest, overwrite: true);
+                aptOption = $" [signed-by={keyringDest}]";
+                _logger.LogInformation("Using GPG keyring {KeyringFile} for upstream verification.",
+                    project.UpstreamSignedBy);
+            }
+            else if (uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+            {
+                aptOption = " [trusted=yes]";
+            }
+            else
+            {
+                aptOption = "";
+            }
+
+            var sourceLine = $"deb{aptOption} {uri} {resolvedUpstreamSuite} {resolvedUpstreamComponent}";
             await File.WriteAllTextAsync(sourceListPath, sourceLine + "\n");
 
             _logger.LogInformation("Downloading {Package} from {Url} ({Suite})...",

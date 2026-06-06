@@ -1173,6 +1173,89 @@ public class AosprojLinterTests
         }
     }
 
+    // ── UpstreamSignedBy linting ──────────────────────────────────────────────
+
+    [TestMethod]
+    public void Lint_UpstreamSignedBy_ExistingFile_NoWarning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var keysDir = Path.Combine(dir, "keys");
+            Directory.CreateDirectory(keysDir);
+            File.WriteAllText(Path.Combine(keysDir, "anduinos-archive-keyring.gpg"), "fake-keyring-data");
+
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamSignedBy = "keys/anduinos-archive-keyring.gpg"
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsFalse(issues.Any(i => i.Message.Contains("UpstreamSignedBy")),
+                $"Should not warn about UpstreamSignedBy when file exists, but got: {string.Join("; ", issues.Select(i => i.Message))}");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamSignedBy_MissingFile_Warning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamSignedBy = "keys/missing-keyring.gpg"
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsTrue(issues.Any(i => i.Message.Contains("UpstreamSignedBy") && i.Message.Contains("not found")),
+                $"Expected warning about missing UpstreamSignedBy file, but got: {string.Join("; ", issues.Select(i => i.Message))}");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Lint_UpstreamSignedBy_Empty_NoWarning()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var project = new AosprojProject
+            {
+                PackageName = "my-pkg",
+                PackageVersion = "1.0.0",
+                PackageDescription = "desc",
+                TargetSuites = "jammy",
+                Maintainer = "Test <test@example.com>",
+                UpstreamSignedBy = ""
+            };
+
+            var issues = _linter.Lint(project, dir);
+            Assert.IsFalse(issues.Any(i => i.Message.Contains("UpstreamSignedBy")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
     private static string CreateTempDir()
     {
         var path = Path.Combine(Path.GetTempPath(), "lint-tests", Guid.NewGuid().ToString("N"));
