@@ -32,7 +32,7 @@ public class RepositoryExportJobTests : TestBase
     public override void CleanTestContext()
     {
         var cleanRoot = _exportRoot.TrimEnd('/');
-        foreach (var dir in new[] { cleanRoot, cleanRoot + "_stage", cleanRoot + "_prev" })
+        foreach (var dir in new[] { cleanRoot, Path.Combine(cleanRoot, ".stage"), Path.Combine(cleanRoot, ".prev") })
         {
             try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
             catch { /* best-effort */ }
@@ -387,7 +387,7 @@ public class RepositoryExportJobTests : TestBase
         await job.ExecuteAsync();
 
         Assert.IsTrue(Directory.Exists(cleanRoot), "Live export directory should exist.");
-        Assert.IsFalse(Directory.Exists(cleanRoot + "_stage"), "Stage should be cleaned up after swap.");
+        Assert.IsFalse(Directory.Exists(Path.Combine(cleanRoot, ".stage")), "Stage should be cleaned up after swap.");
     }
 
     [TestMethod]
@@ -415,9 +415,9 @@ public class RepositoryExportJobTests : TestBase
 
         Assert.IsTrue((await File.ReadAllTextAsync(releasePath)).Contains("Run: 2"));
 
-        var prevDir = cleanRoot + "_prev";
+        var prevDir = Path.Combine(cleanRoot, ".prev");
         Assert.IsTrue(Directory.Exists(prevDir));
-        var prevReleasePath = Path.Combine(prevDir, "artifacts", "testos", "dists", "noble", "Release");
+        var prevReleasePath = Path.Combine(prevDir, "testos", "dists", "noble", "Release");
         Assert.IsTrue(File.Exists(prevReleasePath));
         Assert.IsTrue((await File.ReadAllTextAsync(prevReleasePath)).Contains("Run: 1"));
     }

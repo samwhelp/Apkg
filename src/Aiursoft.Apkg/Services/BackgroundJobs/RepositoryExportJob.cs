@@ -17,7 +17,10 @@ namespace Aiursoft.Apkg.Services.BackgroundJobs;
 /// <para><b>Directory layout produced:</b></para>
 /// <code>
 /// {ExportPath}/
-///   artifacts/
+///   .stage/                                              ← Staging (hidden, rsync/nginx ignore)
+///     artifacts/
+///   .prev/                                               ← Previous artifacts backup
+///   artifacts/                                           ← Live (served by nginx/caddy)
 ///     certs/
 ///       {certName}                                         ← GPG public key (no extension, matches URL)
 ///     {distro}/
@@ -36,17 +39,19 @@ namespace Aiursoft.Apkg.Services.BackgroundJobs;
 ///           {component}/
 ///             {firstLetter}/
 ///               {packageName}/
-///                 {packageName}_{version}_{arch}.deb        ← Hardlink to CAS
+///                 {packageName}_{version}_{arch}.deb        ← Hardlink to CAS (suite-scoped)
 ///       pool/
 ///         {component}/
 ///           {firstLetter}/
 ///             {packageName}/
-///               {fileName}.deb                              ← Hard/symlink to CAS (distro-scoped fallback)
+///               {fileName}.deb                              ← Hardlink to CAS (distro-scoped)
 /// </code>
 ///
-/// <para><b>Atomic swap:</b> Files are written to a staging directory (<c>_stage</c>), then
-/// atomically swapped into the live export path via <c>rename(2)</c>. This prevents APT clients
-/// (or rsync) from ever seeing a half-written tree.</para>
+/// <para><b>Atomic swap:</b> Files are written to <c>.stage/artifacts/</c> inside the export path.
+/// On success, the live <c>artifacts/</c> directory is atomically swapped with <c>.stage/</c>
+/// via <c>rename(2)</c>. Because both directories reside on the same filesystem (even under
+/// Docker bind mounts), the swap is atomic and never exposes half-written state to APT
+/// clients or rsync.</para>
 ///
 /// <para><b>Pool files:</b> .deb files are hardlinked from CAS (<c>Objects/{sha256[..2]}/{sha256}.deb</c>)
 /// to the pool path. This avoids duplicating multi-GB of binaries. Hardlinks are real files
@@ -77,8 +82,9 @@ public class RepositoryExportJob(
         logger.LogInformation("RepositoryExportJob started. ExportPath: {ExportPath}", exportRoot);
 
         var cleanRoot = exportRoot.TrimEnd('/');
-        var stageDir = cleanRoot + "_stage";
-        var prevDir = cleanRoot + "_prev";
+        var stageDir = Path.Combine(cleanRoot, ".stage");
+        var prevDir = Path.Combine(cleanRoot, ".prev");
+        var liveDir = Path.Combine(cleanRoot, "artifacts");
 
         try
         {
@@ -88,6 +94,7 @@ public class RepositoryExportJob(
                 Directory.Delete(stageDir, recursive: true);
             }
 
+            Directory.CreateDirectory(cleanRoot);
             Directory.CreateDirectory(stageDir);
 
             await ExportCertificatesAsync(stageDir);
@@ -104,8 +111,21 @@ public class RepositoryExportJob(
                 return;
             }
 
-            // Atomic swap: _stage → live, old live → _prev
-            AtomicSwap(exportRoot, stageDir, prevDir);
+            // Atomic swap: .stage/artifacts → live artifacts, old artifacts → .prev
+            var stageArtifactsDir = Path.Combine(stageDir, "artifacts");
+            if (Directory.Exists(stageArtifactsDir))
+            {
+                AtomicSwap(liveDir, stageArtifactsDir, prevDir);
+                // Clean up the now-empty .stage directory
+                if (Directory.Exists(stageDir))
+                    Directory.Delete(stageDir);
+            }
+            else
+            {
+                logger.LogInformation("No artifacts were generated in this export cycle. No swap performed.");
+                if (Directory.Exists(stageDir))
+                    Directory.Delete(stageDir);
+            }
 
             logger.LogInformation("RepositoryExportJob finished successfully.");
         }
