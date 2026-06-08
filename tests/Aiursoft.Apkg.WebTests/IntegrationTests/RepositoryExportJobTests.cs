@@ -31,7 +31,7 @@ public class RepositoryExportJobTests : TestBase
     [TestCleanup]
     public override void CleanTestContext()
     {
-        var cleanRoot = _exportRoot?.TrimEnd('/');
+        var cleanRoot = _exportRoot.TrimEnd('/');
         if (cleanRoot != null)
         {
             foreach (var dir in new[] { cleanRoot, cleanRoot + "_stage", cleanRoot + "_prev" })
