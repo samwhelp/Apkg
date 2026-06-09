@@ -175,3 +175,154 @@
     line-height: 1.2;
     margin-top: 4px;
 }
+
+/* =========================================
+   Apkg landing page
+   ========================================= */
+
+.apkg-hero {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    min-height: 720px;
+    background:
+        radial-gradient(circle at 82% 18%, rgba(13, 110, 253, 0.22), transparent 34%),
+        linear-gradient(135deg, #0b1220 0%, #111827 48%, #101828 100%);
+}
+
+.apkg-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 180px;
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0), rgba(11, 18, 32, 0.9));
+}
+
+.apkg-hero-search {
+    max-width: 620px;
+}
+
+.apkg-hero-search .input-group {
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+}
+
+.apkg-stats {
+    margin-top: -1px;
+}
+
+.apkg-metric {
+    height: 100%;
+    padding: 1.5rem;
+    border-left: 4px solid var(--bs-primary);
+    background: var(--bs-body-bg);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.apkg-metric-value {
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.75rem;
+}
+
+.apkg-metric-label {
+    color: var(--bs-secondary-color);
+    line-height: 1.6;
+}
+
+.apkg-step {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-primary);
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.apkg-immersive {
+    min-height: 680px;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(13, 110, 253, 0.18), transparent 34%),
+        #161a27;
+}
+
+.apkg-pipeline {
+    display: grid;
+    gap: 1rem;
+}
+
+.apkg-pipeline-item {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 0.25rem 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.apkg-pipeline-item svg {
+    grid-row: span 2;
+    width: 2rem;
+    height: 2rem;
+    color: var(--bs-primary);
+}
+
+.apkg-pipeline-item strong {
+    color: #fff;
+}
+
+.apkg-pipeline-item span {
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.apkg-terminal {
+    margin: 0;
+    color: #e5eefb;
+    background: transparent;
+    border: 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+@media (max-width: 991px) {
+    .apkg-hero {
+        min-height: 620px;
+    }
+
+    .apkg-immersive {
+        min-height: auto;
+    }
+
+    .apkg-pipeline-item {
+        grid-template-columns: 2.5rem 1fr;
+    }
+}
+
+@media (max-width: 575px) {
+    .apkg-hero-search .input-group {
+        display: grid;
+        grid-template-columns: auto 1fr;
+    }
+
+    .apkg-hero-search .input-group-text {
+        border-bottom-left-radius: 0;
+    }
+
+    .apkg-hero-search .form-control {
+        border-top-right-radius: var(--bs-border-radius-lg) !important;
+    }
+
+    .apkg-hero-search .btn {
+        grid-column: 1 / -1;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+}
