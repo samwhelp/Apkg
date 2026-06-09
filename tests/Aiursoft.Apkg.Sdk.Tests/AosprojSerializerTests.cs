@@ -997,7 +997,7 @@ public class AosprojSerializerTests
             {
                 new DependencyCheckSourceItem
                 {
-                    Url = "https://mirror.aiursoft.com/ubuntu",
+                    Url = "https://archive.ubuntu.com/ubuntu",
                     SuiteMap = "noble-addon=noble questing-addon=questing"
                 },
                 new DependencyCheckSourceItem
@@ -1013,7 +1013,7 @@ public class AosprojSerializerTests
         var roundTripped = _serializer.Deserialize(doc);
 
         Assert.AreEqual(2, roundTripped.DependencyCheckSources.Count);
-        Assert.AreEqual("https://mirror.aiursoft.com/ubuntu", roundTripped.DependencyCheckSources[0].Url);
+        Assert.AreEqual("https://archive.ubuntu.com/ubuntu", roundTripped.DependencyCheckSources[0].Url);
         Assert.AreEqual("noble-addon=noble questing-addon=questing", roundTripped.DependencyCheckSources[0].SuiteMap);
         Assert.IsNull(roundTripped.DependencyCheckSources[0].Condition);
 
@@ -1050,7 +1050,7 @@ public class AosprojSerializerTests
               </PropertyGroup>
               <ItemGroup>
                 <DependencyCheckSource
-                    Url="https://mirror.aiursoft.com/ubuntu"
+                    Url="https://archive.ubuntu.com/ubuntu"
                     SuiteMap="noble-addon=noble questing-addon=questing" />
                 <DependencyCheckSource
                     Url="https://apkg-dev.aiursoft.com/artifacts/anduinos"
@@ -1063,7 +1063,7 @@ public class AosprojSerializerTests
         var project = _serializer.Deserialize(xml);
 
         Assert.AreEqual(2, project.DependencyCheckSources.Count);
-        Assert.AreEqual("https://mirror.aiursoft.com/ubuntu", project.DependencyCheckSources[0].Url);
+        Assert.AreEqual("https://archive.ubuntu.com/ubuntu", project.DependencyCheckSources[0].Url);
         Assert.AreEqual("noble-addon=noble questing-addon=questing", project.DependencyCheckSources[0].SuiteMap);
         Assert.IsNull(project.DependencyCheckSources[0].Condition);
 

@@ -163,7 +163,7 @@ public static class ProgramExtends
             return host;
         }
 
-        var baseUrl = "https://mirror.aiursoft.com/";
+        var baseUrl = "https://archive.ubuntu.com/";
         var components = "main,restricted,universe,multiverse";
         var suites = new[] { "questing", "questing-updates", "questing-backports", "questing-security" };
 

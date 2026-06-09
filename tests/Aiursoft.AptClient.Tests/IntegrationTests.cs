@@ -52,7 +52,7 @@ Signed-By:
         // Use Allow-Insecure to skip GPG signature verification for mock HTTP
         var deb822 = @"
 Types: deb
-URIs: http://mirror.aiursoft.com/ubuntu/
+URIs: http://archive.ubuntu.com/ubuntu/
 Suites: jammy
 Components: main
 Allow-Insecure: yes
@@ -278,12 +278,12 @@ SHA256:
     [TestMethod]
     public void TestParseLegacyFormat()
     {
-        var line = "deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://mirror.aiursoft.com/ubuntu/ jammy main restricted";
+        var line = "deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://archive.ubuntu.com/ubuntu/ jammy main restricted";
         var sources = AptSourceExtractor.ExtractSources(line, "amd64");
 
         Assert.HasCount(2, sources);
         Assert.AreEqual("jammy", sources[0].Suite);
-        Assert.AreEqual("http://mirror.aiursoft.com/ubuntu/", sources[0].ServerUrl);
+        Assert.AreEqual("http://archive.ubuntu.com/ubuntu/", sources[0].ServerUrl);
     }
 
     [TestMethod]
@@ -291,7 +291,7 @@ SHA256:
     {
         var deb822 = @"
 Types: deb
-URIs: http://mirror.aiursoft.com/ubuntu/
+URIs: http://archive.ubuntu.com/ubuntu/
 Suites: jammy
 Components: main
 Allow-Insecure: yes
@@ -506,7 +506,7 @@ Description-md5: 5d41402abc4b2a76b9719d911017c592
     [TestMethod]
     public async Task TestReadmeSample()
     {
-        var sourceText = "deb [allow-insecure=yes] http://mirror.aiursoft.com/ubuntu/ jammy main";
+        var sourceText = "deb [allow-insecure=yes] http://archive.ubuntu.com/ubuntu/ jammy main";
         var mockData = GenerateMockRepoData();
 
         var mockHandler = new MockHttpMessageHandler(request =>

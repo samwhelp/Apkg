@@ -217,7 +217,7 @@
 <ItemGroup>
   <!-- 源 1: Ubuntu 官方镜像 — 验证标准 Ubuntu 包 -->
   <DependencyCheckSource
-      Url="https://mirror.aiursoft.com/ubuntu"
+      Url="https://archive.ubuntu.com/ubuntu"
       SuiteMap="noble-addon=noble questing-addon=questing resolute-addon=resolute" />
 
   <!-- 源 2: AnduinOS 私有仓库 — 验证 AnduinOS 定制包 -->
@@ -230,7 +230,7 @@
 **属性说明**：
 | 属性 | 必填 | 说明 |
 |------|------|------|
-| `Url` | 是 | APT 仓库 base URL（如 `https://mirror.aiursoft.com/ubuntu`） |
+| `Url` | 是 | APT 仓库 base URL（如 `https://archive.ubuntu.com/ubuntu`） |
 | `SuiteMap` | 否 | 目标 suite → 检查 suite 映射，格式与 `UpstreamSuiteMapping` 相同。不设时直接使用目标 suite 名查询 |
 | `Condition` | 否 | MSBuild 风格条件。仅当条件为真时才使用该源（如 `'$(Suite)' != 'jammy'`） |
 
