@@ -153,6 +153,62 @@
     box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
 }
 
+.hover-glow-primary:hover {
+    transform: translateY(-4px);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(13, 110, 253, 0.3) !important;
+    box-shadow: 0 0 20px rgba(13, 110, 253, 0.15);
+}
+
+.hover-glow-success:hover {
+    transform: translateY(-4px);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(25, 135, 84, 0.3) !important;
+    box-shadow: 0 0 20px rgba(25, 135, 84, 0.15);
+}
+
+.hover-glow-warning:hover {
+    transform: translateY(-4px);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(255, 193, 7, 0.3) !important;
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
+}
+
+.hover-glow-info:hover {
+    transform: translateY(-4px);
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(13, 202, 240, 0.3) !important;
+    box-shadow: 0 0 20px rgba(13, 202, 240, 0.15);
+}
+
+/* =========================================
+   Enterprise section
+   ========================================= */
+
+.apkg-enterprise {
+    background:
+        radial-gradient(ellipse 120% 90% at 30% 10%, rgba(13, 110, 253, 0.09), transparent 60%),
+        linear-gradient(180deg, #0b1220 0%, #101828 100%);
+}
+
+.apkg-enterprise-card {
+    transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.apkg-enterprise-card:hover .apkg-enterprise-icon {
+    transform: scale(1.1);
+}
+
+.apkg-enterprise-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+}
+
 .border-white-10 { border-color: rgba(255, 255, 255, 0.08) !important; }
 .bg-white-10 { background-color: rgba(255, 255, 255, 0.1); }
 

@@ -56,6 +56,44 @@
     </div>
 </section>
 
+<section class="py-5 bg-body-tertiary" id="install-apkg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h2 class="mb-2">@Localizer["Install APKG CLI"]</h2>
+                <p class="text-muted mb-4">@Localizer["A single command to install the APKG client and start managing your APT packages."]</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <span class="badge badge-subtle-primary me-2">1</span>
+                            <strong>@Localizer["Prerequisite: Install .NET SDK"]</strong>
+                            <p class="text-muted small mt-1 ms-4 ps-1 mb-0">
+                                <a href="https://dotnet.microsoft.com/en-us/download" target="_blank">@Localizer["Download .NET 8.0 or later"]</a>
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-subtle-primary me-2">2</span>
+                            <strong>@Localizer["Install APKG CLI"]</strong>
+                            <pre class="bg-dark text-white p-2 rounded small mt-1 ms-4 ps-1 mb-0" style="white-space:pre-wrap;"><code>dotnet tool install -g Aiursoft.Apkg.Client</code></pre>
+                        </div>
+                        <div>
+                            <span class="badge badge-subtle-primary me-2">3</span>
+                            <strong>@Localizer["Add a source (requires sudo)"]</strong>
+                            <p class="text-muted small mt-1 ms-4 ps-1 mb-1">@Localizer["To use <code>sudo apkg</code>, make the dotnet tools path available to root:"]</p>
+                            <pre class="bg-dark text-white p-2 rounded small mt-1 ms-4 ps-1 mb-0" style="white-space:pre-wrap;"><code>sudo env "PATH=$PATH" apkg add-source https://apkg-dev.aiursoft.com/api/sources/{id}</code></pre>
+                            <p class="text-muted small mt-1 ms-4 ps-1 mb-0">@Localizer["Or configure it permanently:"] <code>sudo sh -c 'echo "export PATH=\"\$PATH:$HOME/.dotnet/tools\"" >> /root/.bashrc'</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="py-5 bg-body-tertiary border-bottom apkg-stats">
     <div class="container">
         <div class="row g-4">
@@ -73,8 +111,8 @@
             </div>
             <div class="col-md-4">
                 <div class="apkg-metric">
-                    <div class="apkg-metric-value">Buckets</div>
-                    <div class="apkg-metric-label">Immutable repository snapshots that are signed, promoted atomically, and collected only after references disappear.</div>
+                    <div class="apkg-metric-value">.aosproj</div>
+                    <div class="apkg-metric-label">A declarative project file that defines files, folders, scripts, dependencies, systemd services, suites, and architectures — all in one place.</div>
                 </div>
             </div>
         </div>
@@ -202,6 +240,70 @@
                         <strong>RepositoryExportJob</strong>
                         <span>Materialize static artifacts for nginx, caddy, rsync, or edge distribution.</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="apkg-enterprise py-6 border-top border-white-10">
+    <div class="container">
+        <div class="row justify-content-center mb-5">
+            <div class="col-lg-8 text-center">
+                <div class="d-inline-flex align-items-center px-3 py-1 mb-3 rounded-pill border border-white-10 bg-dark-glass-sm backdrop-blur">
+                    <span class="text-primary me-2"><i data-lucide="building-2" style="width:14px;height:14px;"></i></span>
+                    <span class="text-gray-300 small fw-medium text-uppercase tracking-wider">@Localizer["Enterprise Ready"]</span>
+                </div>
+                <h2 class="h1 text-white mb-3">@Localizer["Ship Debian packages at scale."]</h2>
+                <p class="text-gray-400 fs-lg mx-auto mb-0" style="max-width: 700px;">
+                    @Localizer["Apkg brings the full APT repository lifecycle into one server — mirror upstream archives, override packages locally, sign and promote atomically, then serve to client machines worldwide."]
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="apkg-enterprise-card bg-dark-glass rounded-3 p-4 h-100 border border-white-10 hover-glow-primary">
+                    <div class="apkg-enterprise-icon bg-primary bg-opacity-10 text-primary mb-3">
+                        <i data-lucide="package-open" style="width:24px;height:24px;"></i>
+                    </div>
+                    <h4 class="h5 text-white mb-2">@Localizer["Simplify your distribution"]</h4>
+                    <p class="text-gray-400 mb-0 small">
+                        @Localizer["Describe packages once in a declarative <code>.aosproj</code> file. No fragile post-install scripts, no per-distro boilerplate — just files, folders, dependencies, and services."]
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="apkg-enterprise-card bg-dark-glass rounded-3 p-4 h-100 border border-white-10 hover-glow-success">
+                    <div class="apkg-enterprise-icon bg-success bg-opacity-10 text-success mb-3">
+                        <i data-lucide="server" style="width:24px;height:24px;"></i>
+                    </div>
+                    <h4 class="h5 text-white mb-2">@Localizer["Built on AnduinOS"]</h4>
+                    <p class="text-gray-400 mb-0 small">
+                        @Localizer["Production-hardened on the same infrastructure that powers AnduinOS package delivery. Battle-tested mirror ingestion, signing pipelines, and atomic snapshot promotion."]
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="apkg-enterprise-card bg-dark-glass rounded-3 p-4 h-100 border border-white-10 hover-glow-warning">
+                    <div class="apkg-enterprise-icon bg-warning bg-opacity-10 text-warning mb-3">
+                        <i data-lucide="file-code" style="width:24px;height:24px;"></i>
+                    </div>
+                    <h4 class="h5 text-white mb-2">@Localizer["MSBuild-style syntax"]</h4>
+                    <p class="text-gray-400 mb-0 small">
+                        @Localizer["If you have written a <code>.csproj</code> you already know <code>.aosproj</code>. XML-based, toolable, and integrated with the Apkg CLI for linting, building, and publishing."]
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="apkg-enterprise-card bg-dark-glass rounded-3 p-4 h-100 border border-white-10 hover-glow-info">
+                    <div class="apkg-enterprise-icon bg-info bg-opacity-10 text-info mb-3">
+                        <i data-lucide="globe" style="width:24px;height:24px;"></i>
+                    </div>
+                    <h4 class="h5 text-white mb-2">@Localizer["Global Debian delivery"]</h4>
+                    <p class="text-gray-400 mb-0 small">
+                        @Localizer["Export static artifacts for nginx, caddy, or rsync to edge nodes. APT clients anywhere get <code>apt update && apt install</code> — no proprietary agents, no custom tooling."]
+                    </p>
                 </div>
             </div>
         </div>
