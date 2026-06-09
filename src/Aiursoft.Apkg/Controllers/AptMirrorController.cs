@@ -56,6 +56,7 @@ public class AptMirrorController(
             var localPath = Path.Combine(BucketsRoot, bucket.Id.ToString(), path);
             if (System.IO.File.Exists(localPath))
             {
+                Response.Headers.CacheControl = "no-cache";
                 return PhysicalFile(localPath, localPath.EndsWith(".gz") ? "application/x-gzip" : "text/plain", true);
             }
         }
