@@ -172,6 +172,18 @@
 
 **多架构上游源路由**：Ubuntu 的 amd64 包在 `archive.ubuntu.com`，arm64 包在 `ports.ubuntu.com`——两个域互不包含对方架构。通过声明多条带 `Condition` 的 `<UpstreamUrl>`，构建时根据当前目标架构自动选择正确的上游源。Condition 采用 first-match 语义：找到第一个满足条件的即停止，未声明 Condition 的条目作为默认 fallback。
 
+#### arch 限定符与多架构污染防护
+
+上游下载使用隔离的 `apt-get update` + `apt-get download`。当**构建主机**通过 `dpkg --add-architecture` 注册了外部架构（例如 amd64 主机注册了 arm64 以便交叉编译），apt 默认会为**所有已注册架构**拉取 Package 索引。对于只托管单一架构的上游镜像（如 `archive.ubuntu.com` 没有 arm64），这会导致 `binary-arm64/Packages` 返回 404，构建失败。
+
+Apkg **自动**在临时 apt source 上附加 `[arch=<构建目标架构>]` 限定符，阻止 apt 拉取外部架构索引。此行为对 `.aosproj` 开发者完全透明——无需任何配置。
+
+**设计要点**（v10.0.31+）：
+
+- 限定符始终使用**构建目标架构**（即 `TargetArchitectures` 中当前正在构建的 arch），而非 `UpstreamArch`。即便上游包为 `all` 架构，仍会附加 `[arch=amd64]` 或 `[arch=arm64]`
+- `binary-all` 包始终被合并到每个架构的 Package 索引中（Debian 标准约定），因此用构建目标架构限定**不会**阻止下载 `Architecture: all` 的上游包
+- 此机制与 `UpstreamArch` 变量解析完全解耦：`UpstreamArch` 决定下载**哪个 .deb**，`[arch=...]` 只决定拉取**哪些索引**
+
 `$(UpstreamVersion)` 变量仅在 `<PackageVersion>` 中可用。构建时，Apkg 从下载的上游 `.deb` 控制文件中读取 `Version` 字段并替换该占位符。例如 `<PackageVersion>$(UpstreamVersion)-anduinos</PackageVersion>` 对 noble suite（上游版本为 `13ubuntu10`）会生成 `13ubuntu10-anduinos`，对 questing suite（上游版本为 `14ubuntu3`）会生成 `14ubuntu3-anduinos`。
 
 当输出 suite 名与上游 suite 名不同时，可通过 `<UpstreamSuiteMapping>` 建立映射。典型场景：AnduinOS 的 addon 仓库使用 `questing-addon` 等独立 suite（避免与 Official 仓库的 `questing` 冲突），但上游包仍需从 Ubuntu 的 `questing` 下载：
