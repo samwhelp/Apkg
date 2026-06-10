@@ -1789,6 +1789,42 @@ public class DebBuilderTests
         Assert.AreEqual("some-pkg/noble", spec);
     }
 
+    // ── AppendArchQualifier ───────────────────────────────────────────────────
+
+    [TestMethod]
+    public void AppendArchQualifier_EmptyArch_ReturnsUnchanged()
+    {
+        // null or empty arch must be a no-op — the caller has no arch to pin to.
+        Assert.AreEqual(" [trusted=yes]", DebBuilder.AppendArchQualifier(" [trusted=yes]", ""));
+        Assert.AreEqual(" [trusted=yes]", DebBuilder.AppendArchQualifier(" [trusted=yes]", null!));
+        Assert.AreEqual("", DebBuilder.AppendArchQualifier("", ""));
+    }
+
+    [TestMethod]
+    public void AppendArchQualifier_MergesIntoExistingBracket()
+    {
+        // [signed-by=...] → [arch=amd64 signed-by=...]
+        var result = DebBuilder.AppendArchQualifier(" [signed-by=/tmp/keyring.gpg]", "amd64");
+        Assert.AreEqual(" [arch=amd64 signed-by=/tmp/keyring.gpg]", result);
+    }
+
+    [TestMethod]
+    public void AppendArchQualifier_CreatesNewBracketWhenNone()
+    {
+        // Empty string → " [arch=arm64]"
+        var result = DebBuilder.AppendArchQualifier("", "arm64");
+        Assert.AreEqual(" [arch=arm64]", result);
+    }
+
+    [TestMethod]
+    public void AppendArchQualifier_AllUpstreamWithAmd64Target_GetsArchQualifier()
+    {
+        // The key scenario: UpstreamArch=all, building for amd64.
+        // Must still add [arch=amd64] to prevent foreign arch index fetches.
+        var result = DebBuilder.AppendArchQualifier(" [trusted=yes]", "amd64");
+        Assert.AreEqual(" [arch=amd64 trusted=yes]", result);
+    }
+
     // ── ResolvePackageVersion ─────────────────────────────────────────────────
 
     [TestMethod]

@@ -115,7 +115,7 @@ public class DebBuilder
             resolvedUpstreamUrl = ResolveVariables(resolvedUpstreamUrl, project, distro, suite, arch).TrimEnd('/');
 
             var upstreamDebPath = await DownloadUpstreamDebAsync(
-                project, resolvedUpstreamUrl, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, projectDir);
+                project, resolvedUpstreamUrl, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, arch, projectDir);
             try
             {
                 var upstreamExtractDir = Path.Combine(projectDir, "obj", $"_upstream_{suite}_{arch}");
@@ -465,7 +465,7 @@ public class DebBuilder
     /// Returns the path to the downloaded .deb.
     /// </summary>
     private async Task<string> DownloadUpstreamDebAsync(
-        AosprojProject project, string resolvedUpstreamUrl, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string projectDir)
+        AosprojProject project, string resolvedUpstreamUrl, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string arch, string projectDir)
     {
         var downloadDir = Path.Combine(projectDir, "obj");
         Directory.CreateDirectory(downloadDir);
@@ -509,23 +509,12 @@ public class DebBuilder
                 aptOption = "";
             }
 
-            // Add arch qualifier to prevent multi-arch pollution from host dpkg.
-            // Without this, APT fetches Packages for every foreign architecture
-            // (e.g. arm64) registered on the host, which 404s on single-arch mirrors.
-            // Skip for "all" — binary-all packages don't need an arch qualifier.
-            if (!string.Equals(resolvedUpstreamArch, "all", StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrEmpty(resolvedUpstreamArch))
-            {
-                if (aptOption.Contains('['))
-                {
-                    // Merge into existing bracket, e.g. " [signed-by=...]" → " [arch=amd64 signed-by=...]"
-                    aptOption = aptOption.Replace("[", $"[arch={resolvedUpstreamArch} ");
-                }
-                else
-                {
-                    aptOption = $" [arch={resolvedUpstreamArch}]";
-                }
-            }
+            // [arch=X] prevents APT from fetching foreign-arch indexes (e.g. arm64 on
+            // an amd64 host) that 404 on single-arch mirrors. binary-all packages are
+            // always merged into every arch-specific Packages index per Debian
+            // convention, so pinning to the build target arch never prevents
+            // downloading "all" packages. Use the build target arch unconditionally.
+            aptOption = AppendArchQualifier(aptOption, arch);
 
             var sourceLine = $"deb{aptOption} {uri} {resolvedUpstreamSuite} {resolvedUpstreamComponent}";
             await File.WriteAllTextAsync(sourceListPath, sourceLine + "\n");
@@ -687,6 +676,22 @@ public class DebBuilder
         return arch == "all" || string.IsNullOrEmpty(arch)
             ? $"{package}/{suite}"
             : $"{package}:{arch}/{suite}";
+    }
+
+    /// <summary>
+    /// Appends the <c>[arch=...]</c> qualifier to an APT source option string.
+    /// Merges into an existing bracket (e.g. <c>[signed-by=...]</c> → <c>[arch=amd64 signed-by=...]</c>)
+    /// or creates a new one.  Returns <paramref name="aptOption"/> unchanged when
+    /// <paramref name="arch"/> is null/empty.
+    /// </summary>
+    internal static string AppendArchQualifier(string aptOption, string arch)
+    {
+        if (string.IsNullOrEmpty(arch))
+            return aptOption;
+
+        return aptOption.Contains('[')
+            ? aptOption.Replace("[", $"[arch={arch} ")
+            : $" [arch={arch}]";
     }
 
     /// <summary>
