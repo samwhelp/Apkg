@@ -54,12 +54,13 @@ public class DebBuilder
             : rawUpstreamSuite;
 
         var resolvedUpstreamComponent = ResolveVariables(project.UpstreamComponent, project, distro, suite, arch);
+        var resolvedUpstreamArch = ResolveVariables(project.UpstreamArch, project, distro, suite, arch);
 
         var ctx = ConditionEvaluator.BuildContext(
             distro, suite, arch,
             upstreamDistro: project.UpstreamDistro,
             upstreamSuite: resolvedUpstreamSuite,
-            upstreamArch: project.UpstreamArch,
+            upstreamArch: resolvedUpstreamArch,
             component: project.Component);
         bool Include(string? cond) => _evaluator.Evaluate(cond, ctx);
 
@@ -98,7 +99,7 @@ public class DebBuilder
         if (project.HasUpstreamSource)
         {
             var upstreamDebPath = await DownloadUpstreamDebAsync(
-                project, resolvedUpstreamSuite, resolvedUpstreamComponent, projectDir);
+                project, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, projectDir);
             try
             {
                 var upstreamExtractDir = Path.Combine(projectDir, "obj", $"_upstream_{suite}_{arch}");
@@ -448,7 +449,7 @@ public class DebBuilder
     /// Returns the path to the downloaded .deb.
     /// </summary>
     private async Task<string> DownloadUpstreamDebAsync(
-        AosprojProject project, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string projectDir)
+        AosprojProject project, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string projectDir)
     {
         var downloadDir = Path.Combine(projectDir, "obj");
         Directory.CreateDirectory(downloadDir);
@@ -508,7 +509,7 @@ public class DebBuilder
             ], projectDir);
 
             var downloadSpec = BuildDownloadSpec(
-                project.UpstreamPackage, project.UpstreamArch, resolvedUpstreamSuite);
+                project.UpstreamPackage, resolvedUpstreamArch, resolvedUpstreamSuite);
 
             // apt-get download saves to CWD regardless of Dir::Cache::Archives,
             // so we run it inside downloadDir.

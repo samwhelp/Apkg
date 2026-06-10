@@ -112,7 +112,7 @@
 | `UpstreamSuite` | ⚠️ | 上游 suite（如 `$(Suite)` 表示与构建 suite 同名）。设置 `UpstreamPackage` 时必填 |
 | `UpstreamSuiteMapping` | — | 输出 suite → 上游 suite 的映射表。格式：`out1=up1, out2=up2`。当 `UpstreamSuite` 解析后的值命中了映射的 key，则替换为对应的上游 suite |
 | `UpstreamComponent` | — | 上游 APT 组件，默认为 `main`。支持 `$(Suite)` 等变量 |
-| `UpstreamArch` | — | 上游包架构，默认为 `all` |
+| `UpstreamArch` | — | 上游包架构，默认为 `all`。支持 `$(Arch)` 等变量，构建时自动替换为当前目标架构（如 `amd64`、`arm64`），实现多架构上游派生 |
 | `UpstreamSignedBy` | — | 上游 APT 仓库的 GPG 公钥文件路径（相对于 .aosproj 所在目录）。设置后，`apt-get update` 会通过 `[signed-by=…]` 选项用该公钥验证上游仓库签名；未设置时 `file://` URL 自动使用 `[trusted=yes]`，其他 URL 使用系统信任库。详见 [§上游派生-GPG 签名验证](#上游派生gpg-签名验证) |
 | `SuppressUpstreamScripts` | — | 设为 `true` 时，不继承上游包的 maintainer scripts（preinst/postinst/prerm/postrm），仅继承其数据载荷。适用于仅需上游文件但需完全自控安装脚本的场景。默认为 `false` |
 | `SuppressUpstreamDependencies` | — | 空格/逗号分隔的上游包名列表，在合并本地依赖前从上游继承的 `Depends` 中移除。例如 `"ubuntu-pro-client ubuntu-advantage-desktop-daemon"`。移除时仅匹配基础包名（忽略版本约束），大小写不敏感 |
@@ -154,7 +154,7 @@
     <UpstreamPackage>base-files</UpstreamPackage>
     <UpstreamSuite>$(Suite)</UpstreamSuite>
     <UpstreamComponent>main</UpstreamComponent>
-    <UpstreamArch>amd64</UpstreamArch>
+    <UpstreamArch>$(Arch)</UpstreamArch>
   </PropertyGroup>
 
   <!-- 覆盖上游文件：用 AnduinOS 定制的 /etc/issue, /etc/os-release 等替换上游文件 -->
@@ -166,7 +166,7 @@
 </Project>
 ```
 
-`$(Suite)` 变量会在构建时解析为 `resolute`、`questing` 等，实现同一 `.aosproj` 从不同上游 suite 下载对应版本。
+`$(Suite)` 变量会在构建时解析为 `resolute`、`questing` 等，实现同一 `.aosproj` 从不同上游 suite 下载对应版本。`$(Arch)` 同理——在 `UpstreamArch` 中使用 `$(Arch)` 时，构建 amd64 target 会从上游下载 amd64 包，构建 arm64 target 会下载 arm64 包，实现单一 `.aosproj` 的多架构上游派生。
 
 `$(UpstreamVersion)` 变量仅在 `<PackageVersion>` 中可用。构建时，Apkg 从下载的上游 `.deb` 控制文件中读取 `Version` 字段并替换该占位符。例如 `<PackageVersion>$(UpstreamVersion)-anduinos</PackageVersion>` 对 noble suite（上游版本为 `13ubuntu10`）会生成 `13ubuntu10-anduinos`，对 questing suite（上游版本为 `14ubuntu3`）会生成 `14ubuntu3-anduinos`。
 

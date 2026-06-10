@@ -1745,6 +1745,50 @@ public class DebBuilderTests
         Assert.AreEqual("$(Unknown)", result);
     }
 
+    // ── UpstreamArch variable resolution ───────────────────────────────────────
+
+    [TestMethod]
+    public void ResolveVariables_UpstreamArch_DollarArchExpanded()
+    {
+        // Simulates <UpstreamArch>$(Arch)</UpstreamArch> being resolved at build time.
+        var result = DebBuilder.ResolveVariables("$(Arch)", new(), "", "", "arm64");
+        Assert.AreEqual("arm64", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_UpstreamArch_ArchitectureAliasExpanded()
+    {
+        // $(Architecture) is an alias for $(Arch) — must also work in UpstreamArch context.
+        var result = DebBuilder.ResolveVariables("$(Architecture)", new(), "", "", "amd64");
+        Assert.AreEqual("amd64", result);
+    }
+
+    [TestMethod]
+    public void ResolveVariables_UpstreamArch_LiteralValueUnchanged()
+    {
+        // When UpstreamArch is a literal (e.g., "all"), ResolveVariables must not alter it.
+        var result = DebBuilder.ResolveVariables("all", new(), "", "", "amd64");
+        Assert.AreEqual("all", result);
+    }
+
+    [TestMethod]
+    public void BuildDownloadSpec_ResolvedArch_ProducesCorrectSpec()
+    {
+        // End-to-end: $(Arch) resolved to "arm64" → BuildDownloadSpec adds :arm64 qualifier.
+        var resolvedArch = DebBuilder.ResolveVariables("$(Arch)", new(), "", "", "arm64");
+        var spec = DebBuilder.BuildDownloadSpec("firefox", resolvedArch, "mozilla");
+        Assert.AreEqual("firefox:arm64/mozilla", spec);
+    }
+
+    [TestMethod]
+    public void BuildDownloadSpec_ResolvedArchAll_OmitsArchQualifier()
+    {
+        // When UpstreamArch resolves to "all", no :arch qualifier is added.
+        var resolvedArch = DebBuilder.ResolveVariables("all", new(), "", "", "amd64");
+        var spec = DebBuilder.BuildDownloadSpec("some-pkg", resolvedArch, "noble");
+        Assert.AreEqual("some-pkg/noble", spec);
+    }
+
     // ── ResolvePackageVersion ─────────────────────────────────────────────────
 
     [TestMethod]
