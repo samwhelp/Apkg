@@ -163,7 +163,7 @@ public class RepositoryExportJob(
             // The controller route is /artifacts/certs/{name} (no extension).
             // The .asc only appears in Content-Disposition header, not the URL.
             var certPath = Path.Combine(certsDir, cert.Name);
-            await File.WriteAllTextAsync(certPath, cert.PublicKey, Encoding.UTF8);
+            await File.WriteAllTextAsync(certPath, cert.PublicKey, new UTF8Encoding(false));
             logger.LogDebug("Exported certificate: {CertName}", cert.Name);
         }
     }
@@ -215,22 +215,22 @@ public class RepositoryExportJob(
         var distsBase = Path.Combine(stageDir, "artifacts", repo.Distro, "dists", repo.Suite);
         Directory.CreateDirectory(distsBase);
 
-        // InRelease
+        // InRelease — must NOT include a BOM (GPG clearsign requires '-' at byte 0)
         if (!string.IsNullOrEmpty(bucket.InReleaseContent))
         {
             await File.WriteAllTextAsync(
                 Path.Combine(distsBase, "InRelease"),
                 bucket.InReleaseContent,
-                Encoding.UTF8);
+                new UTF8Encoding(false));
         }
 
-        // Release
+        // Release — must NOT include a BOM (apt expects ASCII header at byte 0)
         if (!string.IsNullOrEmpty(bucket.ReleaseContent))
         {
             await File.WriteAllTextAsync(
                 Path.Combine(distsBase, "Release"),
                 bucket.ReleaseContent,
-                Encoding.UTF8);
+                new UTF8Encoding(false));
         }
 
         // Packages, Packages.gz, Contents-{arch}, Contents-{arch}.gz

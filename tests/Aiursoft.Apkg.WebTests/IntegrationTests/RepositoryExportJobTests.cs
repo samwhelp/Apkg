@@ -181,6 +181,67 @@ public class RepositoryExportJobTests : TestBase
             "InRelease should not be written when bucket has no signed content.");
     }
 
+    [TestMethod]
+    public async Task Export_InReleaseAndRelease_MustNotHaveUtf8Bom()
+    {
+        // The BOM (EF BB BF) breaks GPG clearsign parsing ('NOSPLIT') and
+        // APT Release parsing.  This test reads raw bytes to ensure neither
+        // file starts with a BOM — ReadAllTextAsync alone wouldn't catch it
+        // because it decodes UTF-8 and silently discards the BOM.
+
+        const string releaseContent = "Origin: Apkg\nSuite: noble\nArchitectures: amd64\nComponents: main\nSHA256:\n";
+        const string inReleaseContent = "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\n" + releaseContent + "\n-----BEGIN PGP SIGNATURE-----\nABC123\n-----END PGP SIGNATURE-----\n";
+
+        var bucket = CreateBucket(releaseContent, inReleaseContent);
+        _db.AptRepositories.Add(CreateRepo("testos", "nobom", "noble", "main", "amd64", bucket.Id));
+        await _db.SaveChangesAsync();
+
+        var job = GetService<RepositoryExportJob>();
+        await job.ExecuteAsync();
+
+        var liveDir = _exportRoot.TrimEnd('/');
+        var distsDir = Path.Combine(liveDir, "artifacts", "testos", "dists", "noble");
+
+        // ── InRelease ──
+        var inReleasePath = Path.Combine(distsDir, "InRelease");
+        Assert.IsTrue(File.Exists(inReleasePath));
+        var inReleaseBytes = await File.ReadAllBytesAsync(inReleasePath);
+        Assert.IsTrue(inReleaseBytes.Length >= 3, "InRelease file should have at least 3 bytes.");
+        var inReleaseBom = new byte[] { inReleaseBytes[0], inReleaseBytes[1], inReleaseBytes[2] };
+        var bom = new byte[] { 0xEF, 0xBB, 0xBF };
+        CollectionAssert.AreNotEqual(bom, inReleaseBom,
+            "InRelease must NOT start with UTF-8 BOM (EF BB BF). " +
+            "GPG clearsign parsing requires '-' (0x2D) at byte 0. " +
+            $"Got: {BitConverter.ToString(inReleaseBom)}");
+
+        // ── Release ──
+        var releasePath = Path.Combine(distsDir, "Release");
+        Assert.IsTrue(File.Exists(releasePath));
+        var releaseBytes = await File.ReadAllBytesAsync(releasePath);
+        Assert.IsTrue(releaseBytes.Length >= 3, "Release file should have at least 3 bytes.");
+        var releaseBom = new byte[] { releaseBytes[0], releaseBytes[1], releaseBytes[2] };
+        CollectionAssert.AreNotEqual(bom, releaseBom,
+            "Release must NOT start with UTF-8 BOM (EF BB BF). " +
+            "APT expects an ASCII header field at byte 0. " +
+            $"Got: {BitConverter.ToString(releaseBom)}");
+
+        // Also verify the GPG cert export is BOM-free
+        var certsDir = Path.Combine(liveDir, "artifacts", "certs");
+        if (Directory.Exists(certsDir))
+        {
+            foreach (var certFile in Directory.GetFiles(certsDir))
+            {
+                var certBytes = await File.ReadAllBytesAsync(certFile);
+                if (certBytes.Length >= 3)
+                {
+                    var certBom = new byte[] { certBytes[0], certBytes[1], certBytes[2] };
+                    CollectionAssert.AreNotEqual(bom, certBom,
+                        $"Certificate {Path.GetFileName(certFile)} must NOT start with UTF-8 BOM.");
+                }
+            }
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────
     // Packages / Contents file copy from bucket
     // ──────────────────────────────────────────────────────────────
