@@ -118,7 +118,7 @@ public class DebBuilder
             resolvedUpstreamUrl = ResolveVariables(resolvedUpstreamUrl, project, distro, suite, arch).TrimEnd('/');
 
             var upstreamDebPath = await DownloadUpstreamDebAsync(
-                project, resolvedUpstreamUrl, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, arch, projectDir);
+                project, resolvedUpstreamUrl, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, projectDir);
             try
             {
                 var upstreamExtractDir = Path.Combine(projectDir, "obj", $"_upstream_{suite}_{arch}");
@@ -468,7 +468,7 @@ public class DebBuilder
     /// Returns the path to the downloaded .deb.
     /// </summary>
     private async Task<string> DownloadUpstreamDebAsync(
-        AosprojProject project, string resolvedUpstreamUrl, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string arch, string projectDir)
+        AosprojProject project, string resolvedUpstreamUrl, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string projectDir)
     {
         var downloadDir = Path.Combine(projectDir, "obj");
         Directory.CreateDirectory(downloadDir);
@@ -491,7 +491,7 @@ public class DebBuilder
         {
             return await DownloadFromFileRepoAsync(
                 project, resolvedUpstreamUrl, resolvedUpstreamSuite,
-                resolvedUpstreamComponent, resolvedUpstreamArch, arch, downloadDir);
+                resolvedUpstreamComponent, resolvedUpstreamArch, downloadDir);
         }
 
         // HTTPS repos
@@ -502,15 +502,13 @@ public class DebBuilder
         _logger.LogInformation("Downloading {Package} from {Url} ({Suite})...",
             project.UpstreamPackage, resolvedUpstreamUrl, resolvedUpstreamSuite);
 
-        // Search for the package. For UpstreamArch=all, search binary-all first,
-        // then binary-{targetArch}. For arch-specific, search binary-{targetArch}
-        // first, then binary-all.
-        // "all" is not a valid AptPackageSource arch — fall back to host CPU.
-        var hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-        var effectiveArch = arch == "all" ? hostArch : arch;
+        // Search by the upstream package's real architecture first, then fall back
+        // to binary-all. When UpstreamArch=all, try binary-all first, then the
+        // host's Debian arch (some mirrors omit binary-all since all packages are
+        // merged into each arch-specific index per Debian convention).
         var searchArches = resolvedUpstreamArch == "all"
-            ? new[] { "all", effectiveArch }
-            : new[] { effectiveArch, "all" };
+            ? new[] { "all", HostDebArch() }
+            : new[] { resolvedUpstreamArch, "all" };
 
         DebianPackage? resolvedPackage = null;
         foreach (var searchArch in searchArches)
@@ -557,7 +555,7 @@ public class DebBuilder
     /// </summary>
     private async Task<string> DownloadFromFileRepoAsync(
         AosprojProject project, string repoUrl, string suite, string component,
-        string upstreamArch, string targetArch, string downloadDir)
+        string upstreamArch, string downloadDir)
     {
         var repoPath = repoUrl["file://".Length..].TrimStart('/');
         // On Unix, file:///path → /path; the TrimStart above handles both file:/// and file://
@@ -568,8 +566,8 @@ public class DebBuilder
             project.UpstreamPackage, repoPath, suite);
 
         var searchArches = upstreamArch == "all"
-            ? new[] { "all", targetArch }
-            : new[] { targetArch, "all" };
+            ? new[] { "all", HostDebArch() }
+            : new[] { upstreamArch, "all" };
 
         DebianPackage? resolvedPackage = null;
         foreach (var searchArch in searchArches)
@@ -653,6 +651,24 @@ public class DebBuilder
         }
 
         return destPath;
+    }
+
+    /// <summary>
+    /// Maps .NET <see cref="RuntimeInformation.ProcessArchitecture"/> to a Debian
+    /// architecture name. Used as a fallback when <c>binary-all</c> is missing
+    /// from the mirror's InRelease (Ubuntu merges <c>all</c> packages into each
+    /// arch-specific index, so some mirrors omit <c>binary-all</c> entirely).
+    /// </summary>
+    private static string HostDebArch()
+    {
+        return RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "amd64",
+            Architecture.Arm64 => "arm64",
+            Architecture.Arm => "armhf",
+            Architecture.X86 => "i386",
+            _ => "amd64"
+        };
     }
 
     internal static string BuildControl(
