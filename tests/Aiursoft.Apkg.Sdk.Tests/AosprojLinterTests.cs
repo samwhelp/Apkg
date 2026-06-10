@@ -692,7 +692,7 @@ public class AosprojLinterTests
                 UpstreamPackage = "base-files",
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = "jammy",
-                UpstreamUrl = ""
+                UpstreamUrls = [new() { Value = "" }]
             };
 
             var issues = _linter.Lint(project, dir);
@@ -718,7 +718,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
                 UpstreamSuite = "jammy",
                 UpstreamDistro = ""
             };
@@ -746,7 +746,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = ""
             };
@@ -774,7 +774,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = "jammy",
                 UpstreamComponent = ""
@@ -803,7 +803,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = "jammy",
                 UpstreamArch = ""
@@ -834,7 +834,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = "jammy",
                 UpstreamComponent = "main",
@@ -870,7 +870,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "",
-                UpstreamUrl = "",
+                UpstreamUrls = [new() { Value = "" }],
                 UpstreamDistro = "",
                 UpstreamSuite = "",
                 IncludeFiles =
@@ -904,7 +904,7 @@ public class AosprojLinterTests
                 TargetSuites = "jammy",
                 Maintainer = "Test <test@example.com>",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+                UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = "$(Suite)",
                 UpstreamComponent = "main",

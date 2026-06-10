@@ -472,7 +472,7 @@ public class AosprojSerializerTests
             PackageName = "test",
             PackageVersion = "1.0.0",
             PackageDescription = "desc",
-            UpstreamUrl = "http://archive.ubuntu.com/ubuntu",
+            UpstreamUrls = [new() { Value = "http://archive.ubuntu.com/ubuntu" }],
             UpstreamDistro = "ubuntu",
             UpstreamPackage = "base-files",
             UpstreamSuite = "$(Suite)",
@@ -483,7 +483,7 @@ public class AosprojSerializerTests
         var doc = _serializer.Serialize(original);
         var roundTripped = _serializer.Deserialize(doc);
 
-        Assert.AreEqual(original.UpstreamUrl, roundTripped.UpstreamUrl);
+        Assert.AreEqual(original.UpstreamUrls.Single().Value, roundTripped.UpstreamUrls.Single().Value);
         Assert.AreEqual(original.UpstreamDistro, roundTripped.UpstreamDistro);
         Assert.AreEqual(original.UpstreamPackage, roundTripped.UpstreamPackage);
         Assert.AreEqual(original.UpstreamSuite, roundTripped.UpstreamSuite);
@@ -529,13 +529,68 @@ public class AosprojSerializerTests
 
         var project = _serializer.Deserialize(xml);
 
-        Assert.AreEqual("http://archive.ubuntu.com/ubuntu", project.UpstreamUrl);
+        Assert.AreEqual("http://archive.ubuntu.com/ubuntu", project.UpstreamUrls.Single().Value);
         Assert.AreEqual("ubuntu", project.UpstreamDistro);
         Assert.AreEqual("base-files", project.UpstreamPackage);
         Assert.AreEqual("$(Suite)", project.UpstreamSuite);
         Assert.AreEqual("main", project.UpstreamComponent);
         Assert.AreEqual("amd64", project.UpstreamArch);
         Assert.IsTrue(project.HasUpstreamSource);
+    }
+
+    [TestMethod]
+    public void Deserialize_MultipleUpstreamUrls_WithConditions()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>base-files</PackageName>
+                <PackageVersion>13</PackageVersion>
+                <PackageDescription>AnduinOS base files</PackageDescription>
+                <UpstreamUrl Condition="'$(Arch)' == 'amd64'">http://archive.ubuntu.com/ubuntu</UpstreamUrl>
+                <UpstreamUrl Condition="'$(Arch)' == 'arm64'">http://ports.ubuntu.com/ubuntu-ports</UpstreamUrl>
+                <UpstreamDistro>ubuntu</UpstreamDistro>
+                <UpstreamPackage>base-files</UpstreamPackage>
+                <UpstreamSuite>$(Suite)</UpstreamSuite>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+
+        Assert.AreEqual(2, project.UpstreamUrls.Count);
+        Assert.AreEqual("http://archive.ubuntu.com/ubuntu", project.UpstreamUrls[0].Value);
+        Assert.AreEqual("'$(Arch)' == 'amd64'", project.UpstreamUrls[0].Condition);
+        Assert.AreEqual("http://ports.ubuntu.com/ubuntu-ports", project.UpstreamUrls[1].Value);
+        Assert.AreEqual("'$(Arch)' == 'arm64'", project.UpstreamUrls[1].Condition);
+    }
+
+    [TestMethod]
+    public void Serialize_MultipleUpstreamUrls_RoundTrip()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0",
+            PackageDescription = "desc",
+            UpstreamUrls =
+            [
+                new ConditionalValue { Value = "http://a", Condition = "A" },
+                new ConditionalValue { Value = "http://b", Condition = "B" }
+            ]
+        };
+
+        var doc = _serializer.Serialize(project);
+        var xml = doc.ToString();
+        Assert.IsTrue(xml.Contains("Condition=\"A\""));
+        Assert.IsTrue(xml.Contains("Condition=\"B\""));
+
+        var roundTripped = _serializer.Deserialize(doc);
+        Assert.AreEqual(2, roundTripped.UpstreamUrls.Count);
+        Assert.AreEqual("http://a", roundTripped.UpstreamUrls[0].Value);
+        Assert.AreEqual("A", roundTripped.UpstreamUrls[0].Condition);
+        Assert.AreEqual("http://b", roundTripped.UpstreamUrls[1].Value);
+        Assert.AreEqual("B", roundTripped.UpstreamUrls[1].Condition);
     }
 
     [TestMethod]

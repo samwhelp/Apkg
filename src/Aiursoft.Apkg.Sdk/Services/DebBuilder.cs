@@ -98,8 +98,24 @@ public class DebBuilder
 
         if (project.HasUpstreamSource)
         {
+            string? resolvedUpstreamUrl = null;
+            foreach (var urlItem in project.UpstreamUrls)
+            {
+                if (Include(urlItem.Condition))
+                {
+                    resolvedUpstreamUrl = urlItem.Value;
+                    break;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(resolvedUpstreamUrl))
+            {
+                throw new InvalidOperationException($"No valid UpstreamUrl defined for architecture '{arch}' and suite '{suite}'.");
+            }
+            resolvedUpstreamUrl = ResolveVariables(resolvedUpstreamUrl, project, distro, suite, arch).TrimEnd('/');
+
             var upstreamDebPath = await DownloadUpstreamDebAsync(
-                project, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, projectDir);
+                project, resolvedUpstreamUrl, resolvedUpstreamSuite, resolvedUpstreamComponent, resolvedUpstreamArch, projectDir);
             try
             {
                 var upstreamExtractDir = Path.Combine(projectDir, "obj", $"_upstream_{suite}_{arch}");
@@ -449,7 +465,7 @@ public class DebBuilder
     /// Returns the path to the downloaded .deb.
     /// </summary>
     private async Task<string> DownloadUpstreamDebAsync(
-        AosprojProject project, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string projectDir)
+        AosprojProject project, string resolvedUpstreamUrl, string resolvedUpstreamSuite, string resolvedUpstreamComponent, string resolvedUpstreamArch, string projectDir)
     {
         var downloadDir = Path.Combine(projectDir, "obj");
         Directory.CreateDirectory(downloadDir);
@@ -465,7 +481,7 @@ public class DebBuilder
 
         try
         {
-            var uri = project.UpstreamUrl.TrimEnd('/');
+            var uri = resolvedUpstreamUrl;
 
             // Determine the apt option for this source.
             // Priority: explicit keyring > implicit file:// trust > system trust store.
@@ -515,7 +531,7 @@ public class DebBuilder
             await File.WriteAllTextAsync(sourceListPath, sourceLine + "\n");
 
             _logger.LogInformation("Downloading {Package} from {Url} ({Suite})...",
-                project.UpstreamPackage, project.UpstreamUrl, resolvedUpstreamSuite);
+                project.UpstreamPackage, resolvedUpstreamUrl, resolvedUpstreamSuite);
 
             // Update package lists into the isolated directory
             await RunCommandAsync("apt-get", [
@@ -548,7 +564,7 @@ public class DebBuilder
         var debFiles = Directory.GetFiles(downloadDir, $"{project.UpstreamPackage}_*.deb");
         if (debFiles.Length == 0)
             throw new InvalidOperationException(
-                $"Failed to download upstream package '{project.UpstreamPackage}' from {project.UpstreamUrl} suite {resolvedUpstreamSuite}.");
+                $"Failed to download upstream package '{project.UpstreamPackage}' from {resolvedUpstreamUrl} suite {resolvedUpstreamSuite}.");
 
         return debFiles[0];
     }

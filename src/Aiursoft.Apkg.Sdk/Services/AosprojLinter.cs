@@ -40,7 +40,10 @@ public class AosprojLinter
         // UpstreamSource: if deriving from a package, all upstream fields must be present
         if (project.HasUpstreamSource)
         {
-            RequireField(issues, project.UpstreamUrl, "UpstreamUrl (required when UpstreamPackage is set)");
+            if (project.UpstreamUrls.Count == 0 || project.UpstreamUrls.All(u => string.IsNullOrWhiteSpace(u.Value)))
+            {
+                issues.Add(new LintIssue(Severity.Error, "UpstreamUrl (required when UpstreamPackage is set)"));
+            }
             RequireField(issues, project.UpstreamDistro, "UpstreamDistro (required when UpstreamPackage is set)");
             RequireField(issues, project.UpstreamSuite, "UpstreamSuite (required when UpstreamPackage is set)");
             if (string.IsNullOrWhiteSpace(project.UpstreamComponent))

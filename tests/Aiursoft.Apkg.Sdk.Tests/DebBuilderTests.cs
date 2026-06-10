@@ -2182,7 +2182,7 @@ public class DebBuilderTests
                 Maintainer = "Test <test@example.com>",
                 TargetSuites = "jammy",
                 TargetArchitectures = "all",
-                UpstreamUrl = repoUri,
+                UpstreamUrls = [new() { Value = repoUri }],
                 UpstreamDistro = "ubuntu",
                 UpstreamPackage = "fake-upstream",
                 UpstreamSuite = "jammy",
@@ -3009,7 +3009,7 @@ public class DebBuilderTests
                 Maintainer = "Test <test@example.com>",
                 TargetSuites = "jammy",
                 UpstreamPackage = "base-files",
-                UpstreamUrl = "file:///nonexistent",
+                UpstreamUrls = [new() { Value = "file:///nonexistent" }],
                 UpstreamDistro = "ubuntu",
                 UpstreamSuite = "jammy",
                 UpstreamComponent = "main",
@@ -3190,5 +3190,158 @@ public class DebBuilderTests
         {
             Directory.Delete(tempDir, recursive: true);
         }
+    }
+
+    [TestMethod]
+        public async Task BuildAsync_MultipleUpstreamUrls_ChoosesCorrectOne()
+        {
+            var tempDir = CreateTestDirectory();
+            try
+            {
+                var projectDir = Path.Combine(tempDir, "project");
+                var outputDir = Path.Combine(tempDir, "output");
+                Directory.CreateDirectory(projectDir);
+
+                // ── 1. Create a dummy upstream package ──
+                var upstreamBuildDir = Path.Combine(tempDir, "fake-upstream-build");
+                var upstreamDebianDir = Path.Combine(upstreamBuildDir, "DEBIAN");
+                Directory.CreateDirectory(upstreamDebianDir);
+
+                await File.WriteAllTextAsync(Path.Combine(upstreamDebianDir, "control"),
+                    "Package: fake-upstream\n"
+                    + "Version: 1.0\n"
+                    + "Architecture: amd64\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + "Description: Fake upstream package\n");
+
+                var upstreamDebName = "fake-upstream_1.0_amd64.deb";
+                var upstreamDebPath = Path.Combine(tempDir, upstreamDebName);
+                await RunAsync("dpkg-deb", ["--build", "--root-owner-group", upstreamBuildDir, upstreamDebPath]);
+
+                // ── 2. Set up a local APT repo for amd64 ──
+                var repoDir = Path.Combine(tempDir, "repo");
+                var distsDir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-amd64");
+                Directory.CreateDirectory(distsDir);
+
+                File.Copy(upstreamDebPath, Path.Combine(repoDir, upstreamDebName), overwrite: true);
+                var fi = new FileInfo(Path.Combine(repoDir, upstreamDebName));
+                var debSize = fi.Length;
+
+                string md5, sha256;
+                using (var fs = fi.OpenRead())
+                {
+                    using var md5Alg = System.Security.Cryptography.MD5.Create();
+                    md5 = Convert.ToHexStringLower(md5Alg.ComputeHash(fs));
+                    fs.Position = 0;
+                    using var sha256Alg = System.Security.Cryptography.SHA256.Create();
+                    sha256 = Convert.ToHexStringLower(sha256Alg.ComputeHash(fs));
+                }
+
+                var packagesContent =
+                    $"Package: fake-upstream\n"
+                    + $"Version: 1.0\n"
+                    + $"Architecture: amd64\n"
+                    + $"Maintainer: Test <test@example.com>\n"
+                    + $"Description: Fake upstream package\n"
+                    + $"Filename: {upstreamDebName}\n"
+                    + $"Size: {debSize}\n"
+                    + $"MD5sum: {md5}\n"
+                    + $"SHA256: {sha256}\n\n";
+
+                await File.WriteAllTextAsync(Path.Combine(distsDir, "Packages"), packagesContent);
+                await RunAsync("gzip", ["-k", Path.Combine(distsDir, "Packages")]);
+
+                // Also create an empty i386 index to prevent "File not found" warning/error
+                var i386Dir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-i386");
+                Directory.CreateDirectory(i386Dir);
+                var p = Path.Combine(i386Dir, "Packages");
+                await File.WriteAllTextAsync(p, "");
+                await RunAsync("gzip", ["-k", p]);
+
+                var release = await RunAndCaptureAsync("apt-ftparchive",
+                    ["release", Path.Combine(repoDir, "dists", "jammy")]);
+                release = "Suite: jammy\nCodename: jammy\nOrigin: Test\nLabel: Test\n"
+                    + "Architectures: all amd64 i386\nComponents: main\nDescription: Test repo\n"
+                    + release;
+                await File.WriteAllTextAsync(Path.Combine(repoDir, "dists", "jammy", "Release"), release);
+
+                var repoUri = "file://" + repoDir;
+
+                var project = new AosprojProject
+                {
+                    PackageName = "my-derived-pkg",
+                    PackageVersion = "1.0.0",
+                    PackageDescription = "Derived package",
+                    Maintainer = "Test <test@example.com>",
+                    TargetSuites = "jammy",
+                    TargetArchitectures = "amd64",
+                    UpstreamUrls =
+                    [
+                        new ConditionalValue { Value = "file:///nonexistent", Condition = "'$(Arch)' == 'arm64'" },
+                        new ConditionalValue { Value = repoUri, Condition = "'$(Arch)' == 'amd64'" }
+                    ],
+                    UpstreamDistro = "ubuntu",
+                    UpstreamPackage = "fake-upstream",
+                    UpstreamSuite = "jammy",
+                    UpstreamComponent = "main",
+                    UpstreamArch = "amd64" // Need matching upstream arch to download fake-upstream_1.0.0_amd64.deb
+                };
+
+                // Should succeed because it matches the second condition
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+                
+                var debFile = Path.Combine(outputDir, "my-derived-pkg_1.0.0_jammy_amd64.deb");
+                Assert.IsTrue(File.Exists(debFile));
+            }
+            finally
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+
+        [TestMethod]
+        public async Task BuildAsync_NoMatchingUpstreamUrl_Throws()
+        {
+            var tempDir = CreateTestDirectory();
+            try
+            {
+                var projectDir = Path.Combine(tempDir, "project");
+                var outputDir = Path.Combine(tempDir, "output");
+                Directory.CreateDirectory(projectDir);
+
+                var project = new AosprojProject
+                {
+                    PackageName = "my-derived-pkg",
+                    PackageVersion = "1.0.0",
+                    PackageDescription = "Derived package",
+                    Maintainer = "Test <test@example.com>",
+                    TargetSuites = "jammy",
+                    TargetArchitectures = "amd64",
+                    UpstreamUrls =
+                    [
+                        new ConditionalValue { Value = "file:///nonexistent", Condition = "'$(Arch)' == 'arm64'" }
+                    ],
+                    UpstreamDistro = "ubuntu",
+                    UpstreamPackage = "fake-upstream",
+                    UpstreamSuite = "jammy",
+                    UpstreamComponent = "main",
+                    UpstreamArch = "amd64"
+                };
+
+                try
+                {
+                    await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+                    Assert.Fail("Expected InvalidOperationException was not thrown.");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Assert.IsTrue(ex.Message.Contains("No valid UpstreamUrl defined for architecture"),
+                        $"Exception should mention missing upstream URL. Actual: {ex.Message}");
+                }
+            }
+            finally
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
     }
 }

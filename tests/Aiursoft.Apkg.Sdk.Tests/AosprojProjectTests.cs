@@ -228,7 +228,7 @@ public class AosprojProjectTests
     public void Defaults_UpstreamFieldsAreEmpty()
     {
         var project = new AosprojProject();
-        Assert.AreEqual("", project.UpstreamUrl);
+        Assert.AreEqual(0, project.UpstreamUrls.Count);
         Assert.AreEqual("", project.UpstreamDistro);
         Assert.AreEqual("", project.UpstreamPackage);
         Assert.AreEqual("", project.UpstreamSuite);

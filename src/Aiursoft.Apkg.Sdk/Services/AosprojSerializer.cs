@@ -59,7 +59,13 @@ public class AosprojSerializer
                 case "TargetDistro":       project.TargetDistro = el.Value; break;
                 case "TargetSuites":       project.TargetSuites = el.Value; break;
                 case "TargetArchitectures": project.TargetArchitectures = el.Value; break;
-                case "UpstreamUrl":        project.UpstreamUrl = el.Value; break;
+                case "UpstreamUrl":
+                    project.UpstreamUrls.Add(new ConditionalValue
+                    {
+                        Condition = (string?)el.Attribute("Condition"),
+                        Value = el.Value
+                    });
+                    break;
                 case "UpstreamDistro":     project.UpstreamDistro = el.Value; break;
                 case "UpstreamPackage":    project.UpstreamPackage = el.Value; break;
                 case "UpstreamSuite":      project.UpstreamSuite = el.Value; break;
@@ -233,7 +239,7 @@ public class AosprojSerializer
             Elem("TargetDistro", project.TargetDistro),
             Elem("TargetSuites", project.TargetSuites),
             Elem("TargetArchitectures", project.TargetArchitectures),
-            Elem("UpstreamUrl", project.UpstreamUrl),
+            ConditionalElems("UpstreamUrl", project.UpstreamUrls),
             Elem("UpstreamDistro", project.UpstreamDistro),
             Elem("UpstreamPackage", project.UpstreamPackage),
             Elem("UpstreamSuite", project.UpstreamSuite),
@@ -344,6 +350,18 @@ public class AosprojSerializer
     // Returns null for empty/whitespace values so XElement silently skips them.
     private static XElement? Elem(string name, string value) =>
         string.IsNullOrWhiteSpace(value) ? null : new XElement(name, value);
+
+    private static IEnumerable<XElement> ConditionalElems(string name, IEnumerable<ConditionalValue> values)
+    {
+        foreach (var val in values)
+        {
+            if (string.IsNullOrWhiteSpace(val.Value)) continue;
+            var el = new XElement(name, val.Value);
+            if (!string.IsNullOrWhiteSpace(val.Condition))
+                el.Add(new XAttribute("Condition", val.Condition));
+            yield return el;
+        }
+    }
 
     private static XElement ItemElem(string name, string? condition, params XAttribute[] attrs)
     {

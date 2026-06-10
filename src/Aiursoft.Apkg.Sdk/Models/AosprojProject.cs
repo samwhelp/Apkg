@@ -64,8 +64,11 @@ public class AosprojProject
     public string TargetArchitectures { get; set; } = "amd64";
 
     // ── Upstream source (optional — derive from an existing .deb) ─────────────
-    /// <summary>APT repository base URL of the upstream package, e.g. "http://archive.ubuntu.com/ubuntu".</summary>
-    public string UpstreamUrl { get; set; } = string.Empty;
+    /// <summary>
+    /// APT repository base URL of the upstream package, e.g. "http://archive.ubuntu.com/ubuntu".
+    /// Supports multiple entries with Condition attributes to provide architecture-specific upstream mirrors.
+    /// </summary>
+    public List<ConditionalValue> UpstreamUrls { get; set; } = [];
     /// <summary>Distro identifier of the upstream repository, e.g. "ubuntu".</summary>
     public string UpstreamDistro { get; set; } = string.Empty;
     /// <summary>Package name to derive from, e.g. "base-files".</summary>
