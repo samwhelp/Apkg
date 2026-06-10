@@ -174,13 +174,13 @@ public class RepositorySyncJob(
 
     /// <summary>
     /// Rewrites a pool path to include the suite name, e.g.
-    /// "pool/main/g/pkg/pkg_1.0_all.deb" → "questing-addon/pool/main/g/pkg/pkg_1.0_all.deb".
+    /// "pool/main/g/pkg/pkg_1.0_all.deb" → "pool/questing-addon/main/g/pkg/pkg_1.0_all.deb".
     /// </summary>
     private static string RewritePoolFilenameForSuite(string filename, string suite)
     {
         const string prefix = "pool/";
         if (!string.IsNullOrWhiteSpace(filename) && filename.StartsWith(prefix))
-            return $"{suite}/{filename}";
+            return $"pool/{suite}/{filename.Substring(prefix.Length)}";
         return filename;
     }
 

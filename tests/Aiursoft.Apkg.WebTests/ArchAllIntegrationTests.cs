@@ -201,8 +201,8 @@ SHA512: cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c
     /// than the one the APT client indexed, causing "File has unexpected size" errors.
     ///
     /// The fix: RepositorySyncJob rewrites the Filename field in each suite's Packages file
-    /// to "{suite}/pool/main/g/…/pkg_ver_all.deb".  The controller exposes a matching route
-    /// artifacts/{distro}/{suite}/pool/{**path} that passes repoName=suite to
+    /// to "pool/{suite}/main/g/…/pkg_ver_all.deb".  The controller exposes a matching route
+    /// artifacts/{distro}/pool/{suite}/{**path} that passes repoName=suite to
     /// GetLocalPoolPath, scoping the CAS lookup to that suite's primary bucket only.
     /// </summary>
     [TestMethod]
@@ -298,7 +298,7 @@ SHA512: cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c
 
         // The Filename in the Packages index MUST be suite-scoped so that APT constructs
         // a URL that carries the suite name, allowing the server to scope the pool lookup.
-        const string expectedFilename = "Filename: questing-addon/pool/main/g/gnome-shell-extension-tiling-assistant/gnome-shell-extension-tiling-assistant_1.0.56_all.deb";
+        const string expectedFilename = "Filename: pool/questing-addon/main/g/gnome-shell-extension-tiling-assistant/gnome-shell-extension-tiling-assistant_1.0.56_all.deb";
         Assert.IsTrue(packagesContent.Contains(expectedFilename),
             $"Packages file should contain a suite-scoped Filename.\nExpected to find: {expectedFilename}\nActual content:\n{packagesContent}");
 

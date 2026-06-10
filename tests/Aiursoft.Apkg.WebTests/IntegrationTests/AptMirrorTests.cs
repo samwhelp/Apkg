@@ -66,7 +66,7 @@ public class AptMirrorTests : TestBase
         Assert.AreEqual("SIGNED-TEST-CONTENT", content);
 
         // 3. Test Suite-scoped Pool Download (GetSuitePool)
-        var poolResponse = await Http.GetAsync($"/artifacts/{repo.Distro}/{repo.Suite}/pool/main/t/test-pkg/test.deb");
+        var poolResponse = await Http.GetAsync($"/artifacts/{repo.Distro}/pool/{repo.Suite}/main/t/test-pkg/test.deb");
         Assert.IsTrue(poolResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.InternalServerError or HttpStatusCode.NotFound);
     }
 

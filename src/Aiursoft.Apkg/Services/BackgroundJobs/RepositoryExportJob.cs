@@ -34,8 +34,8 @@ namespace Aiursoft.Apkg.Services.BackgroundJobs;
 ///               Packages.gz                                ← Package index (gzip)
 ///             Contents-{arch}                              ← File-to-package mapping
 ///             Contents-{arch}.gz                           ← File-to-package mapping (gzip)
-///       {suite}/
-///         pool/
+///       pool/
+///         {suite}/
 ///           {component}/
 ///             {firstLetter}/
 ///               {packageName}/
@@ -263,13 +263,13 @@ public class RepositoryExportJob(
 
         // ── pool files (hardlinks from CAS) ────────────────────────────
         // The Packages file has Filename entries rewritten by RepositorySyncJob as:
-        //   {suite}/pool/{component}/{firstLetter}/{packageName}/{fileName}
+        //   pool/{suite}/{component}/{firstLetter}/{packageName}/{fileName}
         //
         // APT clients read the rewritten Filename and construct URLs of the form:
-        //   artifacts/{distro}/{suite}/pool/{**path}  → GetSuitePool
+        //   artifacts/{distro}/pool/{suite}/{**path}  → GetSuitePool
         //
         // We materialize this suite-scoped path:
-        //   artifacts/{distro}/{suite}/pool/...
+        //   artifacts/{distro}/pool/{suite}/...
         await ExportPoolFilesAsync(stageDir, repo, bucket);
 
         logger.LogInformation("Repository {RepoName} exported successfully.", repo.Name);
@@ -298,11 +298,14 @@ public class RepositoryExportJob(
             // The Filename field stored in DB is: pool/{component}/{firstLetter}/{pkg}/{...}.deb
             // (no suite prefix — the suite prefix is only injected into Packages.gz output).
             // APT clients read the rewritten Filename from Packages.gz and request URLs of the
-            // form artifacts/{distro}/{suite}/pool/..., so we only need suite-scoped paths.
+            // form artifacts/{distro}/pool/{suite}/..., so we only need suite-scoped paths.
             var filename = pkg.Filename.TrimStart('/');
 
-            // artifacts/{distro}/{suite}/pool/...
-            var suitePoolPath = Path.Combine(stageDir, "artifacts", repo.Distro, repo.Suite, filename);
+            // Strip "pool/" prefix, then place suite under pool:
+            //   DB: pool/{component}/{letter}/{pkg}/...
+            //   FS: artifacts/{distro}/pool/{suite}/{component}/{letter}/{pkg}/...
+            var relativePath = filename.StartsWith("pool/") ? filename.Substring(5) : filename;
+            var suitePoolPath = Path.Combine(stageDir, "artifacts", repo.Distro, "pool", repo.Suite, relativePath);
             LinkDebFile(casPath, suitePoolPath);
         }
     }

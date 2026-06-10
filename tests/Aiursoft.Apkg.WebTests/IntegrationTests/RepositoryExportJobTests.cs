@@ -293,7 +293,7 @@ public class RepositoryExportJobTests : TestBase
 
         // Suite-scoped
         var suitePath = Path.Combine(liveDir, "artifacts", "testos",
-            "noble/pool/main/t/test-pkg/test-pkg_1.0_amd64.deb");
+            "pool/noble/main/t/test-pkg/test-pkg_1.0_amd64.deb");
         Assert.IsTrue(File.Exists(suitePath));
         Assert.AreEqual("fake-deb-content", await File.ReadAllTextAsync(suitePath));
     }
@@ -314,7 +314,7 @@ public class RepositoryExportJobTests : TestBase
 
         var liveDir = _exportRoot.TrimEnd('/');
         var poolPath = Path.Combine(liveDir, "artifacts", "testos",
-            "noble/pool/main/m/missing-pkg/missing-pkg_1.0_amd64.deb");
+            "pool/noble/main/m/missing-pkg/missing-pkg_1.0_amd64.deb");
         Assert.IsFalse(File.Exists(poolPath));
     }
 
@@ -463,8 +463,8 @@ public class RepositoryExportJobTests : TestBase
         Assert.IsTrue(File.Exists(Path.Combine(artifacts, "testos/dists/noble/main/Contents-amd64")));
         Assert.IsTrue(File.Exists(Path.Combine(artifacts, "testos/dists/noble/main/Contents-amd64.gz")));
 
-        // Controller: GET artifacts/{distro}/{suite}/pool/{**path} (GetSuitePool)
-        Assert.IsTrue(File.Exists(Path.Combine(artifacts, "testos/noble/pool/main/t/test/test_1.0_amd64.deb")));
+        // Controller: GET artifacts/{distro}/pool/{suite}/{**path} (GetSuitePool)
+        Assert.IsTrue(File.Exists(Path.Combine(artifacts, "testos/pool/noble/main/t/test/test_1.0_amd64.deb")));
 
         // Controller: GET artifacts/certs/{name}
         var cert = await _db.AptCertificates.FirstOrDefaultAsync();
