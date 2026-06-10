@@ -6,7 +6,7 @@ public class TestMirrorDirect
     [TestMethod]
     public async Task DebugFetchFromRealMirror()
     {
-        var repo = new AptRepository("https://mirror.aiursoft.com/ubuntu/", "noble", signedBy: null, allowInsecure: true);
+        var repo = new UpstreamAptSource("https://mirror.aiursoft.com/ubuntu/", "noble", signedBy: null, allowInsecure: true);
         await repo.EnsureVerifiedAsync();
         var files = (await repo.GetSupportedFilesAsync()).ToList();
         Console.WriteLine($"Supported files: {files.Count}");

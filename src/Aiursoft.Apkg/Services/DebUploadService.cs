@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Aiursoft.Apkg.Entities;
+using Aiursoft.AptClient;
 using Aiursoft.Apkg.Services.FileStorage;
 using Microsoft.EntityFrameworkCore;
 

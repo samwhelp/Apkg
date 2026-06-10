@@ -51,7 +51,7 @@ public class MirrorSyncJob(
         logger.LogInformation("Starting sync for suite {Suite} from {BaseUrl}...", mirror.Suite, mirror.BaseUrl);
 
         var upstreamRoot = $"{mirror.BaseUrl.TrimEnd('/')}/{mirror.Distro.TrimStart('/')}";
-        var repo = new AptClient.AptRepository(upstreamRoot, mirror.Suite, mirror.SignedBy, mirror.AllowInsecure, () => httpClientFactory.CreateClient());
+        var repo = new UpstreamAptSource(upstreamRoot, mirror.Suite, mirror.SignedBy, mirror.AllowInsecure, () => httpClientFactory.CreateClient());
 
         try
         {
@@ -147,7 +147,7 @@ public class MirrorSyncJob(
         return totalInserted;
     }
 
-    private async Task<int> FetchAndInsertComponentAsync(AptMirror mirror, AptBucket bucket, AptClient.AptRepository repo, string component, string arch, HashSet<string> insertedKeys, string upstreamRoot)
+    private async Task<int> FetchAndInsertComponentAsync(AptMirror mirror, AptBucket bucket, UpstreamAptSource repo, string component, string arch, HashSet<string> insertedKeys, string upstreamRoot)
     {
         logger.LogInformation("Fetching component {Component} [{Arch}] for suite {Suite} from {UpstreamRoot}...", component, arch, mirror.Suite, upstreamRoot);
 

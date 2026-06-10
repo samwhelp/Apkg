@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Aiursoft.AptClient;
 
-public class AptRepository
+public class UpstreamAptSource
 {
     public string BaseUrl { get; }
     public string Suite { get; }
@@ -18,7 +18,7 @@ public class AptRepository
     public string? ContentHash { get; private set; }
 
 
-    public AptRepository(string baseUrl, string suite, string? signedBy, bool allowInsecure = false, Func<HttpClient>? httpClientFactory = null)
+    public UpstreamAptSource(string baseUrl, string suite, string? signedBy, bool allowInsecure = false, Func<HttpClient>? httpClientFactory = null)
     {
         // Ensure BaseUrl ends with /
         BaseUrl = baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/";

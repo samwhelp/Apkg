@@ -1,3 +1,4 @@
+using Aiursoft.AptClient;
 using Aiursoft.Apkg.Entities;
 
 namespace Aiursoft.Apkg.Services;

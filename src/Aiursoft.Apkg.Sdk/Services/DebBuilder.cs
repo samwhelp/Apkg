@@ -496,7 +496,7 @@ public class DebBuilder
 
         // HTTPS repos
         var allowInsecure = keyringPath == null; // trust transport when no explicit keyring
-        var repo = new AptRepository(resolvedUpstreamUrl, resolvedUpstreamSuite,
+        var repo = new UpstreamAptSource(resolvedUpstreamUrl, resolvedUpstreamSuite,
             signedBy: keyringPath, allowInsecure: allowInsecure);
 
         _logger.LogInformation("Downloading {Package} from {Url} ({Suite})...",
@@ -511,18 +511,27 @@ public class DebBuilder
             : new[] { resolvedUpstreamArch, "all" };
 
         DebianPackage? resolvedPackage = null;
+        var versionComparer = new AptVersionComparisonService();
         foreach (var searchArch in searchArches)
         {
             try
             {
                 var source = new AptPackageSource(repo, resolvedUpstreamComponent, searchArch);
+                var candidates = new List<DebianPackage>();
                 await foreach (var pkg in source.FetchPackagesAsync())
                 {
                     if (string.Equals(pkg.Package.Package, project.UpstreamPackage, StringComparison.OrdinalIgnoreCase))
                     {
-                        resolvedPackage = pkg.Package;
-                        break;
+                        candidates.Add(pkg.Package);
                     }
+                }
+
+                if (candidates.Count > 0)
+                {
+                    candidates.Sort((a, b) => versionComparer.Compare(b.Version, a.Version));
+                    var best = candidates[0];
+                    if (resolvedPackage == null || versionComparer.Compare(best.Version, resolvedPackage.Version) > 0)
+                        resolvedPackage = best;
                 }
             }
             catch (Exception ex) when (ex is not InvalidOperationException)
@@ -530,8 +539,6 @@ public class DebBuilder
                 // Mirror may not carry this arch index — try the next one.
                 _logger.LogDebug(ex, "Failed to fetch package index for arch={SearchArch}, trying next.", searchArch);
             }
-
-            if (resolvedPackage != null) break;
         }
 
         if (resolvedPackage == null)
@@ -570,6 +577,7 @@ public class DebBuilder
             : new[] { upstreamArch, "all" };
 
         DebianPackage? resolvedPackage = null;
+        var versionComparer = new AptVersionComparisonService();
         foreach (var searchArch in searchArches)
         {
             var binArch = $"binary-{searchArch}";
@@ -596,14 +604,22 @@ public class DebBuilder
                         dicts = DebianPackageParser.Parse(fileStream).ToList();
                     }
 
+                    var candidates = new List<DebianPackage>();
                     foreach (var dict in dicts)
                     {
                         var pkg = DebianPackageParser.MapToPackage(dict, suite, component);
                         if (string.Equals(pkg.Package, project.UpstreamPackage, StringComparison.OrdinalIgnoreCase))
                         {
-                            resolvedPackage = pkg;
-                            break;
+                            candidates.Add(pkg);
                         }
+                    }
+
+                    if (candidates.Count > 0)
+                    {
+                        candidates.Sort((a, b) => versionComparer.Compare(b.Version, a.Version));
+                        var best = candidates[0];
+                        if (resolvedPackage == null || versionComparer.Compare(best.Version, resolvedPackage.Version) > 0)
+                            resolvedPackage = best;
                     }
                 }
                 catch (Exception ex)
@@ -613,8 +629,6 @@ public class DebBuilder
 
                 if (resolvedPackage != null) break;
             }
-
-            if (resolvedPackage != null) break;
         }
 
         if (resolvedPackage == null)

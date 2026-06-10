@@ -1,3 +1,4 @@
+using Aiursoft.AptClient;
 using Aiursoft.CSTools.Tools;
 using Aiursoft.Canon.TaskQueue;
 using Aiursoft.Canon.BackgroundJobs;

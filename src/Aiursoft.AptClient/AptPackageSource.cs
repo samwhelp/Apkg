@@ -9,7 +9,7 @@ using Abstractions;
 
 public class AptPackageSource
 {
-    private readonly AptRepository _repository;
+    private readonly UpstreamAptSource _repository;
 
     public string Component { get; }
     public string Arch { get; }
@@ -20,7 +20,7 @@ public class AptPackageSource
 
     private readonly Func<HttpClient> _httpClientFactory;
 
-    public AptPackageSource(AptRepository repository, string component, string arch, Func<HttpClient>? httpClientFactory = null)
+    public AptPackageSource(UpstreamAptSource repository, string component, string arch, Func<HttpClient>? httpClientFactory = null)
     {
         _repository = repository;
         Component = component;

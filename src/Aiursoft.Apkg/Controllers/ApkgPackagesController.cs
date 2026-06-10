@@ -1,6 +1,7 @@
 using System.Formats.Tar;
 using System.IO.Compression;
 using Aiursoft.Apkg.Authorization;
+using Aiursoft.AptClient;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Models.ApkgPackagesViewModels;
 using Aiursoft.Apkg.Models.ApkgDebPackagesViewModels;

@@ -24,7 +24,7 @@ public class AptSourceExtractor
     private static List<AptPackageSource> ExtractDeb822Sources(string fileContent, string targetArch, Func<HttpClient>? httpClientFactory)
     {
         var sources = new List<AptPackageSource>();
-        var repoCache = new Dictionary<string, AptRepository>();
+        var repoCache = new Dictionary<string, UpstreamAptSource>();
 
         // Split by double newline to separate stanzas
         // Normalize line endings first
@@ -68,7 +68,7 @@ public class AptSourceExtractor
                     var repoKey = $"{uri}|{suite}";
                     if (!repoCache.TryGetValue(repoKey, out var repo))
                     {
-                        repo = new AptRepository(uri, suite, signedBy, allowInsecure, httpClientFactory);
+                        repo = new UpstreamAptSource(uri, suite, signedBy, allowInsecure, httpClientFactory);
                         repoCache[repoKey] = repo;
                     }
 
@@ -85,7 +85,7 @@ public class AptSourceExtractor
     private static List<AptPackageSource> ExtractLegacySources(string fileContent, string targetArch, Func<HttpClient>? httpClientFactory)
     {
         var sources = new List<AptPackageSource>();
-        var repoCache = new Dictionary<string, AptRepository>();
+        var repoCache = new Dictionary<string, UpstreamAptSource>();
 
         var lines = fileContent.Split('\n');
         foreach (var line in lines)
@@ -136,7 +136,7 @@ public class AptSourceExtractor
             var repoKey = $"{uri}|{suite}";
             if (!repoCache.TryGetValue(repoKey, out var repo))
             {
-                repo = new AptRepository(uri, suite, signedBy, allowInsecure, httpClientFactory);
+                repo = new UpstreamAptSource(uri, suite, signedBy, allowInsecure, httpClientFactory);
                 repoCache[repoKey] = repo;
             }
 

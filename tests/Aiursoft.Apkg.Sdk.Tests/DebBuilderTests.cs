@@ -3292,4 +3292,508 @@ public class DebBuilderTests
                 Directory.Delete(tempDir, recursive: true);
             }
     }
+
+    // ── Version selection: highest version, not first match ─────────────────
+
+    [TestMethod]
+    public async Task BuildAsync_FileRepo_SelectsHighestVersion_WhenLowerVersionListedFirst()
+    {
+        // Regression test: when a Packages file lists multiple versions of the
+        // same package, the builder must pick the HIGHEST version using Debian
+        // version comparison, not the first match.  The Mozilla APT repo lists
+        // 150.0.3 before 151.0.4, so a first-match strategy downgrades users.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            // ── 1. Build upstream .debs: v1.0.0 and v2.0.0 ──
+            var repoDir = Path.Combine(tempDir, "repo");
+            Directory.CreateDirectory(repoDir);
+
+            foreach (var ver in new[] { "1.0.0", "2.0.0" })
+            {
+                var buildDir = Path.Combine(tempDir, $"upstream-build-{ver}");
+                var debianDir = Path.Combine(buildDir, "DEBIAN");
+                Directory.CreateDirectory(debianDir);
+                await File.WriteAllTextAsync(Path.Combine(debianDir, "control"),
+                    $"Package: fake-upstream\nVersion: {ver}\nArchitecture: all\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + "Description: Fake upstream version {ver}\n");
+
+                var markerDir = Path.Combine(buildDir, "usr", "share", "doc");
+                Directory.CreateDirectory(markerDir);
+                await File.WriteAllTextAsync(Path.Combine(markerDir, "version-marker.txt"), ver);
+
+                var debName = $"fake-upstream_{ver}_all.deb";
+                var debPath = Path.Combine(tempDir, debName);
+                await RunAsync("dpkg-deb", ["--build", "--root-owner-group", buildDir, debPath]);
+                File.Copy(debPath, Path.Combine(repoDir, debName), overwrite: true);
+            }
+
+            // ── 2. Create Packages file: 1.0.0 FIRST, 2.0.0 SECOND ──
+            // This is the key: lower version comes first (like Mozilla's repo).
+            var distsDir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-all");
+            Directory.CreateDirectory(distsDir);
+
+            var packagesContent = "";
+            foreach (var ver in new[] { "1.0.0", "2.0.0" })
+            {
+                var debName = $"fake-upstream_{ver}_all.deb";
+                var fi = new FileInfo(Path.Combine(repoDir, debName));
+                var debSize = fi.Length;
+                string md5, sha256;
+                using (var fs = fi.OpenRead())
+                {
+                    using var md5Alg = System.Security.Cryptography.MD5.Create();
+                    md5 = Convert.ToHexStringLower(md5Alg.ComputeHash(fs));
+                    fs.Position = 0;
+                    using var sha256Alg = System.Security.Cryptography.SHA256.Create();
+                    sha256 = Convert.ToHexStringLower(sha256Alg.ComputeHash(fs));
+                }
+                var descMd5 = Convert.ToHexStringLower(
+                    System.Security.Cryptography.MD5.HashData(
+                        System.Text.Encoding.UTF8.GetBytes($"Fake upstream version {ver}")));
+                packagesContent +=
+                    $"Package: fake-upstream\n"
+                    + $"Version: {ver}\n"
+                    + "Architecture: all\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + $"Description: Fake upstream version {ver}\n"
+                    + $"Description-md5: {descMd5}\n"
+                    + "Section: utils\n"
+                    + "Priority: optional\n"
+                    + $"Filename: {debName}\n"
+                    + $"Size: {debSize}\n"
+                    + $"MD5sum: {md5}\n"
+                    + $"SHA256: {sha256}\n\n";
+            }
+            var packagesPath = Path.Combine(distsDir, "Packages");
+            await File.WriteAllTextAsync(packagesPath, packagesContent);
+            await RunAsync("gzip", ["-kf", packagesPath]);
+
+            var release = await RunAndCaptureAsync("apt-ftparchive",
+                ["release", Path.Combine(repoDir, "dists", "jammy")]);
+            release = "Suite: jammy\nCodename: jammy\nOrigin: Test\nLabel: Test\n"
+                + "Architectures: all amd64\nComponents: main\nDescription: Test repo\n"
+                + release;
+            await File.WriteAllTextAsync(Path.Combine(repoDir, "dists", "jammy", "Release"), release);
+
+            // ── 3. Build derived package ──
+            var project = new AosprojProject
+            {
+                PackageName = "my-derived-pkg",
+                PackageVersion = "3.0.0",
+                PackageDescription = "Derived package for version selection test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                TargetArchitectures = "all",
+                UpstreamUrls = [new() { Value = "file://" + repoDir }],
+                UpstreamDistro = "ubuntu",
+                UpstreamPackage = "fake-upstream",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = "main",
+                UpstreamArch = "all"
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "all", outputDir);
+
+            // ── 4. Verify: v2.0.0 was selected, not v1.0.0 ──
+            var staging = Path.Combine(projectDir, "obj", "jammy_all");
+            var markerPath = Path.Combine(staging, "usr", "share", "doc", "version-marker.txt");
+            Assert.IsTrue(File.Exists(markerPath), "version-marker.txt should exist in staging.");
+            var markerContent = await File.ReadAllTextAsync(markerPath);
+            Assert.AreEqual("2.0.0", markerContent,
+                "Should select highest version (2.0.0), not first match (1.0.0).");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_FileRepo_SelectsHighestVersion_WithEpoch()
+    {
+        // Epoch makes 1:1.0.0 > 3.0.0 in Debian version ordering.
+        // Listing 3.0.0 first must NOT shadow 1:1.0.0.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            var repoDir = Path.Combine(tempDir, "repo");
+            Directory.CreateDirectory(repoDir);
+
+            foreach (var ver in new[] { "3.0.0", "1:1.0.0" })
+            {
+                var buildDir = Path.Combine(tempDir, $"upstream-build-{ver.Replace(":", "_")}");
+                var debianDir = Path.Combine(buildDir, "DEBIAN");
+                Directory.CreateDirectory(debianDir);
+                await File.WriteAllTextAsync(Path.Combine(debianDir, "control"),
+                    $"Package: fake-upstream\nVersion: {ver}\nArchitecture: all\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + $"Description: Fake upstream version {ver}\n");
+
+                var markerDir = Path.Combine(buildDir, "usr", "share", "doc");
+                Directory.CreateDirectory(markerDir);
+                await File.WriteAllTextAsync(Path.Combine(markerDir, "version-marker.txt"), ver);
+
+                var safeName = ver.Replace(":", "_");
+                var debName = $"fake-upstream_{safeName}_all.deb";
+                var debPath = Path.Combine(tempDir, debName);
+                await RunAsync("dpkg-deb", ["--build", "--root-owner-group", buildDir, debPath]);
+                File.Copy(debPath, Path.Combine(repoDir, debName), overwrite: true);
+            }
+
+            // 3.0.0 FIRST, 1:1.0.0 SECOND
+            var distsDir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-all");
+            Directory.CreateDirectory(distsDir);
+
+            var packagesContent = "";
+            foreach (var ver in new[] { "3.0.0", "1:1.0.0" })
+            {
+                var safeName = ver.Replace(":", "_");
+                var debName = $"fake-upstream_{safeName}_all.deb";
+                var fi = new FileInfo(Path.Combine(repoDir, debName));
+                var debSize = fi.Length;
+                string md5, sha256;
+                using (var fs = fi.OpenRead())
+                {
+                    using var md5Alg = System.Security.Cryptography.MD5.Create();
+                    md5 = Convert.ToHexStringLower(md5Alg.ComputeHash(fs));
+                    fs.Position = 0;
+                    using var sha256Alg = System.Security.Cryptography.SHA256.Create();
+                    sha256 = Convert.ToHexStringLower(sha256Alg.ComputeHash(fs));
+                }
+                var descMd5 = Convert.ToHexStringLower(
+                    System.Security.Cryptography.MD5.HashData(
+                        System.Text.Encoding.UTF8.GetBytes($"Fake upstream version {ver}")));
+                packagesContent +=
+                    $"Package: fake-upstream\n"
+                    + $"Version: {ver}\n"
+                    + "Architecture: all\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + $"Description: Fake upstream version {ver}\n"
+                    + $"Description-md5: {descMd5}\n"
+                    + "Section: utils\n"
+                    + "Priority: optional\n"
+                    + $"Filename: {debName}\n"
+                    + $"Size: {debSize}\n"
+                    + $"MD5sum: {md5}\n"
+                    + $"SHA256: {sha256}\n\n";
+            }
+            var packagesPath = Path.Combine(distsDir, "Packages");
+            await File.WriteAllTextAsync(packagesPath, packagesContent);
+            await RunAsync("gzip", ["-kf", packagesPath]);
+
+            var release = await RunAndCaptureAsync("apt-ftparchive",
+                ["release", Path.Combine(repoDir, "dists", "jammy")]);
+            release = "Suite: jammy\nCodename: jammy\nOrigin: Test\nLabel: Test\n"
+                + "Architectures: all amd64\nComponents: main\nDescription: Test repo\n"
+                + release;
+            await File.WriteAllTextAsync(Path.Combine(repoDir, "dists", "jammy", "Release"), release);
+
+            var project = new AosprojProject
+            {
+                PackageName = "my-derived-pkg",
+                PackageVersion = "4.0.0",
+                PackageDescription = "Derived package for epoch version test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                TargetArchitectures = "all",
+                UpstreamUrls = [new() { Value = "file://" + repoDir }],
+                UpstreamDistro = "ubuntu",
+                UpstreamPackage = "fake-upstream",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = "main",
+                UpstreamArch = "all"
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "all", outputDir);
+
+            var staging = Path.Combine(projectDir, "obj", "jammy_all");
+            var markerPath = Path.Combine(staging, "usr", "share", "doc", "version-marker.txt");
+            Assert.IsTrue(File.Exists(markerPath), "version-marker.txt should exist in staging.");
+            var markerContent = await File.ReadAllTextAsync(markerPath);
+            Assert.AreEqual("1:1.0.0", markerContent,
+                "Should select epoch-based version (1:1.0.0) over higher-numbered 3.0.0, because epoch 1 > epoch 0.");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_FileRepo_SelectsHighestVersion_SimulateMozillaFirefoxBug()
+    {
+        // Direct reproduction of the mozilla APT repo bug:
+        // firefox 150.0.3 listed BEFORE 151.0.4 in the Packages file.
+        // A first-match strategy picks 150.0.3; sorting picks 151.0.4.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            var repoDir = Path.Combine(tempDir, "repo");
+            Directory.CreateDirectory(repoDir);
+
+            foreach (var ver in new[] { "150.0.3-1~ubuntu1.0", "151.0.4-1~ubuntu1.0" })
+            {
+                var buildDir = Path.Combine(tempDir, $"upstream-build-{ver}");
+                var debianDir = Path.Combine(buildDir, "DEBIAN");
+                Directory.CreateDirectory(debianDir);
+                await File.WriteAllTextAsync(Path.Combine(debianDir, "control"),
+                    $"Package: firefox\nVersion: {ver}\nArchitecture: amd64\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + $"Description: Firefox browser version {ver}\n");
+
+                var markerDir = Path.Combine(buildDir, "usr", "share", "doc");
+                Directory.CreateDirectory(markerDir);
+                await File.WriteAllTextAsync(Path.Combine(markerDir, "version-marker.txt"), ver);
+
+                var debName = $"firefox_{ver}_amd64.deb";
+                var debPath = Path.Combine(tempDir, debName);
+                await RunAsync("dpkg-deb", ["--build", "--root-owner-group", buildDir, debPath]);
+                File.Copy(debPath, Path.Combine(repoDir, debName), overwrite: true);
+            }
+
+            // 150.0.3 FIRST, 151.0.4 SECOND — exactly the Mozilla repo bug
+            var distsDir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-amd64");
+            Directory.CreateDirectory(distsDir);
+
+            var packagesContent = "";
+            foreach (var ver in new[] { "150.0.3-1~ubuntu1.0", "151.0.4-1~ubuntu1.0" })
+            {
+                var debName = $"firefox_{ver}_amd64.deb";
+                var fi = new FileInfo(Path.Combine(repoDir, debName));
+                var debSize = fi.Length;
+                string md5, sha256;
+                using (var fs = fi.OpenRead())
+                {
+                    using var md5Alg = System.Security.Cryptography.MD5.Create();
+                    md5 = Convert.ToHexStringLower(md5Alg.ComputeHash(fs));
+                    fs.Position = 0;
+                    using var sha256Alg = System.Security.Cryptography.SHA256.Create();
+                    sha256 = Convert.ToHexStringLower(sha256Alg.ComputeHash(fs));
+                }
+                var descMd5 = Convert.ToHexStringLower(
+                    System.Security.Cryptography.MD5.HashData(
+                        System.Text.Encoding.UTF8.GetBytes($"Firefox browser version {ver}")));
+                packagesContent +=
+                    $"Package: firefox\n"
+                    + $"Version: {ver}\n"
+                    + "Architecture: amd64\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + $"Description: Firefox browser version {ver}\n"
+                    + $"Description-md5: {descMd5}\n"
+                    + "Section: web\n"
+                    + "Priority: optional\n"
+                    + $"Filename: {debName}\n"
+                    + $"Size: {debSize}\n"
+                    + $"MD5sum: {md5}\n"
+                    + $"SHA256: {sha256}\n\n";
+            }
+            var packagesPath = Path.Combine(distsDir, "Packages");
+            await File.WriteAllTextAsync(packagesPath, packagesContent);
+            await RunAsync("gzip", ["-kf", packagesPath]);
+
+            var release = await RunAndCaptureAsync("apt-ftparchive",
+                ["release", Path.Combine(repoDir, "dists", "jammy")]);
+            release = "Suite: jammy\nCodename: jammy\nOrigin: Test\nLabel: Test\n"
+                + "Architectures: all amd64\nComponents: main\nDescription: Test repo\n"
+                + release;
+            await File.WriteAllTextAsync(Path.Combine(repoDir, "dists", "jammy", "Release"), release);
+
+            var project = new AosprojProject
+            {
+                PackageName = "firefox-anduinos",
+                PackageVersion = "2.0.0~beta1-1",
+                PackageDescription = "Firefox browser repackaged for AnduinOS",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                TargetArchitectures = "amd64",
+                UpstreamUrls = [new() { Value = "file://" + repoDir }],
+                UpstreamDistro = "ubuntu",
+                UpstreamPackage = "firefox",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = "main",
+                UpstreamArch = "amd64"
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+            var staging = Path.Combine(projectDir, "obj", "jammy_amd64");
+            var markerPath = Path.Combine(staging, "usr", "share", "doc", "version-marker.txt");
+            Assert.IsTrue(File.Exists(markerPath), "version-marker.txt should exist in staging.");
+            var markerContent = await File.ReadAllTextAsync(markerPath);
+            Assert.AreEqual("151.0.4-1~ubuntu1.0", markerContent,
+                "Should select 151.0.4, not 150.0.3 (the Mozilla firefox downgrade bug).");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_FileRepo_SelectsHighestVersion_AcrossArchitectures()
+    {
+        // When searchArches is ["all", "amd64"] (UpstreamArch=all), the first
+        // arch (binary-all) may carry a lower version than the second arch
+        // (binary-amd64).  The builder must collect candidates across ALL
+        // arches and pick the globally highest version, not stop at the first
+        // match in the first arch.
+        var tempDir = CreateTestDirectory();
+        try
+        {
+            var projectDir = Path.Combine(tempDir, "project");
+            var outputDir = Path.Combine(tempDir, "output");
+            Directory.CreateDirectory(projectDir);
+
+            var repoDir = Path.Combine(tempDir, "repo");
+            Directory.CreateDirectory(repoDir);
+
+            // ── 1. Build two upstream .debs: v1.0.0 (all) and v2.0.0 (amd64) ──
+            // v1.0.0 for arch "all"
+            var buildDirAll = Path.Combine(tempDir, "upstream-build-all");
+            Directory.CreateDirectory(Path.Combine(buildDirAll, "DEBIAN"));
+            await File.WriteAllTextAsync(Path.Combine(buildDirAll, "DEBIAN", "control"),
+                "Package: fake-upstream\nVersion: 1.0.0\nArchitecture: all\n"
+                + "Maintainer: Test <test@example.com>\n"
+                + "Description: Fake upstream v1.0.0 (all)\n");
+            var markerDirAll = Path.Combine(buildDirAll, "usr", "share", "doc");
+            Directory.CreateDirectory(markerDirAll);
+            await File.WriteAllTextAsync(Path.Combine(markerDirAll, "version-marker.txt"), "1.0.0");
+            var debAll = Path.Combine(tempDir, "fake-upstream_1.0.0_all.deb");
+            await RunAsync("dpkg-deb", ["--build", "--root-owner-group", buildDirAll, debAll]);
+            File.Copy(debAll, Path.Combine(repoDir, "fake-upstream_1.0.0_all.deb"), overwrite: true);
+
+            // v2.0.0 for arch "amd64"
+            var buildDirAmd64 = Path.Combine(tempDir, "upstream-build-amd64");
+            Directory.CreateDirectory(Path.Combine(buildDirAmd64, "DEBIAN"));
+            await File.WriteAllTextAsync(Path.Combine(buildDirAmd64, "DEBIAN", "control"),
+                "Package: fake-upstream\nVersion: 2.0.0\nArchitecture: amd64\n"
+                + "Maintainer: Test <test@example.com>\n"
+                + "Description: Fake upstream v2.0.0 (amd64)\n");
+            var markerDirAmd64 = Path.Combine(buildDirAmd64, "usr", "share", "doc");
+            Directory.CreateDirectory(markerDirAmd64);
+            await File.WriteAllTextAsync(Path.Combine(markerDirAmd64, "version-marker.txt"), "2.0.0");
+            var debAmd64 = Path.Combine(tempDir, "fake-upstream_2.0.0_amd64.deb");
+            await RunAsync("dpkg-deb", ["--build", "--root-owner-group", buildDirAmd64, debAmd64]);
+            File.Copy(debAmd64, Path.Combine(repoDir, "fake-upstream_2.0.0_amd64.deb"), overwrite: true);
+
+            // ── 2. binary-all Packages gets v1.0.0 (LOWER, searched FIRST) ──
+            var allDir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-all");
+            Directory.CreateDirectory(allDir);
+            {
+                var fi = new FileInfo(Path.Combine(repoDir, "fake-upstream_1.0.0_all.deb"));
+                string md5, sha256;
+                using (var fs = fi.OpenRead())
+                {
+                    using var md5Alg = System.Security.Cryptography.MD5.Create();
+                    md5 = Convert.ToHexStringLower(md5Alg.ComputeHash(fs));
+                    fs.Position = 0;
+                    using var sha256Alg = System.Security.Cryptography.SHA256.Create();
+                    sha256 = Convert.ToHexStringLower(sha256Alg.ComputeHash(fs));
+                }
+                var descMd5 = Convert.ToHexStringLower(
+                    System.Security.Cryptography.MD5.HashData(
+                        System.Text.Encoding.UTF8.GetBytes("Fake upstream v1.0.0 (all)")));
+                var packagesContent =
+                    "Package: fake-upstream\n"
+                    + "Version: 1.0.0\n"
+                    + "Architecture: all\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + "Description: Fake upstream v1.0.0 (all)\n"
+                    + $"Description-md5: {descMd5}\n"
+                    + "Section: utils\nPriority: optional\n"
+                    + "Filename: fake-upstream_1.0.0_all.deb\n"
+                    + $"Size: {fi.Length}\n"
+                    + $"MD5sum: {md5}\n"
+                    + $"SHA256: {sha256}\n\n";
+                await File.WriteAllTextAsync(Path.Combine(allDir, "Packages"), packagesContent);
+                await RunAsync("gzip", ["-kf", Path.Combine(allDir, "Packages")]);
+            }
+
+            // ── 3. binary-amd64 Packages gets v2.0.0 (HIGHER, searched SECOND) ──
+            var amd64Dir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-amd64");
+            Directory.CreateDirectory(amd64Dir);
+            {
+                var fi = new FileInfo(Path.Combine(repoDir, "fake-upstream_2.0.0_amd64.deb"));
+                string md5, sha256;
+                using (var fs = fi.OpenRead())
+                {
+                    using var md5Alg = System.Security.Cryptography.MD5.Create();
+                    md5 = Convert.ToHexStringLower(md5Alg.ComputeHash(fs));
+                    fs.Position = 0;
+                    using var sha256Alg = System.Security.Cryptography.SHA256.Create();
+                    sha256 = Convert.ToHexStringLower(sha256Alg.ComputeHash(fs));
+                }
+                var descMd5 = Convert.ToHexStringLower(
+                    System.Security.Cryptography.MD5.HashData(
+                        System.Text.Encoding.UTF8.GetBytes("Fake upstream v2.0.0 (amd64)")));
+                var packagesContent =
+                    "Package: fake-upstream\n"
+                    + "Version: 2.0.0\n"
+                    + "Architecture: amd64\n"
+                    + "Maintainer: Test <test@example.com>\n"
+                    + "Description: Fake upstream v2.0.0 (amd64)\n"
+                    + $"Description-md5: {descMd5}\n"
+                    + "Section: utils\nPriority: optional\n"
+                    + "Filename: fake-upstream_2.0.0_amd64.deb\n"
+                    + $"Size: {fi.Length}\n"
+                    + $"MD5sum: {md5}\n"
+                    + $"SHA256: {sha256}\n\n";
+                await File.WriteAllTextAsync(Path.Combine(amd64Dir, "Packages"), packagesContent);
+                await RunAsync("gzip", ["-kf", Path.Combine(amd64Dir, "Packages")]);
+            }
+
+            var release = await RunAndCaptureAsync("apt-ftparchive",
+                ["release", Path.Combine(repoDir, "dists", "jammy")]);
+            release = "Suite: jammy\nCodename: jammy\nOrigin: Test\nLabel: Test\n"
+                + "Architectures: all amd64\nComponents: main\nDescription: Test repo\n"
+                + release;
+            await File.WriteAllTextAsync(Path.Combine(repoDir, "dists", "jammy", "Release"), release);
+
+            // ── 4. Build: UpstreamArch=all means searchArches = ["all", "amd64"] ──
+            var project = new AosprojProject
+            {
+                PackageName = "my-derived-pkg",
+                PackageVersion = "5.0.0",
+                PackageDescription = "Cross-arch version selection test",
+                Maintainer = "Test <test@example.com>",
+                TargetSuites = "jammy",
+                TargetArchitectures = "all",
+                UpstreamUrls = [new() { Value = "file://" + repoDir }],
+                UpstreamDistro = "ubuntu",
+                UpstreamPackage = "fake-upstream",
+                UpstreamSuite = "jammy",
+                UpstreamComponent = "main",
+                UpstreamArch = "all"
+            };
+
+            await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "all", outputDir);
+
+            // ── 5. Verify: v2.0.0 selected, not v1.0.0 from first-searched arch ──
+            var staging = Path.Combine(projectDir, "obj", "jammy_all");
+            var markerPath = Path.Combine(staging, "usr", "share", "doc", "version-marker.txt");
+            Assert.IsTrue(File.Exists(markerPath), "version-marker.txt should exist in staging.");
+            var markerContent = await File.ReadAllTextAsync(markerPath);
+            Assert.AreEqual("2.0.0", markerContent,
+                "Should select the highest version (2.0.0 from amd64) across all arches, "
+                + "not the first match (1.0.0 from all).");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Aiursoft.AptClient;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Services;
 using Aiursoft.Apkg.Services.BackgroundJobs;

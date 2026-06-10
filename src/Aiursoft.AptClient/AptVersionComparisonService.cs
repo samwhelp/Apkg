@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Aiursoft.Apkg.Services;
+namespace Aiursoft.AptClient;
 
 /// <summary>
 /// Implements Debian version comparison according to Policy Manual section 5.6.12

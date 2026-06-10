@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Aiursoft.AptClient;
 using Aiursoft.Apkg.Entities;
 using Aiursoft.Apkg.Services;
 using Aiursoft.Apkg.Services.FileStorage;
