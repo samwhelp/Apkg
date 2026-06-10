@@ -1,7 +1,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Aiursoft.Apkg.Sdk.Models;
+using Aiursoft.AptClient;
+using Aiursoft.AptClient.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace Aiursoft.Apkg.Sdk.Services;
@@ -461,7 +464,7 @@ public class DebBuilder
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Downloads an upstream .deb using an isolated apt configuration — no sudo, no global state.
+    /// Downloads an upstream .deb via HTTP with SHA256 verification.
     /// Returns the path to the downloaded .deb.
     /// </summary>
     private async Task<string> DownloadUpstreamDebAsync(
@@ -470,92 +473,186 @@ public class DebBuilder
         var downloadDir = Path.Combine(projectDir, "obj");
         Directory.CreateDirectory(downloadDir);
 
-        // Use an isolated apt directory so we never touch system apt state or need sudo
-        var aptTempDir = Path.Combine(projectDir, "obj", $"_apt_{Guid.NewGuid():N}");
-        var sourceListPath = Path.Combine(aptTempDir, "sources.list");
-        var listsDir = Path.Combine(aptTempDir, "lists");
-        var cacheDir = Path.Combine(aptTempDir, "cache");
-        Directory.CreateDirectory(aptTempDir);
-        Directory.CreateDirectory(listsDir);
-        Directory.CreateDirectory(cacheDir);
-
-        try
+        // Validate keyring file exists (before branching on URL type, consistent with old behavior)
+        string? keyringPath = null;
+        if (!string.IsNullOrWhiteSpace(project.UpstreamSignedBy))
         {
-            var uri = resolvedUpstreamUrl;
-
-            // Determine the apt option for this source.
-            // Priority: explicit keyring > implicit file:// trust > system trust store.
-            string aptOption;
-            if (!string.IsNullOrWhiteSpace(project.UpstreamSignedBy))
-            {
-                var keyringSrc = Path.GetFullPath(Path.Combine(projectDir, project.UpstreamSignedBy));
-                if (!File.Exists(keyringSrc))
-                    throw new InvalidOperationException(
-                        $"UpstreamSignedBy file not found: '{keyringSrc}'. " +
-                        "The keyring file must be committed alongside the .aosproj file.");
-
-                var keyringDest = Path.Combine(aptTempDir, Path.GetFileName(project.UpstreamSignedBy));
-                File.Copy(keyringSrc, keyringDest, overwrite: true);
-                aptOption = $" [signed-by={keyringDest}]";
-                _logger.LogInformation("Using GPG keyring {KeyringFile} for upstream verification.",
-                    project.UpstreamSignedBy);
-            }
-            else if (uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-            {
-                aptOption = " [trusted=yes]";
-            }
-            else
-            {
-                aptOption = "";
-            }
-
-            // [arch=X] prevents APT from fetching foreign-arch indexes (e.g. arm64 on
-            // an amd64 host) that 404 on single-arch mirrors. binary-all packages are
-            // always merged into every arch-specific Packages index per Debian
-            // convention, so pinning to the build target arch never prevents
-            // downloading "all" packages. Use the build target arch unconditionally.
-            aptOption = AppendArchQualifier(aptOption, arch);
-
-            var sourceLine = $"deb{aptOption} {uri} {resolvedUpstreamSuite} {resolvedUpstreamComponent}";
-            await File.WriteAllTextAsync(sourceListPath, sourceLine + "\n");
-
-            _logger.LogInformation("Downloading {Package} from {Url} ({Suite})...",
-                project.UpstreamPackage, resolvedUpstreamUrl, resolvedUpstreamSuite);
-
-            // Update package lists into the isolated directory
-            await RunCommandAsync("apt-get", [
-                "update", "-qq",
-                "-o", $"Dir::Etc::SourceList={sourceListPath}",
-                "-o", "Dir::Etc::SourceParts=/dev/null",
-                "-o", $"Dir::State::Lists={listsDir}",
-                "-o", $"Dir::Cache={cacheDir}"
-            ], projectDir);
-
-            var downloadSpec = BuildDownloadSpec(
-                project.UpstreamPackage, resolvedUpstreamArch, resolvedUpstreamSuite);
-
-            // apt-get download saves to CWD regardless of Dir::Cache::Archives,
-            // so we run it inside downloadDir.
-            await RunCommandAsync("apt-get", [
-                "download", "-qq", downloadSpec,
-                "-o", $"Dir::Etc::SourceList={sourceListPath}",
-                "-o", "Dir::Etc::SourceParts=/dev/null",
-                "-o", $"Dir::State::Lists={listsDir}",
-                "-o", $"Dir::Cache={cacheDir}"
-            ], downloadDir);
-        }
-        finally
-        {
-            if (Directory.Exists(aptTempDir))
-                Directory.Delete(aptTempDir, recursive: true);
+            keyringPath = Path.GetFullPath(Path.Combine(projectDir, project.UpstreamSignedBy));
+            if (!File.Exists(keyringPath))
+                throw new InvalidOperationException(
+                    $"UpstreamSignedBy file not found: '{keyringPath}'. " +
+                    "The keyring file must be committed alongside the .aosproj file.");
+            _logger.LogInformation("Using GPG keyring {KeyringFile} for upstream verification.",
+                project.UpstreamSignedBy);
         }
 
-        var debFiles = Directory.GetFiles(downloadDir, $"{project.UpstreamPackage}_*.deb");
-        if (debFiles.Length == 0)
+        // file:// repos: read directly from disk (HttpClient doesn't support file://)
+        if (resolvedUpstreamUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            return await DownloadFromFileRepoAsync(
+                project, resolvedUpstreamUrl, resolvedUpstreamSuite,
+                resolvedUpstreamComponent, resolvedUpstreamArch, arch, downloadDir);
+        }
+
+        // HTTPS repos
+        var allowInsecure = keyringPath == null; // trust transport when no explicit keyring
+        var repo = new AptRepository(resolvedUpstreamUrl, resolvedUpstreamSuite,
+            signedBy: keyringPath, allowInsecure: allowInsecure);
+
+        _logger.LogInformation("Downloading {Package} from {Url} ({Suite})...",
+            project.UpstreamPackage, resolvedUpstreamUrl, resolvedUpstreamSuite);
+
+        // Search for the package. For UpstreamArch=all, search binary-all first,
+        // then binary-{targetArch}. For arch-specific, search binary-{targetArch}
+        // first, then binary-all.
+        // "all" is not a valid AptPackageSource arch — fall back to host CPU.
+        var hostArch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        var effectiveArch = arch == "all" ? hostArch : arch;
+        var searchArches = resolvedUpstreamArch == "all"
+            ? new[] { "all", effectiveArch }
+            : new[] { effectiveArch, "all" };
+
+        DebianPackage? resolvedPackage = null;
+        foreach (var searchArch in searchArches)
+        {
+            try
+            {
+                var source = new AptPackageSource(repo, resolvedUpstreamComponent, searchArch);
+                await foreach (var pkg in source.FetchPackagesAsync())
+                {
+                    if (string.Equals(pkg.Package.Package, project.UpstreamPackage, StringComparison.OrdinalIgnoreCase))
+                    {
+                        resolvedPackage = pkg.Package;
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                // Mirror may not carry this arch index — try the next one.
+                _logger.LogDebug(ex, "Failed to fetch package index for arch={SearchArch}, trying next.", searchArch);
+            }
+
+            if (resolvedPackage != null) break;
+        }
+
+        if (resolvedPackage == null)
             throw new InvalidOperationException(
-                $"Failed to download upstream package '{project.UpstreamPackage}' from {resolvedUpstreamUrl} suite {resolvedUpstreamSuite}.");
+                $"Package '{project.UpstreamPackage}' not found in {resolvedUpstreamUrl} " +
+                $"suite {resolvedUpstreamSuite} component {resolvedUpstreamComponent}.");
 
-        return debFiles[0];
+        // Download the .deb with SHA256 verification (built into AptPackageSource)
+        var destPath = Path.Combine(downloadDir,
+            $"{project.UpstreamPackage}_{resolvedPackage.Version}_{resolvedPackage.Architecture}.deb");
+        var downloadSource = new AptPackageSource(repo, resolvedUpstreamComponent,
+            resolvedPackage.Architecture);
+        await downloadSource.DownloadPackageAsync(resolvedPackage, destPath);
+
+        return destPath;
+    }
+
+    /// <summary>
+    /// Downloads an upstream .deb from a local <c>file://</c> repository.
+    /// Reads Packages index files directly from disk — no HTTP or GPG needed.
+    /// </summary>
+    private async Task<string> DownloadFromFileRepoAsync(
+        AosprojProject project, string repoUrl, string suite, string component,
+        string upstreamArch, string targetArch, string downloadDir)
+    {
+        var repoPath = repoUrl["file://".Length..].TrimStart('/');
+        // On Unix, file:///path → /path; the TrimStart above handles both file:/// and file://
+        if (!Path.IsPathRooted(repoPath))
+            repoPath = "/" + repoPath;
+
+        _logger.LogInformation("Downloading {Package} from local repo {Path} ({Suite})...",
+            project.UpstreamPackage, repoPath, suite);
+
+        var searchArches = upstreamArch == "all"
+            ? new[] { "all", targetArch }
+            : new[] { targetArch, "all" };
+
+        DebianPackage? resolvedPackage = null;
+        foreach (var searchArch in searchArches)
+        {
+            var binArch = $"binary-{searchArch}";
+            var distsDir = Path.Combine(repoPath, "dists", suite, component, binArch);
+
+            // Try Packages.gz first, then uncompressed Packages
+            foreach (var (fileName, needsDecompress) in new[] { ("Packages.gz", true), ("Packages", false) })
+            {
+                var indexPath = Path.Combine(distsDir, fileName);
+                if (!File.Exists(indexPath)) continue;
+
+                try
+                {
+                    using var fileStream = File.OpenRead(indexPath);
+                    IEnumerable<Dictionary<string, string>> dicts;
+                    if (needsDecompress)
+                    {
+                        using var gzStream = new System.IO.Compression.GZipStream(
+                            fileStream, System.IO.Compression.CompressionMode.Decompress);
+                        dicts = DebianPackageParser.Parse(gzStream).ToList();
+                    }
+                    else
+                    {
+                        dicts = DebianPackageParser.Parse(fileStream).ToList();
+                    }
+
+                    foreach (var dict in dicts)
+                    {
+                        var pkg = DebianPackageParser.MapToPackage(dict, suite, component);
+                        if (string.Equals(pkg.Package, project.UpstreamPackage, StringComparison.OrdinalIgnoreCase))
+                        {
+                            resolvedPackage = pkg;
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to parse {File}, trying next.", fileName);
+                }
+
+                if (resolvedPackage != null) break;
+            }
+
+            if (resolvedPackage != null) break;
+        }
+
+        if (resolvedPackage == null)
+            throw new InvalidOperationException(
+                $"Package '{project.UpstreamPackage}' not found in local repo {repoPath} " +
+                $"suite {suite} component {component}.");
+
+        // Copy the .deb from the local repo and verify SHA256
+        var debSourcePath = Path.Combine(repoPath, resolvedPackage.Filename);
+        if (!File.Exists(debSourcePath))
+            throw new InvalidOperationException(
+                $"Referenced .deb file not found at {debSourcePath}.");
+
+        var destPath = Path.Combine(downloadDir,
+            $"{project.UpstreamPackage}_{resolvedPackage.Version}_{resolvedPackage.Architecture}.deb");
+
+        // Copy the file
+        using (var srcStream = File.OpenRead(debSourcePath))
+        using (var dstStream = File.Create(destPath))
+        {
+            await srcStream.CopyToAsync(dstStream);
+        }
+
+        // Verify SHA256
+        var actualHash = BitConverter.ToString(
+            System.Security.Cryptography.SHA256.HashData(await File.ReadAllBytesAsync(destPath)))
+            .Replace("-", "").ToLowerInvariant();
+
+        if (!string.Equals(actualHash, resolvedPackage.SHA256, StringComparison.OrdinalIgnoreCase))
+        {
+            File.Delete(destPath);
+            throw new System.Security.SecurityException(
+                $"SHA256 mismatch for {debSourcePath}.\nExpected: {resolvedPackage.SHA256}\nActual:   {actualHash}");
+        }
+
+        return destPath;
     }
 
     internal static string BuildControl(
@@ -661,37 +758,6 @@ public class DebBuilder
     internal static string NormalizeTargetPath(string target)
     {
         return target.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-    }
-
-    /// <summary>
-    /// Builds an apt-get download spec string. For arch "all" packages:
-    ///   <c>pkg/suite</c>
-    /// For arch-specific packages:
-    ///   <c>pkg:arch/suite</c>
-    /// The /suite suffix forces apt to download from the repository rather than
-    /// matching the locally installed version (which may no longer exist).
-    /// </summary>
-    internal static string BuildDownloadSpec(string package, string arch, string suite)
-    {
-        return arch == "all" || string.IsNullOrEmpty(arch)
-            ? $"{package}/{suite}"
-            : $"{package}:{arch}/{suite}";
-    }
-
-    /// <summary>
-    /// Appends the <c>[arch=...]</c> qualifier to an APT source option string.
-    /// Merges into an existing bracket (e.g. <c>[signed-by=...]</c> → <c>[arch=amd64 signed-by=...]</c>)
-    /// or creates a new one.  Returns <paramref name="aptOption"/> unchanged when
-    /// <paramref name="arch"/> is null/empty.
-    /// </summary>
-    internal static string AppendArchQualifier(string aptOption, string arch)
-    {
-        if (string.IsNullOrEmpty(arch))
-            return aptOption;
-
-        return aptOption.Contains('[')
-            ? aptOption.Replace("[", $"[arch={arch} ")
-            : $" [arch={arch}]";
     }
 
     /// <summary>

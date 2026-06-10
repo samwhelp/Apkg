@@ -1565,29 +1565,6 @@ public class DebBuilderTests
         }
     }
 
-    // ── BuildDownloadSpec ────────────────────────────────────────────────────
-
-    [TestMethod]
-    public void BuildDownloadSpec_ArchAll_ReturnsPackageSlashSuite()
-    {
-        var result = DebBuilder.BuildDownloadSpec("base-files", "all", "jammy");
-        Assert.AreEqual("base-files/jammy", result);
-    }
-
-    [TestMethod]
-    public void BuildDownloadSpec_ArchSpecific_ReturnsPackageColonArchSlashSuite()
-    {
-        var result = DebBuilder.BuildDownloadSpec("libc6", "amd64", "noble");
-        Assert.AreEqual("libc6:amd64/noble", result);
-    }
-
-    [TestMethod]
-    public void BuildDownloadSpec_EmptyArch_TreatedAsAll()
-    {
-        var result = DebBuilder.BuildDownloadSpec("base-files", "", "jammy");
-        Assert.AreEqual("base-files/jammy", result);
-    }
-
     // ── StripShebang ─────────────────────────────────────────────────────────
 
     [TestMethod]
@@ -1769,60 +1746,6 @@ public class DebBuilderTests
         // When UpstreamArch is a literal (e.g., "all"), ResolveVariables must not alter it.
         var result = DebBuilder.ResolveVariables("all", new(), "", "", "amd64");
         Assert.AreEqual("all", result);
-    }
-
-    [TestMethod]
-    public void BuildDownloadSpec_ResolvedArch_ProducesCorrectSpec()
-    {
-        // End-to-end: $(Arch) resolved to "arm64" → BuildDownloadSpec adds :arm64 qualifier.
-        var resolvedArch = DebBuilder.ResolveVariables("$(Arch)", new(), "", "", "arm64");
-        var spec = DebBuilder.BuildDownloadSpec("firefox", resolvedArch, "mozilla");
-        Assert.AreEqual("firefox:arm64/mozilla", spec);
-    }
-
-    [TestMethod]
-    public void BuildDownloadSpec_ResolvedArchAll_OmitsArchQualifier()
-    {
-        // When UpstreamArch resolves to "all", no :arch qualifier is added.
-        var resolvedArch = DebBuilder.ResolveVariables("all", new(), "", "", "amd64");
-        var spec = DebBuilder.BuildDownloadSpec("some-pkg", resolvedArch, "noble");
-        Assert.AreEqual("some-pkg/noble", spec);
-    }
-
-    // ── AppendArchQualifier ───────────────────────────────────────────────────
-
-    [TestMethod]
-    public void AppendArchQualifier_EmptyArch_ReturnsUnchanged()
-    {
-        // null or empty arch must be a no-op — the caller has no arch to pin to.
-        Assert.AreEqual(" [trusted=yes]", DebBuilder.AppendArchQualifier(" [trusted=yes]", ""));
-        Assert.AreEqual(" [trusted=yes]", DebBuilder.AppendArchQualifier(" [trusted=yes]", null!));
-        Assert.AreEqual("", DebBuilder.AppendArchQualifier("", ""));
-    }
-
-    [TestMethod]
-    public void AppendArchQualifier_MergesIntoExistingBracket()
-    {
-        // [signed-by=...] → [arch=amd64 signed-by=...]
-        var result = DebBuilder.AppendArchQualifier(" [signed-by=/tmp/keyring.gpg]", "amd64");
-        Assert.AreEqual(" [arch=amd64 signed-by=/tmp/keyring.gpg]", result);
-    }
-
-    [TestMethod]
-    public void AppendArchQualifier_CreatesNewBracketWhenNone()
-    {
-        // Empty string → " [arch=arm64]"
-        var result = DebBuilder.AppendArchQualifier("", "arm64");
-        Assert.AreEqual(" [arch=arm64]", result);
-    }
-
-    [TestMethod]
-    public void AppendArchQualifier_AllUpstreamWithAmd64Target_GetsArchQualifier()
-    {
-        // The key scenario: UpstreamArch=all, building for amd64.
-        // Must still add [arch=amd64] to prevent foreign arch index fetches.
-        var result = DebBuilder.AppendArchQualifier(" [trusted=yes]", "amd64");
-        Assert.AreEqual(" [arch=amd64 trusted=yes]", result);
     }
 
     // ── ResolvePackageVersion ─────────────────────────────────────────────────
@@ -2164,6 +2087,9 @@ public class DebBuilderTests
                 + $"Architecture: all\n"
                 + $"Maintainer: Test <test@example.com>\n"
                 + $"Description: Fake upstream for SuppressUpstreamScripts test\n"
+                + $"Description-md5: {Convert.ToHexStringLower(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes("Fake upstream for SuppressUpstreamScripts test")))}\n"
+                + $"Section: utils\n"
+                + $"Priority: optional\n"
                 + $"Filename: {upstreamDebName}\n"
                 + $"Size: {debSize}\n"
                 + $"MD5sum: {md5}\n"
@@ -2172,17 +2098,7 @@ public class DebBuilderTests
             await File.WriteAllTextAsync(packagesPath, packagesContent);
             await RunAsync("gzip", ["-kf", packagesPath]);
 
-            // apt also tries to fetch Packages for native/foreign architectures;
-            // create empty index files to avoid "File not found" errors (exit 100)
-            foreach (var extraArch in new[] { "amd64", "i386" })
-            {
-                var extraDir = Path.Combine(repoDir, "dists", "jammy", "main", $"binary-{extraArch}");
-                Directory.CreateDirectory(extraDir);
-                var p = Path.Combine(extraDir, "Packages");
-                await File.WriteAllTextAsync(p, "");
-                await RunAsync("gzip", ["-kf", p]);
-            }
-
+            // The repo only carries binary-all for this test; no need for extra arch indexes.
             // apt-get download with /suite suffix requires a Release file
             // identifying the suite. apt-ftparchive generates the checksums,
             // then we prepend Suite/Codename headers so apt can find the release.
@@ -3279,6 +3195,9 @@ public class DebBuilderTests
                     + $"Architecture: amd64\n"
                     + $"Maintainer: Test <test@example.com>\n"
                     + $"Description: Fake upstream package\n"
+                    + $"Description-md5: {Convert.ToHexStringLower(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes("Fake upstream package")))}\n"
+                    + $"Section: utils\n"
+                    + $"Priority: optional\n"
                     + $"Filename: {upstreamDebName}\n"
                     + $"Size: {debSize}\n"
                     + $"MD5sum: {md5}\n"
@@ -3286,13 +3205,6 @@ public class DebBuilderTests
 
                 await File.WriteAllTextAsync(Path.Combine(distsDir, "Packages"), packagesContent);
                 await RunAsync("gzip", ["-k", Path.Combine(distsDir, "Packages")]);
-
-                // Also create an empty i386 index to prevent "File not found" warning/error
-                var i386Dir = Path.Combine(repoDir, "dists", "jammy", "main", "binary-i386");
-                Directory.CreateDirectory(i386Dir);
-                var p = Path.Combine(i386Dir, "Packages");
-                await File.WriteAllTextAsync(p, "");
-                await RunAsync("gzip", ["-k", p]);
 
                 var release = await RunAndCaptureAsync("apt-ftparchive",
                     ["release", Path.Combine(repoDir, "dists", "jammy")]);

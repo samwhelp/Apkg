@@ -32,4 +32,7 @@
   <ItemGroup>
     <PackageReference Include="Aiursoft.AiurProtocol" Version="10.0.17" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Aiursoft.AptClient\Aiursoft.AptClient.csproj" />
+  </ItemGroup>
 </Project>
