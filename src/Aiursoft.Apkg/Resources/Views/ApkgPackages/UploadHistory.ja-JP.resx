@@ -27,6 +27,15 @@
   <data name="Component" xml:space="preserve">
     <value>コンポーネント</value>
   </data>
+  <data name="Continue" xml:space="preserve">
+    <value>続行</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>無効化中</value>
+  </data>
   <data name="Distro" xml:space="preserve">
     <value>ディストリビューション</value>
   </data>
@@ -35,6 +44,9 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>ファイル</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>公開済み</value>
   </data>
   <data name="My Upload History" xml:space="preserve">
     <value>私のアップロード履歴</value>
@@ -48,11 +60,26 @@
   <data name="Packages" xml:space="preserve">
     <value>パッケージ</value>
   </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>同期待ち</value>
+  </data>
+  <data name="Staged for Signing" xml:space="preserve">
+    <value>署名待機</value>
+  </data>
   <data name="Status" xml:space="preserve">
     <value>ステータス</value>
   </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>失効済み</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>ヒント：</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>一覧外</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>未公開</value>
   </data>
   <data name="Upload History" xml:space="preserve">
     <value>アップロード履歴</value>

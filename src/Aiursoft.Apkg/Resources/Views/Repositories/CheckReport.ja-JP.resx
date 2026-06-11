@@ -66,6 +66,9 @@
   <data name="Re-check" xml:space="preserve">
     <value>再チェック</value>
   </data>
+  <data name="Real" xml:space="preserve">
+    <value>実体</value>
+  </data>
   <data name="Report Age" xml:space="preserve">
     <value>レポートの経過時間</value>
   </data>
@@ -80,6 +83,9 @@
   </data>
   <data name="Version" xml:space="preserve">
     <value>バージョン</value>
+  </data>
+  <data name="Virtual" xml:space="preserve">
+    <value>仮想</value>
   </data>
 
 </root>

@@ -27,11 +27,17 @@
   <data name="&quot;Fire-and-forget&quot; support for long-running tasks (like emails or AI), featuring a GUI for queue management, parallel processing, and cancellation." xml:space="preserve">
     <value>&quot;Fire-and-forget&quot; support for long-running tasks (like emails or AI), featuring a GUI for queue management, parallel processing, and cancellation.</value>
   </data>
+  <data name="&lt;code&gt;Buildd&lt;/code&gt; farm compiles natively on real hardware. Cron-driven &lt;code&gt;apt-ftparchive&lt;/code&gt; regenerates indexes — packages wait hours in &lt;code&gt;incoming&lt;/code&gt; before publication." xml:space="preserve">
+    <value>&lt;code&gt;Buildd&lt;/code&gt; farm compiles natively on real hardware. Cron-driven &lt;code&gt;apt-ftparchive&lt;/code&gt; regenerates indexes — packages wait hours in &lt;code&gt;incoming&lt;/code&gt; before publication.</value>
+  </data>
   <data name="&lt;code&gt;sudo apkg&lt;/code&gt; cannot run directly because root&apos;s PATH does not include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works permanently:" xml:space="preserve">
     <value>&lt;code&gt;sudo apkg&lt;/code&gt; cannot run directly because root&apos;s PATH does not include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works permanently:</value>
   </data>
   <data name="&lt;code&gt;sudo apkg&lt;/code&gt; won&apos;t work out of the box because root&apos;s PATH doesn&apos;t include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works forever:" xml:space="preserve">
     <value>&lt;code&gt;sudo apkg&lt;/code&gt; won&apos;t work straight out of the box because root&apos;s PATH doesn&apos;t include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works forever:</value>
+  </data>
+  <data name="&lt;strong class=&quot;text-white&quot;&gt;Dak&lt;/strong&gt; is battle-tested infrastructure that has delivered Debian to millions for over two decades. &lt;strong class=&quot;text-primary&quot;&gt;Apkg&lt;/strong&gt; does not aim to replace it — it trades some of that generality for a modern, CI-native, cloud-deployable APT repository that a small team can operate." xml:space="preserve">
+    <value>&lt;strong class=&quot;text-white&quot;&gt;Dak&lt;/strong&gt; is battle-tested infrastructure that has delivered Debian to millions for over two decades. &lt;strong class=&quot;text-primary&quot;&gt;Apkg&lt;/strong&gt; does not aim to replace it — it trades some of that generality for a modern, CI-native, cloud-deployable APT repository that a small team can operate.</value>
   </data>
   <data name="A built-in Role-Based Access Control (RBAC) system for fine-grained permission management." xml:space="preserve">
     <value>A built-in Role-Based Access Control (RBAC) system for fine-grained permission management.</value>
@@ -123,6 +129,9 @@
   <data name="APT repository server" xml:space="preserve">
     <value>APT repository server</value>
   </data>
+  <data name="Architecture Philosophy" xml:space="preserve">
+    <value>Architecture Philosophy</value>
+  </data>
   <data name="Artificial Intelligence Translation" xml:space="preserve">
     <value>Artificial Intelligence Translation</value>
   </data>
@@ -186,6 +195,9 @@
   <data name="Build" xml:space="preserve">
     <value>Build</value>
   </data>
+  <data name="Build &amp; Pipeline" xml:space="preserve">
+    <value>Build &amp; Pipeline</value>
+  </data>
   <data name="Build once, run anywhere. Fully containerized architecture." xml:space="preserve">
     <value>Build once, run anywhere. Fully containerised architecture.</value>
   </data>
@@ -225,8 +237,17 @@
   <data name="Certificate management" xml:space="preserve">
     <value>Certificate management</value>
   </data>
+  <data name="CI cross-compilation excels on amd64/arm64, but Debian&apos;s native Buildd catches architecture-specific UB that cross-toolchains miss." xml:space="preserve">
+    <value>CI cross-compilation excels on amd64/arm64, but Debian&apos;s native Buildd catches architecture-specific UB that cross-toolchains miss.</value>
+  </data>
+  <data name="CI cross-compilation with per-arch &lt;code&gt;Condition&lt;/code&gt; attributes. Real-time atomic pipeline — sync, sign, swap via &lt;code&gt;rename(2)&lt;/code&gt;. Clients never see half-written metadata." xml:space="preserve">
+    <value>CI cross-compilation with per-arch &lt;code&gt;Condition&lt;/code&gt; attributes. Real-time atomic pipeline — sync, sign, swap via &lt;code&gt;rename(2)&lt;/code&gt;. Clients never see half-written metadata.</value>
+  </data>
   <data name="CLI quick start" xml:space="preserve">
     <value>CLI quick start</value>
+  </data>
+  <data name="Cloud-native CDN delivers consistent low-latency worldwide. DDoS absorbed at the edge." xml:space="preserve">
+    <value>Cloud-native CDN delivers consistent low-latency worldwide. DDoS absorbed at the edge.</value>
   </data>
   <data name="Comes with Docker support for simplified and consistent deployments." xml:space="preserve">
     <value>Comes with Docker support for simplified and consistent deployments.</value>
@@ -294,6 +315,12 @@
   <data name="Day 1 Ready" xml:space="preserve">
     <value>Day 1 Ready</value>
   </data>
+  <data name="Debian&apos;s &lt;code&gt;Dak&lt;/code&gt; has served the community for decades. Apkg takes a different path — shaped by modern CI/CD, cloud infrastructure, and declarative tooling. Both have strengths. Both have trade-offs." xml:space="preserve">
+    <value>Debian&apos;s &lt;code&gt;Dak&lt;/code&gt; has served the community for decades. Apkg takes a different path — shaped by modern CI/CD, cloud infrastructure, and declarative tooling. Both have strengths. Both have trade-offs.</value>
+  </data>
+  <data name="Declarative &lt;code&gt;.aosproj&lt;/code&gt; files with MSBuild syntax. Files, deps, and scripts in one manifest — if you know &lt;code&gt;.csproj&lt;/code&gt;, you know packaging." xml:space="preserve">
+    <value>Declarative &lt;code&gt;.aosproj&lt;/code&gt; files with MSBuild syntax. Files, deps, and scripts in one manifest — if you know &lt;code&gt;.csproj&lt;/code&gt;, you know packaging.</value>
+  </data>
   <data name="Deep integration testing with Authentik. Compatible with Okta." xml:space="preserve">
     <value>Deep integration testing with Authentik. Compatible with Okta.</value>
   </data>
@@ -329,6 +356,9 @@
   </data>
   <data name="Discussions page" xml:space="preserve">
     <value>Discussions page</value>
+  </data>
+  <data name="Distribution" xml:space="preserve">
+    <value>Distribution</value>
   </data>
   <data name="Distribution Infrastructure" xml:space="preserve">
     <value>Distribution Infrastructure</value>
@@ -480,6 +510,9 @@
   <data name="Go to dashboard" xml:space="preserve">
     <value>Go to dashboard</value>
   </data>
+  <data name="GPG Web of Trust with in-person Key Signing Parties. Trust is fully decentralized — no single authority controls the keyring." xml:space="preserve">
+    <value>GPG Web of Trust with in-person Key Signing Parties. Trust is fully decentralised — no single authority controls the keyring.</value>
+  </data>
   <data name="Handle recurring jobs like cleanup and synchronization with a comprehensive GUI for monitoring execution history and logs." xml:space="preserve">
     <value>Handle recurring jobs like cleanup and synchronization with a comprehensive GUI for monitoring execution history and logs.</value>
   </data>
@@ -524,6 +557,9 @@
   </data>
   <data name="If you have written a &lt;code&gt;.csproj&lt;/code&gt; you already know &lt;code&gt;.aosproj&lt;/code&gt;. XML-based, toolable, and integrated with the Apkg CLI for linting, building, and publishing." xml:space="preserve">
     <value>If you have written a &lt;code&gt;.csproj&lt;/code&gt; you already know &lt;code&gt;.aosproj&lt;/code&gt;. XML-based, toolable, and integrated with the Apkg CLI for linting, building, and publishing.</value>
+  </data>
+  <data name="Imperative &lt;code&gt;debian/rules&lt;/code&gt; and dh macros. Mastering Debian packaging takes months of learning arcane shell scripts." xml:space="preserve">
+    <value>Imperative &lt;code&gt;debian/rules&lt;/code&gt; and dh macros. Mastering Debian packaging takes months of learning arcane shell scripts.</value>
   </data>
   <data name="Included" xml:space="preserve">
     <value>Included</value>
@@ -675,6 +711,9 @@
   <data name="OIDC &amp; SSO" xml:space="preserve">
     <value>OIDC &amp; SSO</value>
   </data>
+  <data name="OIDC-backed RBAC with scoped API keys. Teams authenticate via existing SSO, grant per-repo permissions, and revoke access instantly." xml:space="preserve">
+    <value>OIDC-backed RBAC with scoped API keys. Teams authenticate via existing SSO, grant per-repo permissions, and revoke access instantly.</value>
+  </data>
   <data name="One Click Start" xml:space="preserve">
     <value>One Click Start</value>
   </data>
@@ -707,6 +746,9 @@
   </data>
   <data name="Pack multiple .deb files into one .apkg bundle with a manifest. Push to any APKG server." xml:space="preserve">
     <value>Pack multiple .deb files into one .apkg bundle with a manifest. Push to any APKG server.</value>
+  </data>
+  <data name="Packaging" xml:space="preserve">
+    <value>Packaging</value>
   </data>
   <data name="Permission discovery and sync" xml:space="preserve">
     <value>Permission discovery and sync</value>
@@ -756,6 +798,9 @@
   <data name="RBAC Authorization" xml:space="preserve">
     <value>RBAC Authorisation</value>
   </data>
+  <data name="RBAC is ideal for organizations, but Debian&apos;s decentralized WoT remains the gold standard for a trustless global maintainer network." xml:space="preserve">
+    <value>RBAC is ideal for organisations, but Debian&apos;s decentralised WoT remains the gold standard for a trustless global maintainer network.</value>
+  </data>
   <data name="Read the document" xml:space="preserve">
     <value>Read the documentation</value>
   </data>
@@ -777,6 +822,9 @@
   <data name="Robust Integration Testing" xml:space="preserve">
     <value>Robust Integration Testing</value>
   </data>
+  <data name="Room to grow:" xml:space="preserve">
+    <value>Scope for improvement:</value>
+  </data>
   <data name="Runs on Windows, Linux, and macOS via .NET." xml:space="preserve">
     <value>Runs on Windows, Linux, and macOS via .NET.</value>
   </data>
@@ -797,6 +845,9 @@
   </data>
   <data name="Search packages..." xml:space="preserve">
     <value>Search packages...</value>
+  </data>
+  <data name="Security &amp; Trust" xml:space="preserve">
+    <value>Security &amp; Trust</value>
   </data>
   <data name="Self Host" xml:space="preserve">
     <value>Self-host</value>
@@ -867,6 +918,9 @@
   <data name="Starts without any configuration" xml:space="preserve">
     <value>Starts without any configuration</value>
   </data>
+  <data name="Static export with atomic swap + CDN edge caching + Geo-steering. Shared-nothing edge nodes with built-in WAF before origin." xml:space="preserve">
+    <value>Static export with atomic swap + CDN edge caching + Geo-steering. Shared-nothing edge nodes with built-in WAF before origin.</value>
+  </data>
   <data name="Stop Coding Boilerplate." xml:space="preserve">
     <value>Stop Coding Boilerplate.</value>
   </data>
@@ -921,6 +975,9 @@
   <data name="This is a template project, where we start the voyager..." xml:space="preserve">
     <value>This is a template project, where we begin the voyage...</value>
   </data>
+  <data name="Tiered rsync cascade (T1 → T2) run by volunteers. Decentralized and resilient, but latency varies and DDoS defense depends on each operator." xml:space="preserve">
+    <value>Tiered rsync cascade (T1 → T2) run by volunteers. Decentralised and resilient, but latency varies and DDoS defence depends on each operator.</value>
+  </data>
   <data name="Timezone-aware fields" xml:space="preserve">
     <value>Timezone-aware fields</value>
   </data>
@@ -932,6 +989,12 @@
   </data>
   <data name="Trusted by production-grade applications including AnduinOS, StatHub, and Warp. We don&apos;t just share this code; we run our entire business on it." xml:space="preserve">
     <value>Trusted by production-grade applications including AnduinOS, StatHub, and Warp. We don&apos;t just share this code; we run our entire business on it.</value>
+  </data>
+  <data name="Turns packaging from a black art into standard software engineering." xml:space="preserve">
+    <value>Transforms packaging from a black art into standard software engineering.</value>
+  </data>
+  <data name="Two Ways to Run a Repository" xml:space="preserve">
+    <value>Two Ways to Run a Repository</value>
   </data>
   <data name="Ubuntu:" xml:space="preserve">
     <value>Ubuntu:</value>
@@ -974,6 +1037,9 @@
   </data>
   <data name="What our developers say" xml:space="preserve">
     <value>What our developers say</value>
+  </data>
+  <data name="Where Apkg shines:" xml:space="preserve">
+    <value>Where Apkg shines:</value>
   </data>
   <data name="Why APKG?" xml:space="preserve">
     <value>Why APKG?</value>

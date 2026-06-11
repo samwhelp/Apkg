@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+      <data name="Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>すべて</value>
+  </data>
+  <data name="and all generated Local Packages?" xml:space="preserve">
+    <value>生成されたすべてのローカルパッケージも</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>アーキテクチャ</value>
+  </data>
+  <data name="Back to Package" xml:space="preserve">
+    <value>パッケージに戻る</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="Confirm Delete" xml:space="preserve">
+    <value>削除を確認</value>
+  </data>
+  <data name="Confirm Unlist" xml:space="preserve">
+    <value>配信停止の確認</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="Generated packages will be disabled." xml:space="preserve">
+    <value>生成されたパッケージは無効化されます。</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>最新</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>配信済み</value>
+  </data>
+  <data name="No versions found for this package." xml:space="preserve">
+    <value>このパッケージのバージョンが見つかりません。</value>
+  </data>
+  <data name="Only the latest enabled version appears in APT repositories." xml:space="preserve">
+    <value>有効になっている最新バージョンのみがAPTリポジトリに表示されます。</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>パッケージ数</value>
+  </data>
+  <data name="Permanently delete" xml:space="preserve">
+    <value>完全に削除</value>
+  </data>
+  <data name="Signing" xml:space="preserve">
+    <value>署名中</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>スイート</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>更新済み</value>
+  </data>
+  <data name="Superseded — a newer version is live. This deb file remains in CAS storage until the garbage collection job runs (~70 min) and removes unreferenced content." xml:space="preserve">
+    <value>置き換え済み — 新しいバージョンがライブ状態です。この deb ファイルは、ガーベジ・コレクションジョブが実行されて参照されていないコンテンツが削除されるまで（約70分）、CAS ストレージに残ります。</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>同期ステータス</value>
+  </data>
+  <data name="Syncing" xml:space="preserve">
+    <value>同期中</value>
+  </data>
+  <data name="This page shows all uploaded versions of" xml:space="preserve">
+    <value>このページには、アップロードされたすべてのバージョンが表示されます</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>不明</value>
+  </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>リストから削除</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>アップロードされた</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>アップローダー</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>バージョン</value>
+  </data>
+  <data name="Version History" xml:space="preserve">
+    <value>バージョン履歴</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>リポジトリで表示</value>
+  </data>
+
+</root>

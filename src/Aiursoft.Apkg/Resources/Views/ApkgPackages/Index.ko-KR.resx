@@ -84,6 +84,9 @@
   <data name="Unlist" xml:space="preserve">
     <value>제출 취소</value>
   </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>미게재</value>
+  </data>
   <data name="Upload apkg mixed package" xml:space="preserve">
     <value>APKG 혼합 패키지 업로드</value>
   </data>

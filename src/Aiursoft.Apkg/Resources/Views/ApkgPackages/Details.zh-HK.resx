@@ -18,23 +18,176 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
+      <data name="—" xml:space="preserve">
+    <value>—</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
     <value>.apkg 混合套件是 Apkg 的專屬格式，將多個 .deb 套件與 manifest.xml 封裝成一個經 gzip 壓縮的 tar 檔案。伺服器會解壓每個 .deb，從其 control 檔案中提取元資料，並同步至目標 APT 套件庫。</value>
+  </data>
+  <data name="and ALL its revisions? This cannot be undone." xml:space="preserve">
+    <value>及其所有修訂版本？此操作不可復原。</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>架構</value>
+  </data>
+  <data name="Back to Packages" xml:space="preserve">
+    <value>返回套件</value>
+  </data>
+  <data name="because you do not have permission to upload to them:" xml:space="preserve">
+    <value>因為您無權向它們上傳：</value>
+  </data>
+  <data name="by" xml:space="preserve">
+    <value>由</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>元件</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>建立</value>
   </data>
   <data name="Dead (Invariant) Attributes" xml:space="preserve">
     <value>固定（不變）屬性</value>
   </data>
+  <data name="Delete Package" xml:space="preserve">
+    <value>刪除套件</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>說明</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>已停用</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>停用中</value>
+  </data>
+  <data name="Distro" xml:space="preserve">
+    <value>發行版</value>
+  </data>
+  <data name="Effective Packages" xml:space="preserve">
+    <value>有效封包</value>
+  </data>
   <data name="Every .apkg has three &lt;strong&gt;dead attributes&lt;/strong&gt; defined at the manifest root that apply to the entire bundle: &lt;strong&gt;Name&lt;/strong&gt;, &lt;strong&gt;Distro&lt;/strong&gt;, and &lt;strong&gt;Component&lt;/strong&gt;. These identify the package family and its target repository. They cannot vary between entries within a single .apkg." xml:space="preserve">
     <value>每個 .apkg 均在清單根節點定義三個&lt;strong&gt;固定屬性&lt;/strong&gt;，適用於整個套件：&lt;strong&gt;Name&lt;/strong&gt;、&lt;strong&gt;Distro&lt;/strong&gt; 及 &lt;strong&gt;Component&lt;/strong&gt;。這些屬性用於識別套件家族及其目標存放庫。在同一個 .apkg 內的各項目之間，這些屬性不能有所差異。</value>
+  </data>
+  <data name="Go to Preview →" xml:space="preserve">
+    <value>前往預覽 →</value>
+  </data>
+  <data name="Homepage" xml:space="preserve">
+    <value>主頁</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>最新</value>
+  </data>
+  <data name="Latest version per (Architecture, Suite) across all uploads. These are the debs that will be sent to APT repositories." xml:space="preserve">
+    <value>所有上傳內容中，各（架構、套件組合）對應的最新版本。這些即為將發送給 APT 儲存庫的 deb 套件。</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>已上線</value>
   </data>
   <data name="Live (Variant) Attributes" xml:space="preserve">
     <value>即時（可變）屬性</value>
   </data>
+  <data name="Maintainer" xml:space="preserve">
+    <value>維護者</value>
+  </data>
+  <data name="Newest" xml:space="preserve">
+    <value>最新</value>
+  </data>
+  <data name="No debs in this upload. The .apkg has not been published yet." xml:space="preserve">
+    <value>此次上傳無 .deb 套件。該 .apkg 尚未發布。</value>
+  </data>
+  <data name="No packages have been uploaded yet." xml:space="preserve">
+    <value>暫無上傳任何軟件包。</value>
+  </data>
+  <data name="No packages match this filter." xml:space="preserve">
+    <value>沒有任何套件符合此篩選條件。</value>
+  </data>
+  <data name="No upload history yet." xml:space="preserve">
+    <value>暫無上載記錄。</value>
+  </data>
+  <data name="Overview" xml:space="preserve">
+    <value>概述</value>
+  </data>
+  <data name="Package" xml:space="preserve">
+    <value>套件</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>封裝（數目）</value>
+  </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>同步進行中</value>
+  </data>
+  <data name="Permanently delete the entire package family" xml:space="preserve">
+    <value>永久刪除整個套件系列</value>
+  </data>
+  <data name="Publish" xml:space="preserve">
+    <value>發佈</value>
+  </data>
+  <data name="Repository" xml:space="preserve">
+    <value>儲存庫</value>
+  </data>
+  <data name="Some repositories were skipped during publish" xml:space="preserve">
+    <value>發佈時跳過了一些存放庫</value>
+  </data>
+  <data name="Staged" xml:space="preserve">
+    <value>已暫存</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>套件</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>已取代</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>同步狀態</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>提示：</value>
   </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>取消列出</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>未列入清單</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>未發佈</value>
+  </data>
+  <data name="unpublished upload(s) pending publish." xml:space="preserve">
+    <value>有未發佈的待發佈上傳。</value>
+  </data>
+  <data name="Upload History" xml:space="preserve">
+    <value>上載歷史</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>已上載</value>
+  </data>
+  <data name="Uploaded At" xml:space="preserve">
+    <value>上載時間</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>上載者</value>
+  </data>
   <data name="Use &lt;code&gt;apkg push&lt;/code&gt; from the CLI to create and upload .apkg files. Uploads must be published before they appear in APT repositories." xml:space="preserve">
     <value>使用命令行介面中的 &lt;code&gt;apkg push&lt;/code&gt; 指令來建立及上傳 .apkg 檔案。上傳的內容必須先發佈，方可在 APT 存放庫中顯示。</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>在儲存庫中查看</value>
   </data>
   <data name="What is an APKG Mixed Package?" xml:space="preserve">
     <value>什麼是 APKG 混合套件？</value>
