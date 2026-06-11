@@ -27,11 +27,17 @@
   <data name="&quot;Fire-and-forget&quot; support for long-running tasks (like emails or AI), featuring a GUI for queue management, parallel processing, and cancellation." xml:space="preserve">
     <value>「Fire-and-forget」支援長時間執行的作業（例如電子郵件或 AI），並提供圖形使用者介面以進行佇列管理、平行處理和取消。</value>
   </data>
+  <data name="&lt;code&gt;Buildd&lt;/code&gt; farm compiles natively on real hardware. Cron-driven &lt;code&gt;apt-ftparchive&lt;/code&gt; regenerates indexes — packages wait hours in &lt;code&gt;incoming&lt;/code&gt; before publication." xml:space="preserve">
+    <value>&lt;code&gt;Buildd&lt;/code&gt; 叢集在實體硬體上進行原生編譯。由 Cron 驅動的 &lt;code&gt;apt-ftparchive&lt;/code&gt; 重新生成索引 — 套件在發布前需在 &lt;code&gt;incoming&lt;/code&gt; 佇列中等待數小時。</value>
+  </data>
   <data name="&lt;code&gt;sudo apkg&lt;/code&gt; cannot run directly because root&apos;s PATH does not include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works permanently:" xml:space="preserve">
     <value>由於 root 的 PATH 中未包含 &lt;code&gt;~/.dotnet/tools&lt;/code&gt;，因此無法直接執行 &lt;code&gt;sudo apkg&lt;/code&gt;。只需建立一次符號連結，即可永久生效：</value>
   </data>
   <data name="&lt;code&gt;sudo apkg&lt;/code&gt; won&apos;t work out of the box because root&apos;s PATH doesn&apos;t include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works forever:" xml:space="preserve">
     <value>&lt;code&gt;sudo apkg&lt;/code&gt; 無法直接運作，因為 root 的 PATH 並未包含 &lt;code&gt;~/.dotnet/tools&lt;/code&gt;。只需建立一次象徵性連結，即可永久生效：</value>
+  </data>
+  <data name="&lt;strong class=&quot;text-white&quot;&gt;Dak&lt;/strong&gt; is battle-tested infrastructure that has delivered Debian to millions for over two decades. &lt;strong class=&quot;text-primary&quot;&gt;Apkg&lt;/strong&gt; does not aim to replace it — it trades some of that generality for a modern, CI-native, cloud-deployable APT repository that a small team can operate." xml:space="preserve">
+    <value>&lt;strong class=&quot;text-white&quot;&gt;Dak&lt;/strong&gt; 是經過實戰檢驗的基礎設施，二十多年來已將 Debian 交付給數百萬用戶。&lt;strong class=&quot;text-primary&quot;&gt;Apkg&lt;/strong&gt; 並不旨在取代它——它捨棄了部分通用性，以換取一個現代化、原生支援 CI 且可部署於雲端的 APT 套件儲存庫，小型團隊即可輕鬆營運。</value>
   </data>
   <data name="A built-in Role-Based Access Control (RBAC) system for fine-grained permission management." xml:space="preserve">
     <value>內建的角色型存取控制（RBAC）系統，用於細粒度的權限管理。</value>
@@ -123,6 +129,9 @@
   <data name="APT repository server" xml:space="preserve">
     <value>APT 套件存放庫伺服器</value>
   </data>
+  <data name="Architecture Philosophy" xml:space="preserve">
+    <value>架構理念</value>
+  </data>
   <data name="Artificial Intelligence Translation" xml:space="preserve">
     <value>人工智慧翻譯</value>
   </data>
@@ -186,6 +195,9 @@
   <data name="Build" xml:space="preserve">
     <value>建構</value>
   </data>
+  <data name="Build &amp; Pipeline" xml:space="preserve">
+    <value>建置與流程</value>
+  </data>
   <data name="Build once, run anywhere. Fully containerized architecture." xml:space="preserve">
     <value>一次建置，随处執行。完全容器化架構。</value>
   </data>
@@ -225,8 +237,17 @@
   <data name="Certificate management" xml:space="preserve">
     <value>憑證管理</value>
   </data>
+  <data name="CI cross-compilation excels on amd64/arm64, but Debian&apos;s native Buildd catches architecture-specific UB that cross-toolchains miss." xml:space="preserve">
+    <value>CI 交叉編譯在 amd64/arm64 上表現優異，但 Debian 的原生 Buildd 能捕捉到交叉工具鏈會遺漏的特定架構未定義行為（UB）。</value>
+  </data>
+  <data name="CI cross-compilation with per-arch &lt;code&gt;Condition&lt;/code&gt; attributes. Real-time atomic pipeline — sync, sign, swap via &lt;code&gt;rename(2)&lt;/code&gt;. Clients never see half-written metadata." xml:space="preserve">
+    <value>使用依架構而定的 &lt;code&gt;Condition&lt;/code&gt; 屬性的 CI 交叉編譯。即時原子化 pipeline — 透過 &lt;code&gt;rename(2)&lt;/code&gt; 進行同步、簽署與切換。用戶端絕不會看到未寫入完成的元數據。</value>
+  </data>
   <data name="CLI quick start" xml:space="preserve">
     <value>CLI 快速入門</value>
+  </data>
+  <data name="Cloud-native CDN delivers consistent low-latency worldwide. DDoS absorbed at the edge." xml:space="preserve">
+    <value>雲端原生 CDN 在全球提供穩定低延遲服務。DDoS 攻擊於邊緣層攔截。</value>
   </data>
   <data name="Comes with Docker support for simplified and consistent deployments." xml:space="preserve">
     <value>內建 Docker 支援，可簡化並一致地進行部署。</value>
@@ -294,6 +315,12 @@
   <data name="Day 1 Ready" xml:space="preserve">
     <value>第一天就準備就緒</value>
   </data>
+  <data name="Debian&apos;s &lt;code&gt;Dak&lt;/code&gt; has served the community for decades. Apkg takes a different path — shaped by modern CI/CD, cloud infrastructure, and declarative tooling. Both have strengths. Both have trade-offs." xml:space="preserve">
+    <value>Debian 的 &lt;code&gt;Dak&lt;/code&gt; 已服務社群數十年。Apkg 則另闢蹊徑——由現代 CI/CD、雲端基礎架構與宣告式工具所塑造。兩者各有優勢，亦各有取捨。</value>
+  </data>
+  <data name="Declarative &lt;code&gt;.aosproj&lt;/code&gt; files with MSBuild syntax. Files, deps, and scripts in one manifest — if you know &lt;code&gt;.csproj&lt;/code&gt;, you know packaging." xml:space="preserve">
+    <value>採用 MSBuild 語法的宣告式 &lt;code&gt;.aosproj&lt;/code&gt; 檔案。檔案、相依套件與腳本皆彙整於單一資訊清單——若您熟悉 &lt;code&gt;.csproj&lt;/code&gt;，便已掌握打包要訣。</value>
+  </data>
   <data name="Deep integration testing with Authentik. Compatible with Okta." xml:space="preserve">
     <value>與 Authentik 深度整合測試。相容於 Okta。</value>
   </data>
@@ -329,6 +356,9 @@
   </data>
   <data name="Discussions page" xml:space="preserve">
     <value>討論頁面</value>
+  </data>
+  <data name="Distribution" xml:space="preserve">
+    <value>發行版</value>
   </data>
   <data name="Distribution Infrastructure" xml:space="preserve">
     <value>發行基礎架構</value>
@@ -480,6 +510,9 @@
   <data name="Go to dashboard" xml:space="preserve">
     <value>前往儀表板</value>
   </data>
+  <data name="GPG Web of Trust with in-person Key Signing Parties. Trust is fully decentralized — no single authority controls the keyring." xml:space="preserve">
+    <value>透過面對面的金鑰簽署派對建立 GPG 信任網。信任機制完全去中心化，沒有任何單一機構能掌控金鑰環。</value>
+  </data>
   <data name="Handle recurring jobs like cleanup and synchronization with a comprehensive GUI for monitoring execution history and logs." xml:space="preserve">
     <value>使用完整的 GUI 來監控執行歷史和記錄，以處理類似清除和同步等重複作業。</value>
   </data>
@@ -524,6 +557,9 @@
   </data>
   <data name="If you have written a &lt;code&gt;.csproj&lt;/code&gt; you already know &lt;code&gt;.aosproj&lt;/code&gt;. XML-based, toolable, and integrated with the Apkg CLI for linting, building, and publishing." xml:space="preserve">
     <value>如果您曾編寫過 &lt;code&gt;.csproj&lt;/code&gt;，那麼您已經熟悉 &lt;code&gt;.aosproj&lt;/code&gt;。基於 XML、支援工具化，並與 Apkg CLI 整合以進行檢查、建置與發布。</value>
+  </data>
+  <data name="Imperative &lt;code&gt;debian/rules&lt;/code&gt; and dh macros. Mastering Debian packaging takes months of learning arcane shell scripts." xml:space="preserve">
+    <value>命令式 &lt;code&gt;debian/rules&lt;/code&gt; 與 dh 巨集。要精通 Debian 套件製作，需花費數月時間鑽研艱澀的 Shell 指令碼。</value>
   </data>
   <data name="Included" xml:space="preserve">
     <value>包含在內</value>
@@ -675,6 +711,9 @@
   <data name="OIDC &amp; SSO" xml:space="preserve">
     <value>OIDC &amp; SSO</value>
   </data>
+  <data name="OIDC-backed RBAC with scoped API keys. Teams authenticate via existing SSO, grant per-repo permissions, and revoke access instantly." xml:space="preserve">
+    <value>具備作用域 API 金鑰的 OIDC 支援型 RBAC。團隊透過既有 SSO 進行驗證，授予每個倉庫的權限，並能立即撤銷存取權。</value>
+  </data>
   <data name="One Click Start" xml:space="preserve">
     <value>一键啟動</value>
   </data>
@@ -707,6 +746,9 @@
   </data>
   <data name="Pack multiple .deb files into one .apkg bundle with a manifest. Push to any APKG server." xml:space="preserve">
     <value>將多個 .deb 檔案打包成一個包含清單的 .apkg 套件，並推送至任何 APKG 伺服器。</value>
+  </data>
+  <data name="Packaging" xml:space="preserve">
+    <value>封裝</value>
   </data>
   <data name="Permission discovery and sync" xml:space="preserve">
     <value>權限偵測與同步</value>
@@ -756,6 +798,9 @@
   <data name="RBAC Authorization" xml:space="preserve">
     <value>RBAC 授權</value>
   </data>
+  <data name="RBAC is ideal for organizations, but Debian&apos;s decentralized WoT remains the gold standard for a trustless global maintainer network." xml:space="preserve">
+    <value>RBAC 非常適合企業組織，但 Debian 去中心化的信任網路（WoT）仍是無信任全球維護者網路的黃金標準。</value>
+  </data>
   <data name="Read the document" xml:space="preserve">
     <value>閱讀文件</value>
   </data>
@@ -777,6 +822,9 @@
   <data name="Robust Integration Testing" xml:space="preserve">
     <value>強大的整合測試</value>
   </data>
+  <data name="Room to grow:" xml:space="preserve">
+    <value>提升空間：</value>
+  </data>
   <data name="Runs on Windows, Linux, and macOS via .NET." xml:space="preserve">
     <value>透過 .NET 在 Windows、Linux 和 macOS 上執行。</value>
   </data>
@@ -797,6 +845,9 @@
   </data>
   <data name="Search packages..." xml:space="preserve">
     <value>搜尋套件...</value>
+  </data>
+  <data name="Security &amp; Trust" xml:space="preserve">
+    <value>安全性與信任</value>
   </data>
   <data name="Self Host" xml:space="preserve">
     <value>自行托管</value>
@@ -867,6 +918,9 @@
   <data name="Starts without any configuration" xml:space="preserve">
     <value>無需任何設定即可啟動</value>
   </data>
+  <data name="Static export with atomic swap + CDN edge caching + Geo-steering. Shared-nothing edge nodes with built-in WAF before origin." xml:space="preserve">
+    <value>靜態匯出搭配原子交換 + CDN 邊緣快取 + 地理路由。具備獨立邊緣節點與原生 WAF，防護來源站。</value>
+  </data>
   <data name="Stop Coding Boilerplate." xml:space="preserve">
     <value>停止重複撰寫程式碼。</value>
   </data>
@@ -921,6 +975,9 @@
   <data name="This is a template project, where we start the voyager..." xml:space="preserve">
     <value>這是一個模板專案，我們從這裡開啟航程...</value>
   </data>
+  <data name="Tiered rsync cascade (T1 → T2) run by volunteers. Decentralized and resilient, but latency varies and DDoS defense depends on each operator." xml:space="preserve">
+    <value>由志工運作的分層 rsync 級聯同步（T1 → T2）。去中心化且具韌性，但延遲不固定，且 DDoS 防護成效取決於各營運者。</value>
+  </data>
   <data name="Timezone-aware fields" xml:space="preserve">
     <value>時區感知欄位</value>
   </data>
@@ -932,6 +989,12 @@
   </data>
   <data name="Trusted by production-grade applications including AnduinOS, StatHub, and Warp. We don&apos;t just share this code; we run our entire business on it." xml:space="preserve">
     <value>由包括 AnduinOS、StatHub 和 Warp 在內的生產級應用程式所信賴。我們不僅分享這段程式碼；我們整個事業都建立在這之上。</value>
+  </data>
+  <data name="Turns packaging from a black art into standard software engineering." xml:space="preserve">
+    <value>將軟體封裝從難以捉摸的技藝轉變為標準的軟體工程實踐。</value>
+  </data>
+  <data name="Two Ways to Run a Repository" xml:space="preserve">
+    <value>運作存放庫的兩種方式</value>
   </data>
   <data name="Ubuntu:" xml:space="preserve">
     <value>Ubuntu:</value>
@@ -974,6 +1037,9 @@
   </data>
   <data name="What our developers say" xml:space="preserve">
     <value>我們的開發者怎麼說</value>
+  </data>
+  <data name="Where Apkg shines:" xml:space="preserve">
+    <value>Apkg 的優勢所在：</value>
   </data>
   <data name="Why APKG?" xml:space="preserve">
     <value>為什麼 APKG？</value>

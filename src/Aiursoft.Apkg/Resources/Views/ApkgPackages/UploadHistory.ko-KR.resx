@@ -27,6 +27,15 @@
   <data name="Component" xml:space="preserve">
     <value>컴포넌트</value>
   </data>
+  <data name="Continue" xml:space="preserve">
+    <value>계속하기</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>사용 안 함</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>비활성화 중</value>
+  </data>
   <data name="Distro" xml:space="preserve">
     <value>배포판</value>
   </data>
@@ -35,6 +44,9 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>파일</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>운영 중</value>
   </data>
   <data name="My Upload History" xml:space="preserve">
     <value>내 업로드 기록</value>
@@ -48,11 +60,26 @@
   <data name="Packages" xml:space="preserve">
     <value>패키지</value>
   </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>동기화 대기 중</value>
+  </data>
+  <data name="Staged for Signing" xml:space="preserve">
+    <value>서명 대기 중</value>
+  </data>
   <data name="Status" xml:space="preserve">
     <value>상태</value>
   </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>대체됨</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>팁:</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>미등록</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>미발행</value>
   </data>
   <data name="Upload History" xml:space="preserve">
     <value>업로드 기록</value>

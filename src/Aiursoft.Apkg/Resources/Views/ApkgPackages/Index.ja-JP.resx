@@ -84,6 +84,9 @@
   <data name="Unlist" xml:space="preserve">
     <value>リストから削除</value>
   </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>未公開</value>
+  </data>
   <data name="Upload apkg mixed package" xml:space="preserve">
     <value>APKGミックスパッケージをアップロード</value>
   </data>
