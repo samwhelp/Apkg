@@ -323,6 +323,122 @@
     </div>
 </section>
 
+<section class="apkg-compare py-6 border-top border-white-10">
+    <div class="container">
+        <div class="row justify-content-center mb-5">
+            <div class="col-lg-8 text-center">
+                <div class="d-inline-flex align-items-center px-3 py-1 mb-3 rounded-pill border border-white-10 bg-dark-glass-sm backdrop-blur">
+                    <span class="text-info me-2"><i data-lucide="git-compare-arrows" style="width:14px;height:14px;"></i></span>
+                    <span class="text-gray-300 small fw-medium text-uppercase tracking-wider">@Localizer["Architecture Philosophy"]</span>
+                </div>
+                <h2 class="h1 text-white mb-3">Apkg vs Dak: <span class="text-primary">@Localizer["Two Ways to Run a Repository"]</span></h2>
+                <p class="text-gray-400 fs-lg mx-auto mb-0" style="max-width: 640px;">
+                    @Localizer["Debian's <code>Dak</code> has served the community for decades. Apkg takes a different path — shaped by modern CI/CD, cloud infrastructure, and declarative tooling. Both have strengths. Both have trade-offs."]
+                </p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Packaging -->
+            <div class="col-lg-6">
+                <div class="apkg-compare-card">
+                    <div class="apkg-compare-header">
+                        <i data-lucide="package-open"></i> @Localizer["Packaging"]
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-6 apkg-compare-side apkg-compare-dak">
+                            <span class="apkg-compare-label">Dak</span>
+                            <p>@Localizer["Imperative <code>debian/rules</code> and dh macros. Mastering Debian packaging takes months of learning arcane shell scripts."]</p>
+                        </div>
+                        <div class="col-6 apkg-compare-side apkg-compare-apkg">
+                            <span class="apkg-compare-label">Apkg</span>
+                            <p>@Localizer["Declarative <code>.aosproj</code> files with MSBuild syntax. Files, deps, and scripts in one manifest — if you know <code>.csproj</code>, you know packaging."]</p>
+                        </div>
+                    </div>
+                    <div class="apkg-compare-verdict verdict-wins">
+                        <strong>@Localizer["Where Apkg shines:"]</strong> @Localizer["Turns packaging from a black art into standard software engineering."]
+                    </div>
+                </div>
+            </div>
+
+            <!-- Build & Pipeline (merged) -->
+            <div class="col-lg-6">
+                <div class="apkg-compare-card">
+                    <div class="apkg-compare-header">
+                        <i data-lucide="refresh-cw"></i> @Localizer["Build & Pipeline"]
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-6 apkg-compare-side apkg-compare-dak">
+                            <span class="apkg-compare-label">Dak</span>
+                            <p>@Localizer["<code>Buildd</code> farm compiles natively on real hardware. Cron-driven <code>apt-ftparchive</code> regenerates indexes — packages wait hours in <code>incoming</code> before publication."]</p>
+                        </div>
+                        <div class="col-6 apkg-compare-side apkg-compare-apkg">
+                            <span class="apkg-compare-label">Apkg</span>
+                            <p>@Localizer["CI cross-compilation with per-arch <code>Condition</code> attributes. Real-time atomic pipeline — sync, sign, swap via <code>rename(2)</code>. Clients never see half-written metadata."]</p>
+                        </div>
+                    </div>
+                    <div class="apkg-compare-verdict verdict-humble">
+                        <strong>@Localizer["Room to grow:"]</strong> @Localizer["CI cross-compilation excels on amd64/arm64, but Debian's native Buildd catches architecture-specific UB that cross-toolchains miss."]
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution -->
+            <div class="col-lg-6">
+                <div class="apkg-compare-card">
+                    <div class="apkg-compare-header">
+                        <i data-lucide="globe"></i> @Localizer["Distribution"]
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-6 apkg-compare-side apkg-compare-dak">
+                            <span class="apkg-compare-label">Dak</span>
+                            <p>@Localizer["Tiered rsync cascade (T1 → T2) run by volunteers. Decentralized and resilient, but latency varies and DDoS defense depends on each operator."]</p>
+                        </div>
+                        <div class="col-6 apkg-compare-side apkg-compare-apkg">
+                            <span class="apkg-compare-label">Apkg</span>
+                            <p>@Localizer["Static export with atomic swap + CDN edge caching + Geo-steering. Shared-nothing edge nodes with built-in WAF before origin."]</p>
+                        </div>
+                    </div>
+                    <div class="apkg-compare-verdict verdict-wins">
+                        <strong>@Localizer["Where Apkg shines:"]</strong> @Localizer["Cloud-native CDN delivers consistent low-latency worldwide. DDoS absorbed at the edge."]
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security -->
+            <div class="col-lg-6">
+                <div class="apkg-compare-card">
+                    <div class="apkg-compare-header">
+                        <i data-lucide="shield-check"></i> @Localizer["Security & Trust"]
+                    </div>
+                    <div class="row g-0">
+                        <div class="col-6 apkg-compare-side apkg-compare-dak">
+                            <span class="apkg-compare-label">Dak</span>
+                            <p>@Localizer["GPG Web of Trust with in-person Key Signing Parties. Trust is fully decentralized — no single authority controls the keyring."]</p>
+                        </div>
+                        <div class="col-6 apkg-compare-side apkg-compare-apkg">
+                            <span class="apkg-compare-label">Apkg</span>
+                            <p>@Localizer["OIDC-backed RBAC with scoped API keys. Teams authenticate via existing SSO, grant per-repo permissions, and revoke access instantly."]</p>
+                        </div>
+                    </div>
+                    <div class="apkg-compare-verdict verdict-humble">
+                        <strong>@Localizer["Room to grow:"]</strong> @Localizer["RBAC is ideal for organizations, but Debian's decentralized WoT remains the gold standard for a trustless global maintainer network."]
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom note -->
+            <div class="col-12">
+                <div class="apkg-compare-card text-center py-4">
+                    <p class="text-gray-400 mb-0" style="max-width: 640px; margin: 0 auto;">
+                        @Localizer["<strong class=\"text-white\">Dak</strong> is battle-tested infrastructure that has delivered Debian to millions for over two decades. <strong class=\"text-primary\">Apkg</strong> does not aim to replace it — it trades some of that generality for a modern, CI-native, cloud-deployable APT repository that a small team can operate."]
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="py-6">
     <div class="container">
         <div class="mb-5 text-center">

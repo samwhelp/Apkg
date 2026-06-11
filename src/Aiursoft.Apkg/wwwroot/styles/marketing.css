@@ -362,7 +362,120 @@
     }
 }
 
+/* =========================================
+   Apkg vs Dak comparison section
+   ========================================= */
+
+.apkg-compare {
+    background:
+        radial-gradient(ellipse 120% 90% at 70% 80%, rgba(13, 110, 253, 0.09), transparent 60%),
+        linear-gradient(180deg, #0b1220 0%, #101828 100%);
+}
+
+.apkg-compare-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.apkg-compare-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.apkg-compare-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #e2e8f0;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.apkg-compare-header svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--bs-primary);
+    flex-shrink: 0;
+}
+
+.apkg-compare-side {
+    padding: 1rem 0.75rem;
+}
+
+.apkg-compare-dak {
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.apkg-compare-label {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.apkg-compare-dak .apkg-compare-label {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+}
+
+.apkg-compare-apkg .apkg-compare-label {
+    background: rgba(13, 110, 253, 0.12);
+    color: #60a5fa;
+}
+
+.apkg-compare-side p {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    margin: 0;
+    line-height: 1.55;
+}
+
+.apkg-compare-verdict {
+    margin-top: 1rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.apkg-compare-verdict.verdict-wins {
+    background: rgba(34, 197, 94, 0.06);
+    border-left: 3px solid rgba(34, 197, 94, 0.5);
+    color: #86efac;
+}
+
+.apkg-compare-verdict.verdict-humble {
+    background: rgba(251, 191, 36, 0.05);
+    border-left: 3px solid rgba(251, 191, 36, 0.45);
+    color: #fde68a;
+}
+
+.apkg-compare-verdict strong {
+    color: #fff;
+}
+
 @media (max-width: 575px) {
+    .apkg-compare-side {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .apkg-compare-side p {
+        font-size: 0.76rem;
+    }
     .apkg-hero-search .input-group {
         display: grid;
         grid-template-columns: auto 1fr;
