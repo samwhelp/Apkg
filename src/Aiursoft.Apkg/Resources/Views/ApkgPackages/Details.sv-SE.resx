@@ -18,23 +18,176 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
+      <data name="—" xml:space="preserve">
+    <value>—</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Åtgärder</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Alla</value>
+  </data>
+  <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
     <value>Ett .apkg-blandpaket är Apkgs proprietära format som kapslar in flera .deb-paket och en manifest.xml i ett enda gzippat tar-arkiv. Servern packar upp varje .deb, extraherar metadata från dess kontrollfil och synkroniserar dem till sina mål-APT-arkiv.</value>
+  </data>
+  <data name="and ALL its revisions? This cannot be undone." xml:space="preserve">
+    <value>och ALLA dess versioner? Detta kan inte ångras.</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Arkitektur</value>
+  </data>
+  <data name="Back to Packages" xml:space="preserve">
+    <value>Tillbaka till paket</value>
+  </data>
+  <data name="because you do not have permission to upload to them:" xml:space="preserve">
+    <value>eftersom du inte har behörighet att ladda upp till dem:</value>
+  </data>
+  <data name="by" xml:space="preserve">
+    <value>av</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>Komponent</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Skapad</value>
   </data>
   <data name="Dead (Invariant) Attributes" xml:space="preserve">
     <value>Döda (invariante) attribut</value>
   </data>
+  <data name="Delete Package" xml:space="preserve">
+    <value>Ta bort paketet</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Beskrivning</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Inaktiverad</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>Inaktiverar</value>
+  </data>
+  <data name="Distro" xml:space="preserve">
+    <value>Distribution</value>
+  </data>
+  <data name="Effective Packages" xml:space="preserve">
+    <value>Aktiva paket</value>
+  </data>
   <data name="Every .apkg has three &lt;strong&gt;dead attributes&lt;/strong&gt; defined at the manifest root that apply to the entire bundle: &lt;strong&gt;Name&lt;/strong&gt;, &lt;strong&gt;Distro&lt;/strong&gt;, and &lt;strong&gt;Component&lt;/strong&gt;. These identify the package family and its target repository. They cannot vary between entries within a single .apkg." xml:space="preserve">
     <value>Varje .apkg har tre &lt;strong&gt;döda attribut&lt;/strong&gt; definierade på manifestroten som gäller för hela paketet: &lt;strong&gt;Name&lt;/strong&gt;, &lt;strong&gt;Distro&lt;/strong&gt; och &lt;strong&gt;Component&lt;/strong&gt;. Dessa identifierar paketfamiljen och dess målrepository. De får inte variera mellan poster inom en och samma .apkg.</value>
+  </data>
+  <data name="Go to Preview →" xml:space="preserve">
+    <value>Gå till förhandsgranskning →</value>
+  </data>
+  <data name="Homepage" xml:space="preserve">
+    <value>Hemsida</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>Senaste</value>
+  </data>
+  <data name="Latest version per (Architecture, Suite) across all uploads. These are the debs that will be sent to APT repositories." xml:space="preserve">
+    <value>Senaste versionen per (arkitektur, svit) över alla uppladdningar. Dessa är deb-paketen som skickas till APT-repositorier.</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Aktiv</value>
   </data>
   <data name="Live (Variant) Attributes" xml:space="preserve">
     <value>Aktiva (Variant) Attribut</value>
   </data>
+  <data name="Maintainer" xml:space="preserve">
+    <value>Underhållare</value>
+  </data>
+  <data name="Newest" xml:space="preserve">
+    <value>Senaste</value>
+  </data>
+  <data name="No debs in this upload. The .apkg has not been published yet." xml:space="preserve">
+    <value>Inga .deb-paket i denna uppladdning. .apkg-filen har inte publicerats ännu.</value>
+  </data>
+  <data name="No packages have been uploaded yet." xml:space="preserve">
+    <value>Inga paket har laddats upp ännu.</value>
+  </data>
+  <data name="No packages match this filter." xml:space="preserve">
+    <value>Inga paket matchar det här filtret.</value>
+  </data>
+  <data name="No upload history yet." xml:space="preserve">
+    <value>Ingen uppladdningshistorik ännu.</value>
+  </data>
+  <data name="Overview" xml:space="preserve">
+    <value>Översikt</value>
+  </data>
+  <data name="Package" xml:space="preserve">
+    <value>Paket</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>paket(t)</value>
+  </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>Väntar på synkronisering</value>
+  </data>
+  <data name="Permanently delete the entire package family" xml:space="preserve">
+    <value>Ta bort hela paketfamiljen permanent</value>
+  </data>
+  <data name="Publish" xml:space="preserve">
+    <value>Publicera</value>
+  </data>
+  <data name="Repository" xml:space="preserve">
+    <value>Repository</value>
+  </data>
+  <data name="Some repositories were skipped during publish" xml:space="preserve">
+    <value>Vissa arkiv hoppades över under publicering</value>
+  </data>
+  <data name="Staged" xml:space="preserve">
+    <value>Stadgad</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>Svit</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Övertruffad</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>Synkroniseringsstatus</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>Tips:</value>
   </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>Ta bort från listan</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>Ej listad</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Opubblicerad</value>
+  </data>
+  <data name="unpublished upload(s) pending publish." xml:space="preserve">
+    <value>o publicerade uppladdning(ar) väntar på publicering.</value>
+  </data>
+  <data name="Upload History" xml:space="preserve">
+    <value>Uppladdningshistorik</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>Uppladdad</value>
+  </data>
+  <data name="Uploaded At" xml:space="preserve">
+    <value>Laddad upp</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>Uppladdare</value>
+  </data>
   <data name="Use &lt;code&gt;apkg push&lt;/code&gt; from the CLI to create and upload .apkg files. Uploads must be published before they appear in APT repositories." xml:space="preserve">
     <value>Använd &lt;code&gt;apkg push&lt;/code&gt; från kommandoraden för att skapa och ladda upp .apkg-filer. Uppladdningar måste publiceras innan de syns i APT-repositorier.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>Versioner</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>Visa i arkiv</value>
   </data>
   <data name="What is an APKG Mixed Package?" xml:space="preserve">
     <value>Vad är ett APKG blandat paket?</value>
