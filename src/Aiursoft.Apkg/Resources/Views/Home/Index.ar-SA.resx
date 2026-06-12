@@ -18,14 +18,26 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name=".NET Global Tool" xml:space="preserve">
+      <data name=".apkg publishing" xml:space="preserve">
+    <value>نشر حزم .apkg</value>
+  </data>
+  <data name=".NET Global Tool" xml:space="preserve">
     <value>أداة .NET العالمية</value>
   </data>
   <data name="&quot;Fire-and-forget&quot; support for long-running tasks (like emails or AI), featuring a GUI for queue management, parallel processing, and cancellation." xml:space="preserve">
     <value>دعم &quot;Fire-and-forget&quot; للمهام الطويلة (مثل البريد الإلكتروني أو الذكاء الاصطناعي)، مع ميزة واجهة مستخدم رسومية لإدارة الطابور، والمعالجة المتوازية، والإلغاء.</value>
   </data>
+  <data name="&lt;code&gt;Buildd&lt;/code&gt; farm compiles natively on real hardware. Cron-driven &lt;code&gt;apt-ftparchive&lt;/code&gt; regenerates indexes — packages wait hours in &lt;code&gt;incoming&lt;/code&gt; before publication." xml:space="preserve">
+    <value>تقوم مزرعة &lt;code&gt;Buildd&lt;/code&gt; بالتجميع بشكل أصلي على أجهزة حقيقية. يعيد &lt;code&gt;apt-ftparchive&lt;/code&gt; الذي يعمل بنظام Cron إنشاء الفهارس — تنتظر الحزم لساعات في &lt;code&gt;incoming&lt;/code&gt; قبل النشر.</value>
+  </data>
+  <data name="&lt;code&gt;sudo apkg&lt;/code&gt; cannot run directly because root&apos;s PATH does not include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works permanently:" xml:space="preserve">
+    <value>لا يمكن تشغيل &lt;code&gt;sudo apkg&lt;/code&gt; مباشرة لأن مسار root PATH لا يتضمن &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. قم بإنشاء رابط رمزي مرة واحدة وسيعمل بشكل دائم:</value>
+  </data>
   <data name="&lt;code&gt;sudo apkg&lt;/code&gt; won&apos;t work out of the box because root&apos;s PATH doesn&apos;t include &lt;code&gt;~/.dotnet/tools&lt;/code&gt;. Create a symlink once and it works forever:" xml:space="preserve">
     <value>&lt;code&gt;sudo apkg&lt;/code&gt; لن يعمل تلقائياً لأن مسار &lt;code&gt;~/.dotnet/tools&lt;/code&gt; غير مدرج في مسار root. قم بإنشاء ارتباط رمزي مرة واحدة وسيعمل للأبد:</value>
+  </data>
+  <data name="&lt;strong class=&quot;text-white&quot;&gt;Dak&lt;/strong&gt; is battle-tested infrastructure that has delivered Debian to millions for over two decades. &lt;strong class=&quot;text-primary&quot;&gt;Apkg&lt;/strong&gt; does not aim to replace it — it trades some of that generality for a modern, CI-native, cloud-deployable APT repository that a small team can operate." xml:space="preserve">
+    <value>&lt;strong class=&quot;text-white&quot;&gt;Dak&lt;/strong&gt; هو بنية تحتية خضت معارك كثيرة وقدمت Debian لملايين الأشخاص لأكثر من عقدين من الزمن. لا تهدف &lt;strong class=&quot;text-primary&quot;&gt;Apkg&lt;/strong&gt; إلى استبداله، بل تقدم تنازلاً في بعض جوانب عاميته مقابل مستودع APT حديث، متوافق أصلاً مع التكامل المستمر (CI-native)، وقابل للنشر على السحابة، ويمكن لفريق صغير تشغيله.</value>
   </data>
   <data name="A built-in Role-Based Access Control (RBAC) system for fine-grained permission management." xml:space="preserve">
     <value>نظام مدمج للتحكم في الوصول القائم على الأدوار (RBAC) لإدارة دقيقة للصلاحيات.</value>
@@ -35,6 +47,9 @@
   </data>
   <data name="A complete solution for user authentication and profile management." xml:space="preserve">
     <value>حل كامل لإدارة المصادقة وملف التعريف للمستخدم.</value>
+  </data>
+  <data name="A declarative project file that defines files, folders, scripts, dependencies, systemd services, suites, and architectures — all in one place." xml:space="preserve">
+    <value>ملف مشروع إعلاني يحدد الملفات والمجلدات والنصوص البرمجية والتبعيات وخدمات systemd والسلاسل المعمارية - كل ذلك في مكان واحد.</value>
   </data>
   <data name="A fully responsive layout that looks great on both desktop and mobile devices." xml:space="preserve">
     <value>تصميم متجاوب بالكامل يبدو رائعًا على كل من أجهزة الكمبيوتر المكتبية والهواتف المحمولة.</value>
@@ -53,6 +68,12 @@
   </data>
   <data name="Admin site included" xml:space="preserve">
     <value>موقع الإدارة مضمن</value>
+  </data>
+  <data name="Administrators can manage repositories, upstream mirrors, signing certificates, API keys, package upload history, background jobs, permissions, users, and global settings from the web UI." xml:space="preserve">
+    <value>يمكن للمسؤولين إدارة المستودعات، والمرآت الصاعدة، وشهادات التوقيع، ومفاتيح واجهة برمجة التطبيقات (API)، وسجل تحميل الحزم، والمهام الخلفية، والصلاحيات، والمستخدمين، والإعدادات العامة من واجهة المستخدم الويب.</value>
+  </data>
+  <data name="After sync and signing, machines consume the repository with normal APT source files and &lt;code&gt;apt install&lt;/code&gt; commands." xml:space="preserve">
+    <value>بعد المزامنة والتوقيع، تستخدم الأجهزة المستودع عبر ملفات مصادر APT العادية وأوامر &lt;code&gt;apt install&lt;/code&gt;.</value>
   </data>
   <data name="AI Driven Translation" xml:space="preserve">
     <value>الترجمة المدفوعة بالذكاء الاصطناعي</value>
@@ -81,11 +102,38 @@
   <data name="Anduin Xue" xml:space="preserve">
     <value>Anduin Xue</value>
   </data>
+  <data name="AnduinOS ready" xml:space="preserve">
+    <value>جاهز لأنظمة AnduinOS</value>
+  </data>
+  <data name="Apkg" xml:space="preserve">
+    <value>Apkg</value>
+  </data>
+  <data name="Apkg brings the full APT repository lifecycle into one server — mirror upstream archives, override packages locally, sign and promote atomically, then serve to client machines worldwide." xml:space="preserve">
+    <value>تجمع Apkg دورة حياة مستودع APT الكاملة في خادم واحد — استنساخ الأرشيفات الأصلية، تجاوز الحزم محلياً، التوقيع والترقية بشكل ذري، ثم التزويد لأجهزة العملاء حول العالم.</value>
+  </data>
+  <data name="Apkg dashboard showing package repository management" xml:space="preserve">
+    <value>لوحة تحكم APKG التي تعرض إدارة مستودع الحزم</value>
+  </data>
+  <data name="Apkg sits between upstream archives, package developers, and client machines. It turns mirror metadata and uploaded overrides into signed, stable repository snapshots." xml:space="preserve">
+    <value>تقع Apkg بين الأرشيفات الأصلية، ومطوري الحزم، وأجهزة العميل. وتقوم بتحويل بيانات التعريف الخاصة بالمرآة والتOverrides المرفوعة إلى صور ثابتة وموقعة للمستودعات.</value>
+  </data>
+  <data name="APT clients only read primary buckets. Incomplete syncs, unsigned metadata, and staging buckets stay invisible." xml:space="preserve">
+    <value>تقرأ عملاء APT الدلاء الأساسية فقط. وتبقى المزامنات غير المكتملة، والبيانات الوصفية غير الموقعة، ودلاء التجهيز غير مرئية.</value>
+  </data>
   <data name="APT Package Repository" xml:space="preserve">
     <value>مستودع حزم APT</value>
   </data>
+  <data name="APT repository server" xml:space="preserve">
+    <value>خادم مستودع APT</value>
+  </data>
+  <data name="Architecture Philosophy" xml:space="preserve">
+    <value>فلسفة الهندسة المعمارية</value>
+  </data>
   <data name="Artificial Intelligence Translation" xml:space="preserve">
     <value>الترجمة بالذكاء الاصطناعي</value>
+  </data>
+  <data name="Atomic snapshot promotion" xml:space="preserve">
+    <value>ترقية فورية للصور الثابتة</value>
   </data>
   <data name="Authentik &amp; Okta" xml:space="preserve">
     <value>Authentik &amp; Okta</value>
@@ -138,14 +186,29 @@
   <data name="Browse All Packages" xml:space="preserve">
     <value>تصفح جميع الحزم</value>
   </data>
+  <data name="Browse packages" xml:space="preserve">
+    <value>تصفح الحزم</value>
+  </data>
+  <data name="Build" xml:space="preserve">
+    <value>بناءً</value>
+  </data>
+  <data name="Build &amp; Pipeline" xml:space="preserve">
+    <value>التجميع وخط الأنابيب</value>
+  </data>
   <data name="Build once, run anywhere. Fully containerized architecture." xml:space="preserve">
     <value>ابنِ مرة واحدة، شغّل في أي مكان. بنية تحتية محتواة بالكامل.</value>
+  </data>
+  <data name="Build safely." xml:space="preserve">
+    <value>البناء بأمان.</value>
   </data>
   <data name="Build your next big thing," xml:space="preserve">
     <value>ابنِ مشروعك الكبير القادم،</value>
   </data>
   <data name="Built for engineers who care about quality." xml:space="preserve">
     <value>مُصمم خصيصًا للمهندسين الذين يهتمون بالجودة.</value>
+  </data>
+  <data name="Built on AnduinOS" xml:space="preserve">
+    <value>مبني على AnduinOS</value>
   </data>
   <data name="Built with Aiursoft Template" xml:space="preserve">
     <value>مُبنى باستخدام قوالب Aiursoft</value>
@@ -168,6 +231,21 @@
   <data name="Built-in User Management" xml:space="preserve">
     <value>إدارة المستخدمين المدمجة</value>
   </data>
+  <data name="Certificate management" xml:space="preserve">
+    <value>إدارة الشهادات</value>
+  </data>
+  <data name="CI cross-compilation excels on amd64/arm64, but Debian&apos;s native Buildd catches architecture-specific UB that cross-toolchains miss." xml:space="preserve">
+    <value>تتفوق عمليات الترجمة المتقاطعة للتكامل المستمر على منصات amd64/arm64، لكن نظام Buildd الأصلي في دبيان يلتقط السلوك غير المحدد (UB) الخاص بكل معمارية، وهو ما تفوته سلاسل أدوات الترجمة المتقاطعة.</value>
+  </data>
+  <data name="CI cross-compilation with per-arch &lt;code&gt;Condition&lt;/code&gt; attributes. Real-time atomic pipeline — sync, sign, swap via &lt;code&gt;rename(2)&lt;/code&gt;. Clients never see half-written metadata." xml:space="preserve">
+    <value>التجميع التقاطعي المستمر (CI) باستخدام سمات &lt;code&gt;Condition&lt;/code&gt; لكل معمارية. خط إنتاج ذري فوري — مزامنة، توقيع، وتبديل عبر &lt;code&gt;rename(2)&lt;/code&gt;. لا يرى العملاء أبدًا بيانات وصفية جزئية الكتابة.</value>
+  </data>
+  <data name="CLI quick start" xml:space="preserve">
+    <value>البدء السريع في سطر الأوامر</value>
+  </data>
+  <data name="Cloud-native CDN delivers consistent low-latency worldwide. DDoS absorbed at the edge." xml:space="preserve">
+    <value>توفر شبكة توصيل المحتوى (CDN) السحابية زمن استجابة منخفض باستمرار في جميع أنحاء العالم. يتم امتصاص هجمات الحرمان من الخدمة الموزعة (DDoS) عند نقاط الحافة.</value>
+  </data>
   <data name="Comes with Docker support for simplified and consistent deployments." xml:space="preserve">
     <value>يأتي مع دعم Docker لDeployment مبسطة وثابتة.</value>
   </data>
@@ -176,6 +254,9 @@
   </data>
   <data name="Comes with strict unit tests, making test-driven development easy." xml:space="preserve">
     <value>يأتي مع اختبارات وحدة صارمة، مما يجعل تطوير البرمجيات القائم على الاختبار سهلًا.</value>
+  </data>
+  <data name="Command line flow" xml:space="preserve">
+    <value>تدفق سطر الأوامر</value>
   </data>
   <data name="Comprehensive Documentation" xml:space="preserve">
     <value>توثيق شامل</value>
@@ -198,11 +279,17 @@
   <data name="Coordinate Comfortably" xml:space="preserve">
     <value>coordination بسلاسة</value>
   </data>
+  <data name="Copy mirror data, apply package overrides, and build release metadata." xml:space="preserve">
+    <value>نسخ بيانات المرآة، وتطبيق تجاوزات الحزم، وبناء بيانات الإصدار الوصفية.</value>
+  </data>
   <data name="Core Routing &amp; DI" xml:space="preserve">
     <value>التوجيه الأساسي وحقن التبعيات</value>
   </data>
   <data name="Coverage Report" xml:space="preserve">
     <value>تقرير التغطية</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>إنشاء</value>
   </data>
   <data name="Cross Platform" xml:space="preserve">
     <value>متعدد المنصات</value>
@@ -225,6 +312,12 @@
   <data name="Day 1 Ready" xml:space="preserve">
     <value>جاهز من اليوم الأول</value>
   </data>
+  <data name="Debian&apos;s &lt;code&gt;Dak&lt;/code&gt; has served the community for decades. Apkg takes a different path — shaped by modern CI/CD, cloud infrastructure, and declarative tooling. Both have strengths. Both have trade-offs." xml:space="preserve">
+    <value>قام &lt;code&gt;Dak&lt;/code&gt; الخاص بـ Debian بخدمة المجتمع لعقود من الزمان. يسلك Apkg مساراً مختلفاً — مُتشكلاً بفضل CI/CD الحديثة، والبنية التحتية السحابية، وأدوات التوجيه التصريحي. لكل منهما نقاط قوة. ولكل منهما مقايضات.</value>
+  </data>
+  <data name="Declarative &lt;code&gt;.aosproj&lt;/code&gt; files with MSBuild syntax. Files, deps, and scripts in one manifest — if you know &lt;code&gt;.csproj&lt;/code&gt;, you know packaging." xml:space="preserve">
+    <value>ملفات &lt;code&gt;.aosproj&lt;/code&gt; إعلانية بصيغة MSBuild. الملفات، التبعيات، وأوامر البرامج في مخطط واحد — إذا كنت تعرف &lt;code&gt;.csproj&lt;/code&gt;، فأنت تعرف التغليف.</value>
+  </data>
   <data name="Deep integration testing with Authentik. Compatible with Okta." xml:space="preserve">
     <value>اختبارات دمج عميقة مع Authentik. متوافقة مع Okta.</value>
   </data>
@@ -233,6 +326,9 @@
   </data>
   <data name="Default SQLite database, no configuration needed." xml:space="preserve">
     <value>قاعدة بيانات SQLite افتراضية، لا حاجة إلى تهيئة</value>
+  </data>
+  <data name="Describe packages once in a declarative &lt;code&gt;.aosproj&lt;/code&gt; file. No fragile post-install scripts, no per-distro boilerplate — just files, folders, dependencies, and services." xml:space="preserve">
+    <value>اكتب وصف الحزم مرة واحدة في ملف `&lt;code&gt;.aosproj&lt;/code&gt;` إعلاني. بدون نصوص ما بعد التثبيت الهشة، وبدون قوالب نمطية خاصة بكل توزيعة - فقط ملفات، ومجلدات، وتبعيات، وخدمات.</value>
   </data>
   <data name="Designed for everyone, from beginners to experts." xml:space="preserve">
     <value>مصمم للجميع، من المبتدئين إلى الخبراء.</value>
@@ -249,11 +345,20 @@
   <data name="Developer Experience" xml:space="preserve">
     <value>تجربة المطور</value>
   </data>
+  <data name="Developers describe package contents once, build Debian artifacts locally or in CI, push a &lt;code&gt;.apkg&lt;/code&gt; bundle, and let the server route packages into the right repositories." xml:space="preserve">
+    <value>يصف المطورون محتويات الحزم مرة واحدة، ويبuildوا مخرجات Debian محلياً أو في بيئة CI، ويرفعون حزمة &lt;code&gt;.apkg&lt;/code&gt;، ثم يسمعون للخادم توجيه الحزم إلى المستودعات الصحيحة.</value>
+  </data>
   <data name="DevOps Native" xml:space="preserve">
     <value>مُصمم لبيئة DevOps</value>
   </data>
   <data name="Discussions page" xml:space="preserve">
     <value>صفحة المناقشات</value>
+  </data>
+  <data name="Distribution" xml:space="preserve">
+    <value>التوزيع</value>
+  </data>
+  <data name="Distribution Infrastructure" xml:space="preserve">
+    <value>بنية التوزيع</value>
   </data>
   <data name="Docker Native" xml:space="preserve">
     <value>Native Docker</value>
@@ -285,6 +390,9 @@
   <data name="Enforced quality gate" xml:space="preserve">
     <value>بوابة جودة مفروضة</value>
   </data>
+  <data name="Enter Dashboard" xml:space="preserve">
+    <value>الدخول إلى لوحة التحكم</value>
+  </data>
   <data name="Enterprise C#" xml:space="preserve">
     <value>C# المؤسسي</value>
   </data>
@@ -299,6 +407,12 @@
   </data>
   <data name="Entity Framework Core included" xml:space="preserve">
     <value>تضمين Entity Framework Core</value>
+  </data>
+  <data name="Everything needed to publish an APT repository." xml:space="preserve">
+    <value>كل ما تحتاجه لنشر مستودع APT.</value>
+  </data>
+  <data name="Export static artifacts for nginx, caddy, or rsync to edge nodes. APT clients anywhere get &lt;code&gt;apt update &amp;&amp; apt install&lt;/code&gt; — no proprietary agents, no custom tooling." xml:space="preserve">
+    <value>تصدير الملفات الثابتة لـ nginx وcaddy أو rsync إلى عقد الحافة. يحصل عملاء APT في أي مكان على &lt;code&gt;apt update &amp;&amp; apt install&lt;/code&gt; — بدون وكلاء مملوكة أو أدوات مخصصة.</value>
   </data>
   <data name="FAQ" xml:space="preserve">
     <value>الأسئلة الشائعة</value>
@@ -345,6 +459,9 @@
   <data name="Frequently asked questions" xml:space="preserve">
     <value>الأسئلة الشائعة</value>
   </data>
+  <data name="From &lt;code&gt;.aosproj&lt;/code&gt; to &lt;code&gt;apt install&lt;/code&gt;." xml:space="preserve">
+    <value>من &lt;code&gt;.aosproj&lt;/code&gt; إلى &lt;code&gt;apt install&lt;/code&gt;.</value>
+  </data>
   <data name="From the Architect" xml:space="preserve">
     <value>من المصمم</value>
   </data>
@@ -360,6 +477,12 @@
   <data name="Fully Offline" xml:space="preserve">
     <value>كاملة بدون اتصال</value>
   </data>
+  <data name="Generate &lt;code&gt;.deb&lt;/code&gt; packages with Debian control metadata and maintainer scripts produced from the project file." xml:space="preserve">
+    <value>إنشاء حزم &lt;code&gt;.deb&lt;/code&gt; تحتوي على بيانات تحكم Debian وسكربتات صيانة مُنتَجة من ملف المشروع.</value>
+  </data>
+  <data name="Generate and manage GPG signing certificates, then expose public keys through repository-friendly artifact routes." xml:space="preserve">
+    <value>إنشاء وإدارة شهادات التوقيع بـ GPG، ثم عرض المفاتيح العامة عبر مسارات حزم متوافقة مع المستودعات.</value>
+  </data>
   <data name="Generic configuration" xml:space="preserve">
     <value>إعداد عام</value>
   </data>
@@ -372,6 +495,9 @@
   <data name="GitLab CI/CD Native" xml:space="preserve">
     <value>GitLab CI/CD أصلي</value>
   </data>
+  <data name="Global Debian delivery" xml:space="preserve">
+    <value>توصيل دبيان العالمي</value>
+  </data>
   <data name="Global Scale" xml:space="preserve">
     <value>النطاق العالمي</value>
   </data>
@@ -380,6 +506,9 @@
   </data>
   <data name="Go to dashboard" xml:space="preserve">
     <value>انتقل إلى لوحة التحكم</value>
+  </data>
+  <data name="GPG Web of Trust with in-person Key Signing Parties. Trust is fully decentralized — no single authority controls the keyring." xml:space="preserve">
+    <value>شبكة الثقة في GPG مع حضور شخصي لحفلات توقيع المفاتيح. الثقة لا مركزية تمامًا - لا توجد سلطة واحدة تتحكم في حقيبة المفاتيح.</value>
   </data>
   <data name="Handle recurring jobs like cleanup and synchronization with a comprehensive GUI for monitoring execution history and logs." xml:space="preserve">
     <value>إدارة المهام المتكررة مثل التنظيف والمزامنة باستخدام واجهة مستخدم شاملة لمراقبة سجلات التنفيذ والسجلات.</value>
@@ -405,6 +534,9 @@
   <data name="Horizon included" xml:space="preserve">
     <value>Horizon مضمن</value>
   </data>
+  <data name="Host signed Debian package repositories, mirror upstream Ubuntu archives, and publish distribution-specific package overrides without asking client machines to run fragile post-install scripts." xml:space="preserve">
+    <value>استضافة مستودعات حزم Debian الموقعة، ومرآة أرشيفات Ubuntu الأصلية، ونشر تجاوزات الحزم الخاصة بالتوزيع دون مطالبة أجهزة العملاء بتشغيل سكريبتات ما بعد التثبيت الهشة.</value>
+  </data>
   <data name="Host, manage, and distribute .deb packages with a modern NuGet-like experience. Powered by APKG." xml:space="preserve">
     <value>استضافة وإدارة وتوزيع حزم .deb بتجربة حديثة شبيهة بـ NuGet. مدعوم من APKG.</value>
   </data>
@@ -420,6 +552,12 @@
   <data name="IDE Support" xml:space="preserve">
     <value>دعم بيئة التطوير المتكاملة</value>
   </data>
+  <data name="If you have written a &lt;code&gt;.csproj&lt;/code&gt; you already know &lt;code&gt;.aosproj&lt;/code&gt;. XML-based, toolable, and integrated with the Apkg CLI for linting, building, and publishing." xml:space="preserve">
+    <value>إذا كنت قد كتبت ملف &lt;code&gt;.csproj&lt;/code&gt;، فأنت تعرف بالفعل ملف &lt;code&gt;.aosproj&lt;/code&gt;. يعتمد على XML، ويدعم الأدوات، ومتكامل مع سطر أوامر Apkg CLI للفحص، والتجميع، والنشر.</value>
+  </data>
+  <data name="Imperative &lt;code&gt;debian/rules&lt;/code&gt; and dh macros. Mastering Debian packaging takes months of learning arcane shell scripts." xml:space="preserve">
+    <value>أوامر &lt;code&gt;debian/rules&lt;/code&gt; ووحيدات &lt;code&gt;dh&lt;/code&gt;. يستغرق إتقان حزم Debian شهورًا من تعلم نصوص shell المعقدة.</value>
+  </data>
   <data name="Included" xml:space="preserve">
     <value>مُضمن</value>
   </data>
@@ -428,6 +566,9 @@
   </data>
   <data name="Includes Tutorials" xml:space="preserve">
     <value>يحتوي على دروس تدريبية</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>تثبيت</value>
   </data>
   <data name="Install .NET SDK" xml:space="preserve">
     <value>تثبيت مجموعة أدوات تطوير .NET</value>
@@ -468,6 +609,9 @@
   <data name="Lint Check" xml:space="preserve">
     <value>فحص اللينت</value>
   </data>
+  <data name="Local package overrides" xml:space="preserve">
+    <value>تجاوزات الحزم المحلية</value>
+  </data>
   <data name="Made Simple." xml:space="preserve">
     <value>أصبح بسيطاً.</value>
   </data>
@@ -480,6 +624,12 @@
   <data name="Markdown To HTML" xml:space="preserve">
     <value>تحويل Markdown إلى HTML</value>
   </data>
+  <data name="Materialize static artifacts for nginx, caddy, rsync, or edge distribution." xml:space="preserve">
+    <value>إعداد المخرجات الثابتة لتوزيع nginx، وcaddy، وrsync، أو الحواف.</value>
+  </data>
+  <data name="Mirror sync, repository composition, signing, export, and garbage collection are split into independent jobs. Published clients keep reading the last signed primary bucket while new metadata is being prepared." xml:space="preserve">
+    <value>يتم تقسيم مزامنة المرآة وتكوين المستودع والتوقيع والتصدير وجمع النفايات إلى مهام مستقلة. تستمر العملاء المنشورة في قراءة الحاوية الأساسية الموقعة الأخيرة بينما يتم تحضير البيانات الوصفية الجديدة.</value>
+  </data>
   <data name="MIT Licence" xml:space="preserve">
     <value>رخصة MIT</value>
   </data>
@@ -488,6 +638,9 @@
   </data>
   <data name="Models are validated on both client and server sides based on data annotations." xml:space="preserve">
     <value>يتم التحقق من النماذج على الطرفين العميل والخادم بناءً على ملاحظات البيانات.</value>
+  </data>
+  <data name="MSBuild-style syntax" xml:space="preserve">
+    <value>صياغة على غرار MSBuild</value>
   </data>
   <data name="Multi-timezone Handling" xml:space="preserve">
     <value>التعامل مع مناطق زمنية متعددة</value>
@@ -555,6 +708,9 @@
   <data name="OIDC &amp; SSO" xml:space="preserve">
     <value>OIDC &amp; SSO</value>
   </data>
+  <data name="OIDC-backed RBAC with scoped API keys. Teams authenticate via existing SSO, grant per-repo permissions, and revoke access instantly." xml:space="preserve">
+    <value>إدارة الصلاحيات المستندة إلى الأدوار المدعومة بـ OIDC مع مفاتيح واجهة برمجة التطبيقات ذات النطاق المحدد. تتم مصادقة الفرق عبر أنظمة تسجيل الدخول الموحد الموجودة، ومنح صلاحيات لكل مستودع، وإلغاء الوصول فوراً.</value>
+  </data>
   <data name="One Click Start" xml:space="preserve">
     <value>ابدأ بنقرة واحدة</value>
   </data>
@@ -567,6 +723,9 @@
   <data name="OpenID Connect Integration" xml:space="preserve">
     <value>دمج OpenID Connect</value>
   </data>
+  <data name="Operate it from the browser." xml:space="preserve">
+    <value>التحكم به من المتصفح.</value>
+  </data>
   <data name="Optimized Docker &amp; K8s config" xml:space="preserve">
     <value>تكوين Docker و K8s محسن</value>
   </data>
@@ -576,11 +735,20 @@
   <data name="Out-of-the-box" xml:space="preserve">
     <value>جاهز للاستخدام فوراً</value>
   </data>
+  <data name="Pack &lt;code&gt;.deb&lt;/code&gt; files into a &lt;code&gt;.apkg&lt;/code&gt; archive and upload it with an API key from a developer shell or CI pipeline." xml:space="preserve">
+    <value>قم بحزم ملفات &lt;code&gt;.deb&lt;/code&gt; في أرشيف &lt;code&gt;.apkg&lt;/code&gt; وارفعه باستخدام مفتاح واجهة برمجة التطبيقات (API) من محطة المطور أو خط الأنابيب المتكامل للتطوير المستمر (CI).</value>
+  </data>
   <data name="Pack multiple .deb files into one .apkg bundle with a manifest. Push to any APKG server." xml:space="preserve">
     <value>تغليف ملفات .deb متعددة في حزمة .apkg واحدة مع بيان. النقل إلى أي خادم APKG.</value>
   </data>
+  <data name="Packaging" xml:space="preserve">
+    <value>التعبئة والتغليف</value>
+  </data>
   <data name="Permission discovery and sync" xml:space="preserve">
     <value>اكتشاف الصلاحيات ومزامنتها</value>
+  </data>
+  <data name="Portable publishing bundles with a manifest plus one or more &lt;code&gt;.deb&lt;/code&gt; files for multiple suites and architectures." xml:space="preserve">
+    <value>حزم نشر محمولة تتضمن ملف بيان وملف أو أكثر من ملفات &lt;code&gt;.deb&lt;/code&gt; لمجموعات ومعالجات متعددة.</value>
   </data>
   <data name="Powered by AnduinOS" xml:space="preserve">
     <value>مدعوم من AnduinOS</value>
@@ -594,17 +762,44 @@
   <data name="Pre-configured pipelines for dev/prod" xml:space="preserve">
     <value>خطوط أنابيب مُعدّة مسبقًا للتطوير والإنتاج</value>
   </data>
+  <data name="Production-hardened on the same infrastructure that powers AnduinOS package delivery. Battle-tested mirror ingestion, signing pipelines, and atomic snapshot promotion." xml:space="preserve">
+    <value>مختبَّرة في بيئات الإنتاج على نفس البنية التحتية التي تدير توزيع حزم AnduinOS. وتم اختباره ميدانياً في عمليات استيراد المرايا، وسلاسل التوقيع، وترقية اللحظات atomية.</value>
+  </data>
+  <data name="Publish atomically." xml:space="preserve">
+    <value>انشر الذرات.</value>
+  </data>
+  <data name="Publish from any machine with the .NET tool." xml:space="preserve">
+    <value>انشر من أي جهاز باستخدام أداة .NET.</value>
+  </data>
+  <data name="Publishing workflow" xml:space="preserve">
+    <value>سير عمل النشر</value>
+  </data>
+  <data name="Pull upstream metadata into mirror buckets." xml:space="preserve">
+    <value>اسحب البيانات الوصفية من المصدر إلى دلاء المرآة.</value>
+  </data>
+  <data name="Push" xml:space="preserve">
+    <value>الإرسال</value>
+  </data>
   <data name="Quality Gate" xml:space="preserve">
     <value>بوابة الجودة</value>
   </data>
   <data name="Quick Start" xml:space="preserve">
     <value>البدء السريع</value>
   </data>
+  <data name="RBAC and API keys" xml:space="preserve">
+    <value>التحكم في الوصول بناءً على الأدوار ومفاتيح واجهة برمجة التطبيقات</value>
+  </data>
   <data name="RBAC Authorization" xml:space="preserve">
     <value>التحكم في الوصول القائم على الأدوار (RBAC)</value>
   </data>
+  <data name="RBAC is ideal for organizations, but Debian&apos;s decentralized WoT remains the gold standard for a trustless global maintainer network." xml:space="preserve">
+    <value>يعتبر نموذج RBAC مثاليًا للمنظمات، ومع ذلك تظل شبكة Debian اللامركزية المبنية على الثقة (WoT) هي المعيار الذهبي لشبكة عالمية من المساهمين تعمل دون الحاجة إلى طرف موثوق به مسبقًا.</value>
+  </data>
   <data name="Read the document" xml:space="preserve">
     <value>اقرأ المستند</value>
+  </data>
+  <data name="Repository Platform" xml:space="preserve">
+    <value>منصة المستودعات</value>
   </data>
   <data name="Requires Laravel Socialite config" xml:space="preserve">
     <value>يتطلب إعداد Laravel Socialite</value>
@@ -621,6 +816,9 @@
   <data name="Robust Integration Testing" xml:space="preserve">
     <value>اختبارات التكامل القوية</value>
   </data>
+  <data name="Room to grow:" xml:space="preserve">
+    <value>هناك مجال للتطور:</value>
+  </data>
   <data name="Runs on Windows, Linux, and macOS via .NET." xml:space="preserve">
     <value>يعمل على أنظمة Windows و Linux و macOS عبر .NET.</value>
   </data>
@@ -636,17 +834,41 @@
   <data name="Search" xml:space="preserve">
     <value>بحث</value>
   </data>
+  <data name="Search packages" xml:space="preserve">
+    <value>البحث عن الحزم</value>
+  </data>
   <data name="Search packages..." xml:space="preserve">
     <value>البحث عن حزم...</value>
   </data>
+  <data name="Security &amp; Trust" xml:space="preserve">
+    <value>الأمان والثقة</value>
+  </data>
+  <data name="Self Host" xml:space="preserve">
+    <value>استضافة ذاتية</value>
+  </data>
+  <data name="Serve &lt;code&gt;InRelease&lt;/code&gt;, &lt;code&gt;Release&lt;/code&gt;, &lt;code&gt;Packages.gz&lt;/code&gt;, &lt;code&gt;Contents&lt;/code&gt;, certificates, and pool files from Debian-style URLs." xml:space="preserve">
+    <value>تقديم ملفات &lt;code&gt;InRelease&lt;/code&gt; و&lt;code&gt;Release&lt;/code&gt; و&lt;code&gt;Packages.gz&lt;/code&gt; و&lt;code&gt;Contents&lt;/code&gt; والشهادات وملفات المستودعات من عناوين URL بأسلوب دبيان.</value>
+  </data>
   <data name="Shift with confidence" xml:space="preserve">
     <value>انقل بثقة</value>
+  </data>
+  <data name="Ship Debian packages at scale." xml:space="preserve">
+    <value>نشر حزم Debian على نطاق واسع.</value>
+  </data>
+  <data name="Sign pending buckets and promote them to primary." xml:space="preserve">
+    <value>وقع الجردات المعلقة وقم بترقيتها إلى الجردات الرئيسية.</value>
+  </data>
+  <data name="Signed APT hosting" xml:space="preserve">
+    <value>استضافة مستودعات APT الموقعة</value>
   </data>
   <data name="Simple &amp; Easy" xml:space="preserve">
     <value>بسيط وسهل</value>
   </data>
   <data name="Simplified dpkg Packaging" xml:space="preserve">
     <value>تبسيط تعبئة dpkg</value>
+  </data>
+  <data name="Simplify your distribution" xml:space="preserve">
+    <value>بسط عملية التوزيع لديك</value>
   </data>
   <data name="Single Container" xml:space="preserve">
     <value>حاوية واحدة</value>
@@ -660,6 +882,12 @@
   <data name="Smart dark mode that automatically adapts to the user&apos;s system settings." xml:space="preserve">
     <value>وضع الظلام الذكي الذي يتكيف تلقائيًا مع إعدادات نظام المستخدم.</value>
   </data>
+  <data name="Snapshot Pipeline" xml:space="preserve">
+    <value>خط أنابيب اللقطات</value>
+  </data>
+  <data name="Standard Debian repository endpoints for &lt;code&gt;apt update&lt;/code&gt;, &lt;code&gt;apt install&lt;/code&gt;, GPG keys, package indexes, and pool downloads." xml:space="preserve">
+    <value>نقاط نهاية مستودع دبيان القياسي لأوامر &lt;code&gt;apt update&lt;/code&gt; و&lt;code&gt;apt install&lt;/code&gt; ومفاتيح GPG وفهارس الحزم وتحميل المستودع.</value>
+  </data>
   <data name="Standard implementation. Switch providers without compilation." xml:space="preserve">
     <value>التنفيذ القياسي. تبديل المزودين دون إعادة التجميع.</value>
   </data>
@@ -669,6 +897,12 @@
   <data name="Start a new project" xml:space="preserve">
     <value>بدء مشروع جديد</value>
   </data>
+  <data name="Start a package project with &lt;code&gt;.aosproj&lt;/code&gt;, then declare files, folders, scripts, dependencies, services, suites, and architectures." xml:space="preserve">
+    <value>ابدأ مشروع حزمة بملف &lt;code&gt;.aosproj&lt;/code&gt;، ثم اعرّف الملفات والمجلدات والسكربتات والتبعيات والخدمات والسويتس والبنى البرمجية.</value>
+  </data>
+  <data name="Start Publishing" xml:space="preserve">
+    <value>ابدأ النشر</value>
+  </data>
   <data name="Start Shipping Value." xml:space="preserve">
     <value>ابدأ في توصيل القيمة.</value>
   </data>
@@ -677,6 +911,9 @@
   </data>
   <data name="Starts without any configuration" xml:space="preserve">
     <value>يبدأ بدون أي إعداد</value>
+  </data>
+  <data name="Static export with atomic swap + CDN edge caching + Geo-steering. Shared-nothing edge nodes with built-in WAF before origin." xml:space="preserve">
+    <value>تصدير ثابت مع تبديل ذري + التخزين المؤقت لحافة CDN + التوجيه الجغرافي. عقد حافة بدون مشاركة مع جدار حماية للتطبيقات الويب (WAF) مدمج قبل المصدر.</value>
   </data>
   <data name="Stop Coding Boilerplate." xml:space="preserve">
     <value>توقّف عن كتابة الكود المتكرر.</value>
@@ -708,6 +945,9 @@
   <data name="Technical Lead" xml:space="preserve">
     <value>القائد التقني</value>
   </data>
+  <data name="The Apkg CLI handles project creation, linting, package builds, bundle publishing, server uploads, local unpacking, and APT source configuration." xml:space="preserve">
+    <value>يتولى موجه أوامر Apkg CLI إدارة إنشاء المشاريع، والتدقيق اللغوي (Linting)، وبناء الحزم، ونشر المجموعات، والتحميل على الخوادم، وإلغاء الحزم محلياً، وتكوين مصادر APT.</value>
+  </data>
   <data name="The definitive, battle-tested .NET enterprise foundation. From Auth to AI, we&apos;ve solved the hard parts so you don&apos;t have to." xml:space="preserve">
     <value>الأساس المؤسسي المتميز، المختبر في الميدان، لمنصة .NET المؤسسية. من المصادقة إلى الذكاء الاصطناعي، فقد حللنا الجزء الصعب حتى لا يتعين عليك ذلك.</value>
   </data>
@@ -729,11 +969,23 @@
   <data name="This is a template project, where we start the voyager..." xml:space="preserve">
     <value>هذا مشروع قالب، حيث نبدأ رحلة المستكشف...</value>
   </data>
+  <data name="Tiered rsync cascade (T1 → T2) run by volunteers. Decentralized and resilient, but latency varies and DDoS defense depends on each operator." xml:space="preserve">
+    <value>تتابع rsync الهرمي (T1 → T2) يديره متطوعون. لا مركزي ومقاوم، لكن زمن الاستجابة يختلف ودفاع DDoS يعتمد على كل مشغل.</value>
+  </data>
   <data name="Timezone-aware fields" xml:space="preserve">
     <value>حقول مدركة للمنطقة الزمنية</value>
   </data>
+  <data name="Track upstream suites and components as metadata snapshots, then compose downstream repositories from those mirror buckets." xml:space="preserve">
+    <value>تتبع المجموعات والمكونات المصدّرة كلقطات للبيانات الوصفية، ثم قم بإنشاء مستودعات مستقبلة من هذه الدلاء المرآة.</value>
+  </data>
   <data name="Trusted by production-grade applications including AnduinOS, StatHub, and Warp. We don&apos;t just share this code; we run our entire business on it." xml:space="preserve">
     <value>مُوثوق به من قبل تطبيقات إنتاجية بما في ذلك AnduinOS وStatHub وWarp. لا نشارك هذا الكود فقط؛ بل نُدير عملنا بالكامل عليه.</value>
+  </data>
+  <data name="Turns packaging from a black art into standard software engineering." xml:space="preserve">
+    <value>يُحوّل التغليف من فن غامض إلى هندسة برمجية قياسية.</value>
+  </data>
+  <data name="Two Ways to Run a Repository" xml:space="preserve">
+    <value>طريقتان لتشغيل مستودع</value>
   </data>
   <data name="Ubuntu:" xml:space="preserve">
     <value>أوبونتو:</value>
@@ -744,14 +996,29 @@
   <data name="Unified Identity" xml:space="preserve">
     <value>هوية موحدة</value>
   </data>
+  <data name="Upload &lt;code&gt;.deb&lt;/code&gt; packages that replace upstream entries by package name and architecture in the final published bucket." xml:space="preserve">
+    <value>تحميل حزم &lt;code&gt;.deb&lt;/code&gt; التي تحل محل إدخالات المصدر الأساسي بناءً على اسم الحزمة والبنية في الدلو النهائي الذي تم نشره.</value>
+  </data>
+  <data name="Upstream mirror ingestion" xml:space="preserve">
+    <value>استيعاب المرآة المصدرية</value>
+  </data>
   <data name="Usage" xml:space="preserve">
     <value>الاستخدام</value>
   </data>
   <data name="Use it as a foundation for your SaaS, a backend for your mobile app, a corporate website, or a personal blog. The possibilities are endless." xml:space="preserve">
     <value>استخدمه كأساس لخدماتك السحابية (SaaS)، أو كخلفية لتطبيقك المحمول، أو كموقع مؤسسي، أو مدونة شخصية. الإمكانيات لا حدود لها.</value>
   </data>
+  <data name="Use local accounts or OIDC, grant repository permissions, and publish from CI with scoped API keys." xml:space="preserve">
+    <value>استخدم الحسابات المحلية أو OIDC، ومنح صلاحيات المستودع، والنشر من CI باستخدام مفاتيح API محدودة النطاق.</value>
+  </data>
+  <data name="View jobs" xml:space="preserve">
+    <value>عرض المهام</value>
+  </data>
   <data name="View on GitHub" xml:space="preserve">
     <value>عرض على جيثب</value>
+  </data>
+  <data name="Web Operations" xml:space="preserve">
+    <value>عمليات الويب</value>
   </data>
   <data name="Welcome" xml:space="preserve">
     <value>مرحباً بك</value>
@@ -761,6 +1028,9 @@
   </data>
   <data name="What our developers say" xml:space="preserve">
     <value>ماذا يقول مطورونا</value>
+  </data>
+  <data name="Where Apkg shines:" xml:space="preserve">
+    <value>نقاط قوة Apkg:</value>
   </data>
   <data name="Why APKG?" xml:space="preserve">
     <value>لماذا APKG؟</value>
