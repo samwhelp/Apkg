@@ -84,6 +84,9 @@
   <data name="Unlist" xml:space="preserve">
     <value>Verwijderen uit de lijst</value>
   </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Niet gepubliceerd</value>
+  </data>
   <data name="Upload apkg mixed package" xml:space="preserve">
     <value>apkg gemengd pakket uploaden</value>
   </data>

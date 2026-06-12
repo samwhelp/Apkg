@@ -27,6 +27,15 @@
   <data name="Component" xml:space="preserve">
     <value>المكون</value>
   </data>
+  <data name="Continue" xml:space="preserve">
+    <value>متابعة</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>معطل</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>جاري الإيقاف</value>
+  </data>
   <data name="Distro" xml:space="preserve">
     <value>التوزيعة</value>
   </data>
@@ -35,6 +44,9 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>ملف</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>مباشر</value>
   </data>
   <data name="My Upload History" xml:space="preserve">
     <value>سجل رفعاتي</value>
@@ -48,11 +60,26 @@
   <data name="Packages" xml:space="preserve">
     <value>الحزم</value>
   </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>في انتظار المزامنة</value>
+  </data>
+  <data name="Staged for Signing" xml:space="preserve">
+    <value>مجهز للتوقيع</value>
+  </data>
   <data name="Status" xml:space="preserve">
     <value>الحالة</value>
   </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>تم استبداله</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>ملاحظة:</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>غير مدرج</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>غير منشور</value>
   </data>
   <data name="Upload History" xml:space="preserve">
     <value>سجل الرفع</value>

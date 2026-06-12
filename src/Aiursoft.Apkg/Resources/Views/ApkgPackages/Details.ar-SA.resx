@@ -18,23 +18,176 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
+      <data name="—" xml:space="preserve">
+    <value>—</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>الإجراءات</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>الكل</value>
+  </data>
+  <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
     <value>حزمة .apkg المختلطة هي تنسيق Apkg الخاص الذي يجمع بين حزم .deb المتعددة وملف manifest.xml في أرشيف tar مضغوط بـ gzip واحد. يقوم الخادم بفك ضغط كل .deb، واستخراج البيانات الوصفية من ملف التحكم الخاص به، ومزامنتها مع مستودعات APT المستهدفة الخاصة بها.</value>
+  </data>
+  <data name="and ALL its revisions? This cannot be undone." xml:space="preserve">
+    <value>وجميع إصداراته؟ لا يمكن التراجع عن هذا الإجراء.</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>الهيكلية</value>
+  </data>
+  <data name="Back to Packages" xml:space="preserve">
+    <value>العودة إلى الحزم</value>
+  </data>
+  <data name="because you do not have permission to upload to them:" xml:space="preserve">
+    <value>لأنك غير مصرح لك برفع الملفات إليهم:</value>
+  </data>
+  <data name="by" xml:space="preserve">
+    <value>بواسطة</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>مكون</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>تم الإنشاء</value>
   </data>
   <data name="Dead (Invariant) Attributes" xml:space="preserve">
     <value>السمات الثابتة (غير المتغيرة)</value>
   </data>
+  <data name="Delete Package" xml:space="preserve">
+    <value>حذف الحزمة</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>الوصف</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>معطل</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>جارٍ التعطيل</value>
+  </data>
+  <data name="Distro" xml:space="preserve">
+    <value>التوزيع</value>
+  </data>
+  <data name="Effective Packages" xml:space="preserve">
+    <value>الحزم الفعالة</value>
+  </data>
   <data name="Every .apkg has three &lt;strong&gt;dead attributes&lt;/strong&gt; defined at the manifest root that apply to the entire bundle: &lt;strong&gt;Name&lt;/strong&gt;, &lt;strong&gt;Distro&lt;/strong&gt;, and &lt;strong&gt;Component&lt;/strong&gt;. These identify the package family and its target repository. They cannot vary between entries within a single .apkg." xml:space="preserve">
     <value>تحتوي كل وحدة .apkg على ثلاثة &lt;strong&gt;خصائص ثابتة&lt;/strong&gt; مُعرَّفة في جذر الوصفة وتُطبَّق على الحزمة بأكملها: &lt;strong&gt;الاسم (Name)&lt;/strong&gt;، و&lt;strong&gt;التوزيع (Distro)&lt;/strong&gt;، و&lt;strong&gt;المكون (Component)&lt;/strong&gt;. تحدد هذه الخصائص عائلة الحزمة ومستودعها المستهدف. ولا يمكن أن تختلف بين الإدخالات داخل وحدة .apkg واحدة.</value>
+  </data>
+  <data name="Go to Preview →" xml:space="preserve">
+    <value>الانتقال إلى المعاينة →</value>
+  </data>
+  <data name="Homepage" xml:space="preserve">
+    <value>الصفحة الرئيسية</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>الأحدث</value>
+  </data>
+  <data name="Latest version per (Architecture, Suite) across all uploads. These are the debs that will be sent to APT repositories." xml:space="preserve">
+    <value>أحدث إصدار لكل من (البنية، المجموعة) عبر جميع عمليات الرفع. هذه هي ملفات debs التي سيتم إرسالها إلى مستودعات APT.</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>نشط</value>
   </data>
   <data name="Live (Variant) Attributes" xml:space="preserve">
     <value>الخصائص الحية (المتغيرة)</value>
   </data>
+  <data name="Maintainer" xml:space="preserve">
+    <value>المشرف</value>
+  </data>
+  <data name="Newest" xml:space="preserve">
+    <value>الأحدث</value>
+  </data>
+  <data name="No debs in this upload. The .apkg has not been published yet." xml:space="preserve">
+    <value>لا توجد حزم DEB في هذا الرفع. لم يتم نشر ملف .apkg بعد.</value>
+  </data>
+  <data name="No packages have been uploaded yet." xml:space="preserve">
+    <value>لم يتم تحميل أي حزم بعد.</value>
+  </data>
+  <data name="No packages match this filter." xml:space="preserve">
+    <value>لا توجد حزم تطابق هذا المرشح.</value>
+  </data>
+  <data name="No upload history yet." xml:space="preserve">
+    <value>لا يوجد سجل رفع بعد.</value>
+  </data>
+  <data name="Overview" xml:space="preserve">
+    <value>نظرة عامة</value>
+  </data>
+  <data name="Package" xml:space="preserve">
+    <value>حزمة</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>الحزمة/الحزم</value>
+  </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>المزامنة قيد الانتظار</value>
+  </data>
+  <data name="Permanently delete the entire package family" xml:space="preserve">
+    <value>حذف العائلة الكاملة للباقة نهائياً</value>
+  </data>
+  <data name="Publish" xml:space="preserve">
+    <value>نشر</value>
+  </data>
+  <data name="Repository" xml:space="preserve">
+    <value>المستودع</value>
+  </data>
+  <data name="Some repositories were skipped during publish" xml:space="preserve">
+    <value>تم تخطي بعض المستودعات أثناء النشر</value>
+  </data>
+  <data name="Staged" xml:space="preserve">
+    <value>مُجهَّز</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>المتابعة</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>تم الإحلال</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>حالة المزامنة</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>نصيحة:</value>
   </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>إلغاء الإدراج</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>غير مدرج</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>غير منشور</value>
+  </data>
+  <data name="unpublished upload(s) pending publish." xml:space="preserve">
+    <value>عمليات تحميل غير منشورة في انتظار النشر.</value>
+  </data>
+  <data name="Upload History" xml:space="preserve">
+    <value>سجل التحميلات</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>تم الرفع</value>
+  </data>
+  <data name="Uploaded At" xml:space="preserve">
+    <value>تم الرفع في</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>المرفِّع</value>
+  </data>
   <data name="Use &lt;code&gt;apkg push&lt;/code&gt; from the CLI to create and upload .apkg files. Uploads must be published before they appear in APT repositories." xml:space="preserve">
     <value>استخدم الأمر &lt;code&gt;apkg push&lt;/code&gt; من سطر الأوامر (CLI) لإنشاء وتحميل ملفات .apkg. يجب نشر الملفات المرفوعة قبل أن تظهر في مستودعات APT.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>الإصدار</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>الإصدارات</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>عرض في المستودع</value>
   </data>
   <data name="What is an APKG Mixed Package?" xml:space="preserve">
     <value>ما هو حزمة APKG المختلطة؟</value>

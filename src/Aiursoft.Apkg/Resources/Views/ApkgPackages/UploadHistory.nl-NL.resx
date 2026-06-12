@@ -27,6 +27,15 @@
   <data name="Component" xml:space="preserve">
     <value>Component</value>
   </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Doorgaan</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Uitgeschakeld</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>Uitschakelen</value>
+  </data>
   <data name="Distro" xml:space="preserve">
     <value>Distributie</value>
   </data>
@@ -35,6 +44,9 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>Bestand</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Actief</value>
   </data>
   <data name="My Upload History" xml:space="preserve">
     <value>Mijn uploadgeschiedenis</value>
@@ -48,11 +60,26 @@
   <data name="Packages" xml:space="preserve">
     <value>Pakketten</value>
   </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>Sync pendende</value>
+  </data>
+  <data name="Staged for Signing" xml:space="preserve">
+    <value>Geprepareerd voor ondertekening</value>
+  </data>
   <data name="Status" xml:space="preserve">
     <value>Status</value>
   </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Verouderd</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>Tip:</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>Niet vermeld</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Niet gepubliceerd</value>
   </data>
   <data name="Upload History" xml:space="preserve">
     <value>Uploadgeschiedenis</value>
