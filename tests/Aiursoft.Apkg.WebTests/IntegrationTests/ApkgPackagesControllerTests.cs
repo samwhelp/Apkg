@@ -1764,4 +1764,62 @@ public class ApkgPackagesControllerTests : TestBase
         Assert.IsFalse(html.Contains("2.0.0"),
             "Live filter must NOT show the version that is not yet in the APT repo.");
     }
+
+    /// <summary>
+    /// Regression test: the "Newest" badge must be per-architecture, not per-revision.
+    /// When amd64 v2.0 is uploaded in revision 1 and arm64 v2.0 in revision 2,
+    /// both should show the "Newest" badge because each is the highest version
+    /// for its own architecture.
+    /// </summary>
+    [TestMethod]
+    public async Task Details_VersionsTab_NewestBadge_IsPerArchitecture_NotPerRevision()
+    {
+        var pkgName = $"crossrev-{Guid.NewGuid():N}";
+        var pkg = new ApkgPackage
+        {
+            Name = pkgName, Distro = "ubuntu", Component = "main", OwnerUserId = _adminUserId
+        };
+        _db.ApkgPackages.Add(pkg);
+        _db.SaveChanges();
+
+        // Revision 1 (older): amd64 v2.0.0
+        var rev1 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v1.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        _db.ApkgRevisions.Add(rev1);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev1.Id, pkgName, "2.0.0", "amd64"));
+        _db.SaveChanges();
+
+        // Revision 2 (newer): arm64 v2.0.0 — same version level, different architecture
+        var rev2 = new ApkgRevision
+        {
+            ApkgPackageId = pkg.Id, UploadedByUserId = _adminUserId,
+            FileName = "v2.apkg", IsListed = true,
+            UploadedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _db.ApkgRevisions.Add(rev2);
+        _db.SaveChanges();
+        _db.ApkgDebPackages.Add(CreateLocalPackage(rev2.Id, pkgName, "2.0.0", "arm64"));
+        _db.SaveChanges();
+
+        var response = await Http.GetAsync(
+            $"/ApkgPackages/Details/{pkg.Id}?tab=versions&versionsFilter=all");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+        // Both amd64 and arm64 should appear in the versions table.
+        Assert.IsTrue(html.Contains("amd64"), "Versions table must include amd64 entries.");
+        Assert.IsTrue(html.Contains("arm64"), "Versions table must include arm64 entries.");
+
+        // The "Newest" badge (bg-success) must appear for BOTH architectures.
+        // Count occurrences: we expect exactly 2 "Newest" badges (one per architecture).
+        var newestCount = System.Text.RegularExpressions.Regex.Matches(html, "badge bg-success ms-1").Count;
+        Assert.AreEqual(2, newestCount,
+            "Both amd64 v2.0.0 and arm64 v2.0.0 must show the 'Newest' badge — each is the highest version for its architecture.");
+    }
 }

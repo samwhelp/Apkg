@@ -372,6 +372,14 @@
                     var latestRevisionId = Model.UploadHistory
                         .FirstOrDefault(uh => uh.Revision.TempApkgFileInVaultPath == null)?.Revision.Id;
 
+                    var versionComparer = new AptVersionComparisonService();
+                    var latestVersionPerArch = Model.AllPackageStatuses
+                        .GroupBy(ps => ps.Package.Architecture)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.OrderByDescending(ps => ps.Package.Version, Comparer<string>.Create(versionComparer.Compare)).First().Package.Version
+                        );
+
                     var filteredPkgs = (Model.VersionsFilter switch
                     {
                         "live" => Model.AllPackageStatuses
@@ -432,7 +440,8 @@
                                         var uploadedAt = deb.ApkgRevisionId.HasValue
                                             ? uploadDates.GetValueOrDefault(deb.ApkgRevisionId.Value)
                                             : (DateTime?)null;
-                                        var isFromLatest = deb.ApkgRevisionId == latestRevisionId;
+                                        var isFromLatest = latestVersionPerArch.TryGetValue(deb.Architecture, out var latestVer)
+                                            && versionComparer.Compare(deb.Version, latestVer) == 0;
                                         <tr>
                                             <td>
                                                 <span class="badge bg-dark">@deb.Architecture</span>
