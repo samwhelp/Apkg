@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+      <data name="Actions" xml:space="preserve">
+    <value>Akcje</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Wszystkie</value>
+  </data>
+  <data name="and all generated Local Packages?" xml:space="preserve">
+    <value>oraz wszystkie wygenerowane Pakiety lokalne?</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Architektura</value>
+  </data>
+  <data name="Back to Package" xml:space="preserve">
+    <value>Wróć do Pakietu</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Anuluj</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Zamknij</value>
+  </data>
+  <data name="Confirm Delete" xml:space="preserve">
+    <value>Potwierdź usunięcie</value>
+  </data>
+  <data name="Confirm Unlist" xml:space="preserve">
+    <value>Potwierdź usunięcie z listy</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Wyłączony</value>
+  </data>
+  <data name="Generated packages will be disabled." xml:space="preserve">
+    <value>Wygenerowane pakiety zostaną wyłączone.</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>Najnowsze</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Aktualne</value>
+  </data>
+  <data name="No versions found for this package." xml:space="preserve">
+    <value>Nie znaleziono wersji dla tego pakietu.</value>
+  </data>
+  <data name="Only the latest enabled version appears in APT repositories." xml:space="preserve">
+    <value>Tylko najnowsza włączona wersja pojawia się w repozytoriach APT.</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>pakiet(y)</value>
+  </data>
+  <data name="Permanently delete" xml:space="preserve">
+    <value>Trwale usuń</value>
+  </data>
+  <data name="Signing" xml:space="preserve">
+    <value>Podpisywanie</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>Seria</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Przestarzałe</value>
+  </data>
+  <data name="Superseded — a newer version is live. This deb file remains in CAS storage until the garbage collection job runs (~70 min) and removes unreferenced content." xml:space="preserve">
+    <value>Przestarzały — nowsza wersja jest aktywna. Ten plik deb pozostaje w magazynie CAS, dopóki zadanie odśmiecania nie zostanie uruchomione (~70 min) i nie usunie nieodwoływanej zawartości.</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>Status synchronizacji</value>
+  </data>
+  <data name="Syncing" xml:space="preserve">
+    <value>Synchronizowanie</value>
+  </data>
+  <data name="This page shows all uploaded versions of" xml:space="preserve">
+    <value>Ta strona wyświetla wszystkie wgrane wersje pakietu</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Nieznany</value>
+  </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>Usuń z listy</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>Przesłano</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>Wgrywający</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Wersja</value>
+  </data>
+  <data name="Version History" xml:space="preserve">
+    <value>Historia wersji</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>Zobacz w repozytorium</value>
+  </data>
+
+</root>

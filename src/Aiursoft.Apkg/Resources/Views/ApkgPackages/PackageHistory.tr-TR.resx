@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+      <data name="Actions" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tümü</value>
+  </data>
+  <data name="and all generated Local Packages?" xml:space="preserve">
+    <value>ve tüm oluşturulan Yerel Paketler?</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Mimari</value>
+  </data>
+  <data name="Back to Package" xml:space="preserve">
+    <value>Pakete Dön</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="Confirm Delete" xml:space="preserve">
+    <value>Silme Onayı</value>
+  </data>
+  <data name="Confirm Unlist" xml:space="preserve">
+    <value>Listeden Çıkarmayı Onayla</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Sil</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Devre Dışı</value>
+  </data>
+  <data name="Generated packages will be disabled." xml:space="preserve">
+    <value>Oluşturulan paketler devre dışı bırakılacaktır.</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>En Yeniler</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Canlı</value>
+  </data>
+  <data name="No versions found for this package." xml:space="preserve">
+    <value>Bu paket için sürüm bulunamadı.</value>
+  </data>
+  <data name="Only the latest enabled version appears in APT repositories." xml:space="preserve">
+    <value>APT depolarında yalnızca en son etkinleştirilen sürüm görünür.</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>paket(ler)</value>
+  </data>
+  <data name="Permanently delete" xml:space="preserve">
+    <value>Kalıcı olarak sil</value>
+  </data>
+  <data name="Signing" xml:space="preserve">
+    <value>İmzalanıyor</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>Yığın</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Eskiyen</value>
+  </data>
+  <data name="Superseded — a newer version is live. This deb file remains in CAS storage until the garbage collection job runs (~70 min) and removes unreferenced content." xml:space="preserve">
+    <value>Güncellendi — daha yeni bir sürüm aktif. Bu deb dosyası, çöp toplama işlemi (~70 dk) çalışıp referanssız içeriği silene kadar CAS depolamasında kalır.</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>Senkronizasyon Durumu</value>
+  </data>
+  <data name="Syncing" xml:space="preserve">
+    <value>Senkronizasyon</value>
+  </data>
+  <data name="This page shows all uploaded versions of" xml:space="preserve">
+    <value>Bu sayfa, tüm yüklenen sürümleri gösterir.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Bilinmeyen</value>
+  </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>Listeden Kaldır</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>Yüklenen</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>Yükleyen</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Sürüm</value>
+  </data>
+  <data name="Version History" xml:space="preserve">
+    <value>Sürüm Geçmişi</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>Depoda görüntüle</value>
+  </data>
+
+</root>

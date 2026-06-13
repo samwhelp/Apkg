@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+      <data name="About Apkg" xml:space="preserve">
+    <value>Apkg Hakkında</value>
+  </data>
+  <data name="and the default password is:" xml:space="preserve">
+    <value>ve varsayılan şifre şudur:</value>
+  </data>
+  <data name="Apkg" xml:space="preserve">
+    <value>Apkg</value>
+  </data>
+  <data name="Apkg is an APT repository server and Debian package publishing platform. Host it when you need signed repository snapshots, upstream Ubuntu mirror ingestion, API-key package publishing, and browser-based operations for repositories, certificates, users, roles, and jobs." xml:space="preserve">
+    <value>Apkg, bir APT depo sunucusu ve Debian paket yayınlama platformudur. İmzalı depo anlık görüntüleri, yukarı akışlı Ubuntu aynalama alma, API anahtarlı paket yayınlama ve depolar, sertifikalar, kullanıcılar, roller ve işler için tarayıcı tabanlı işlemler ihtiyaç duyduğunuzda barındırın.</value>
+  </data>
+  <data name="Apkg uses SQLite by default. For production MySQL, edit the ConnectionStrings section in appsettings.json and set DbType to MySql with your server connection string." xml:space="preserve">
+    <value>Apkg varsayılan olarak SQLite kullanır. Üretim ortamında MySQL kullanmak için, appsettings.json dosyasındaki ConnectionStrings bölümünü düzenleyin ve DbType&apos;i MySql olarak, kendi sunucu bağlantı dizenizle birlikte ayarlayın.</value>
+  </data>
+  <data name="Authentication" xml:space="preserve">
+    <value>Kimlik Doğrulama</value>
+  </data>
+  <data name="Binary path" xml:space="preserve">
+    <value>İkili yol</value>
+  </data>
+  <data name="Change the default administrator password immediately." xml:space="preserve">
+    <value>Varsayılan yönetici şifresini hemen değiştirin.</value>
+  </data>
+  <data name="Config path" xml:space="preserve">
+    <value>Yol Yapılandırma</value>
+  </data>
+  <data name="Configuration" xml:space="preserve">
+    <value>Yapılandırma</value>
+  </data>
+  <data name="Container Context" xml:space="preserve">
+    <value>Konteyner Bağlamı</value>
+  </data>
+  <data name="Create repositories for every distro, suite, and architecture that package publishers will target." xml:space="preserve">
+    <value>Paket yayıncılarının hedefleyeceği her dağıtım, seri ve mimari için depolar oluşturun.</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Gösterge Paneli</value>
+  </data>
+  <data name="Data path" xml:space="preserve">
+    <value>Veri yolu</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>Veritabanı</value>
+  </data>
+  <data name="Development &amp; Manual Run" xml:space="preserve">
+    <value>Geliştirme ve Manuel Çalıştırma</value>
+  </data>
+  <data name="Execute `dotnet run --project src/Aiursoft.Apkg/Aiursoft.Apkg.csproj` to run the app." xml:space="preserve">
+    <value>Uygulamayı çalıştırmak için `dotnet run --project src/Aiursoft.Apkg/Aiursoft.Apkg.csproj` komutunu çalıştırın.</value>
+  </data>
+  <data name="Execute `npm install` at `src/Aiursoft.Apkg/wwwroot` folder to install the dependencies." xml:space="preserve">
+    <value>Bağımlılıkları yüklemek için `src/Aiursoft.Apkg/wwwroot` klasöründe `npm install` komutunu çalıştırın.</value>
+  </data>
+  <data name="First, install Docker. Then run the following commands in a Linux shell:" xml:space="preserve">
+    <value>Önce Docker&apos;ı yükleyin. Ardından aşağıdaki komutları bir Linux kabuğunda çalıştırın:</value>
+  </data>
+  <data name="GitHub" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="Health check" xml:space="preserve">
+    <value>Sağlık Kontrolü</value>
+  </data>
+  <data name="Image" xml:space="preserve">
+    <value>Görüntü</value>
+  </data>
+  <data name="Local accounts are enabled by default. Set AppSettings:AuthProvider to OIDC and fill the OIDC section when you want to delegate sign-in to an identity provider." xml:space="preserve">
+    <value>Yerel hesaplar varsayılan olarak etkindir. Kimlik girişini bir kimlik sağlayıcısına devretmek istediğinizde AppSettings:AuthProvider ayarını OIDC olarak belirleyin ve OIDC bölümünü doldurun.</value>
+  </data>
+  <data name="Open the `.sln` file in the project path." xml:space="preserve">
+    <value>Proje dizinindeki `.sln` dosyasını açın.</value>
+  </data>
+  <data name="Or with a custom port:" xml:space="preserve">
+    <value>Veya özel bir bağlantı noktası ile:</value>
+  </data>
+  <data name="Ports" xml:space="preserve">
+    <value>Bağlantı Noktaları</value>
+  </data>
+  <data name="Prerequisites" xml:space="preserve">
+    <value>Ön Koşullar</value>
+  </data>
+  <data name="Press `F5` to run the app." xml:space="preserve">
+    <value>Uygulamayı çalıştırmak için `F5` tuşuna basın.</value>
+  </data>
+  <data name="Production checklist" xml:space="preserve">
+    <value>Üretim kontrol listesi</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Özellik</value>
+  </data>
+  <data name="Put the site behind your normal TLS and network controls." xml:space="preserve">
+    <value>Siteyi standart TLS ve ağ kontrollerinizin arkasına yerleştirin.</value>
+  </data>
+  <data name="Recommended" xml:space="preserve">
+    <value>Önerilen</value>
+  </data>
+  <data name="Replace the seeded signing certificate before serving real repositories." xml:space="preserve">
+    <value>Gerçek depoları sunmadan önce yerleştirilmiş imzalama sertifikasını değiştirin.</value>
+  </data>
+  <data name="Run in Docker" xml:space="preserve">
+    <value>Docker&apos;da Çalıştır</value>
+  </data>
+  <data name="Run in Ubuntu" xml:space="preserve">
+    <value>Ubuntu&apos;da Çalıştır</value>
+  </data>
+  <data name="Run in Visual Studio" xml:space="preserve">
+    <value>Visual Studio&apos;da Çalıştır</value>
+  </data>
+  <data name="Run Manually" xml:space="preserve">
+    <value>Manuel Çalıştırma</value>
+  </data>
+  <data name="Self Host" xml:space="preserve">
+    <value>Kendi Sunucunuzda Barındırma</value>
+  </data>
+  <data name="Storage" xml:space="preserve">
+    <value>Depolama</value>
+  </data>
+  <data name="Storage:Path keeps package objects, local packages, avatars, and GPG keyrings. Storage:ExportPath keeps exported static repository artifacts. Both paths should be durable on a real server." xml:space="preserve">
+    <value>Storage:Path, paket nesnelerini, yerel paketleri, avatarları ve GPG anahtar halkalarını saklar. Storage:ExportPath, dışa aktarılmış statik depo unsurlarını saklar. Gerçek bir sunucuda her iki yol da kalıcı olmalıdır.</value>
+  </data>
+  <data name="That will start a web server at http://localhost:5000 and you can test the app." xml:space="preserve">
+    <value>Bu işlem http://localhost:5000 adresinde bir web sunucusu başlatacak ve uygulamayı test edebileceksiniz.</value>
+  </data>
+  <data name="The default username is:" xml:space="preserve">
+    <value>Varsayılan kullanıcı adı:</value>
+  </data>
+  <data name="The Docker image checks http://localhost:5000/health. Use the same endpoint for external uptime monitoring after the app has started." xml:space="preserve">
+    <value>Docker görüntüsü http://localhost:5000/health adresini kontrol eder. Uygulama başladığında harici süreklilik izleme için aynı uç nokta kullanın.</value>
+  </data>
+  <data name="The Docker image installs gnupg and ubuntu-keyring for repository signing and upstream signature verification. Persist /data because it stores appsettings.json, the SQLite database, package objects, avatars, and GPG keyrings." xml:space="preserve">
+    <value>Docker görüntüsü, depo imzalama ve tedarikçi imza doğrulama için gnupg ve ubuntu-keyring&apos;i yükler. appsettings.json, SQLite veritabanı, paket nesneleri, avatarlar ve GPG anahtarlıkları depoladığından /data yolunu kalıcı hale getirin.</value>
+  </data>
+  <data name="The following script will install/update this app on your Ubuntu server. Supports Ubuntu 25.04." xml:space="preserve">
+    <value>Aşağıdaki komut dosyası bu uygulamayı Ubuntu sunucunuza yükler/günceller. Ubuntu 25.04&apos;ü destekler.</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Değer</value>
+  </data>
+  <data name="Visit http://localhost:5000." xml:space="preserve">
+    <value>http://localhost:5000 adresini ziyaret edin.</value>
+  </data>
+
+</root>

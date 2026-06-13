@@ -18,23 +18,176 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
+      <data name="—" xml:space="preserve">
+    <value>—</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Akcje</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Wszystkie</value>
+  </data>
+  <data name="An .apkg mixed package is Apkg&apos;s proprietary format that bundles multiple .deb packages and a manifest.xml into a single gzipped tar archive. The server unpacks each .deb, extracts metadata from its control file, and syncs them to their target APT repositories." xml:space="preserve">
     <value>Plik .apkg to własny format firmy Apkg, który łączy wiele pakietów .deb oraz plik manifest.xml w jedno archiwum tar spakowane algorytmem gzip. Serwer rozpakowuje każdy plik .deb, wyciąga metadane z pliku sterującego (control) i synchronizuje je z odpowiednimi repozytoriami APT.</value>
+  </data>
+  <data name="and ALL its revisions? This cannot be undone." xml:space="preserve">
+    <value>oraz WSZYSTKIE jego rewizje? Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Architektura</value>
+  </data>
+  <data name="Back to Packages" xml:space="preserve">
+    <value>Powrót do pakietów</value>
+  </data>
+  <data name="because you do not have permission to upload to them:" xml:space="preserve">
+    <value>ponieważ nie masz uprawnień do przesyłania do nich:</value>
+  </data>
+  <data name="by" xml:space="preserve">
+    <value>przez</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>Komponent</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Utworzono</value>
   </data>
   <data name="Dead (Invariant) Attributes" xml:space="preserve">
     <value>Atrybuty stałe (niezmiennicze)</value>
   </data>
+  <data name="Delete Package" xml:space="preserve">
+    <value>Usuń pakiet</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Opis</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Wyłączone</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>Wyłączanie</value>
+  </data>
+  <data name="Distro" xml:space="preserve">
+    <value>Dystrybucja</value>
+  </data>
+  <data name="Effective Packages" xml:space="preserve">
+    <value>Efektywne pakiety</value>
+  </data>
   <data name="Every .apkg has three &lt;strong&gt;dead attributes&lt;/strong&gt; defined at the manifest root that apply to the entire bundle: &lt;strong&gt;Name&lt;/strong&gt;, &lt;strong&gt;Distro&lt;/strong&gt;, and &lt;strong&gt;Component&lt;/strong&gt;. These identify the package family and its target repository. They cannot vary between entries within a single .apkg." xml:space="preserve">
     <value>Każdy plik .apkg zawiera trzy &lt;strong&gt;stałe atrybuty&lt;/strong&gt; zdefiniowane w głównym węźle pliku manifest, które dotyczą całego pakietu: &lt;strong&gt;Name&lt;/strong&gt;, &lt;strong&gt;Distro&lt;/strong&gt; oraz &lt;strong&gt;Component&lt;/strong&gt;. Identyfikują one rodzinę pakietów i docelowy repozytorium. Nie mogą się one różnić między wpisami w ramach pojedynczego pliku .apkg.</value>
+  </data>
+  <data name="Go to Preview →" xml:space="preserve">
+    <value>Przejdź do podglądu →</value>
+  </data>
+  <data name="Homepage" xml:space="preserve">
+    <value>Strona domowa</value>
+  </data>
+  <data name="Latest" xml:space="preserve">
+    <value>Najnowszy</value>
+  </data>
+  <data name="Latest version per (Architecture, Suite) across all uploads. These are the debs that will be sent to APT repositories." xml:space="preserve">
+    <value>Najnowsza wersja dla każdej pary (Architektura, Edycja) ze wszystkich przesyłań. To są pakiety .deb, które zostaną wysłane do repozytoriów APT.</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Aktywna</value>
   </data>
   <data name="Live (Variant) Attributes" xml:space="preserve">
     <value>Atrybuty aktywne (warianty)</value>
   </data>
+  <data name="Maintainer" xml:space="preserve">
+    <value>Pielęgnujący</value>
+  </data>
+  <data name="Newest" xml:space="preserve">
+    <value>Najnowszy</value>
+  </data>
+  <data name="No debs in this upload. The .apkg has not been published yet." xml:space="preserve">
+    <value>Nie ma żadnych pakietów deb w tym przesyłaniu. Plik .apkg nie został jeszcze opublikowany.</value>
+  </data>
+  <data name="No packages have been uploaded yet." xml:space="preserve">
+    <value>Nie przesłano jeszcze żadnych pakietów.</value>
+  </data>
+  <data name="No packages match this filter." xml:space="preserve">
+    <value>Żaden pakiet nie pasuje do tego filtra.</value>
+  </data>
+  <data name="No upload history yet." xml:space="preserve">
+    <value>Nie ma jeszcze historii przesyłania.</value>
+  </data>
+  <data name="Overview" xml:space="preserve">
+    <value>Przegląd</value>
+  </data>
+  <data name="Package" xml:space="preserve">
+    <value>Pakiet</value>
+  </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>pakietów</value>
+  </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>Oczekiwanie na synchronizację</value>
+  </data>
+  <data name="Permanently delete the entire package family" xml:space="preserve">
+    <value>Trwale usuń całą rodzinę pakietów</value>
+  </data>
+  <data name="Publish" xml:space="preserve">
+    <value>Opublikuj</value>
+  </data>
+  <data name="Repository" xml:space="preserve">
+    <value>Repozytorium</value>
+  </data>
+  <data name="Some repositories were skipped during publish" xml:space="preserve">
+    <value>Niektóre repozytoria zostały pominięte podczas publikacji</value>
+  </data>
+  <data name="Staged" xml:space="preserve">
+    <value>W przygotowaniu</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Stan</value>
+  </data>
+  <data name="Suite" xml:space="preserve">
+    <value>Suita</value>
+  </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Unieważniony</value>
+  </data>
+  <data name="Sync Status" xml:space="preserve">
+    <value>Status synchronizacji</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>Wskazówka:</value>
   </data>
+  <data name="Unlist" xml:space="preserve">
+    <value>Usuń z listy</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>Niepublikowany</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Niepublikowane</value>
+  </data>
+  <data name="unpublished upload(s) pending publish." xml:space="preserve">
+    <value>nieopublikowana/ych przesłania czekająca/e na opublikowanie.</value>
+  </data>
+  <data name="Upload History" xml:space="preserve">
+    <value>Historia przesyłania</value>
+  </data>
+  <data name="Uploaded" xml:space="preserve">
+    <value>Przesłane</value>
+  </data>
+  <data name="Uploaded At" xml:space="preserve">
+    <value>Data przesłania</value>
+  </data>
+  <data name="Uploader" xml:space="preserve">
+    <value>Dodający</value>
+  </data>
   <data name="Use &lt;code&gt;apkg push&lt;/code&gt; from the CLI to create and upload .apkg files. Uploads must be published before they appear in APT repositories." xml:space="preserve">
     <value>Użyj komendy &lt;code&gt;apkg push&lt;/code&gt; z wiersza poleceń (CLI), aby tworzyć i przesyłać pliki .apkg. Przesłane paczki muszą zostać opublikowane, zanim pojawią się w repozytoriach APT.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Wersja</value>
+  </data>
+  <data name="Versions" xml:space="preserve">
+    <value>Wersje</value>
+  </data>
+  <data name="View in repository" xml:space="preserve">
+    <value>Zobacz w repozytorium</value>
   </data>
   <data name="What is an APKG Mixed Package?" xml:space="preserve">
     <value>Czym jest mieszany pakiet APKG?</value>

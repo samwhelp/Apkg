@@ -84,6 +84,9 @@
   <data name="Unlist" xml:space="preserve">
     <value>Listeden Kaldır</value>
   </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Yayınlanmadı</value>
+  </data>
   <data name="Upload apkg mixed package" xml:space="preserve">
     <value>Apkg karma paketi yükle</value>
   </data>

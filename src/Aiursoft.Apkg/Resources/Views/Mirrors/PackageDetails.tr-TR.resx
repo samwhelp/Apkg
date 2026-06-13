@@ -87,6 +87,9 @@
   <data name="Package Details" xml:space="preserve">
     <value>Paket Detayları</value>
   </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>paket(ler)</value>
+  </data>
   <data name="Physical (Cached)" xml:space="preserve">
     <value>Fiziksel (Önbelleğe Alınmış)</value>
   </data>
