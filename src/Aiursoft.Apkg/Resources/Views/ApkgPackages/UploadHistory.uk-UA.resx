@@ -27,6 +27,15 @@
   <data name="Component" xml:space="preserve">
     <value>Компонент</value>
   </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Продовжити</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Вимкнено</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>Вимкнення</value>
+  </data>
   <data name="Distro" xml:space="preserve">
     <value>Дистрибутив</value>
   </data>
@@ -35,6 +44,9 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>Файл</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Увімкнено</value>
   </data>
   <data name="My Upload History" xml:space="preserve">
     <value>Мій історичний журнал завантажень</value>
@@ -48,11 +60,26 @@
   <data name="Packages" xml:space="preserve">
     <value>Пакети</value>
   </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>Очікується синхронізація</value>
+  </data>
+  <data name="Staged for Signing" xml:space="preserve">
+    <value>Підготовлено до підписання</value>
+  </data>
   <data name="Status" xml:space="preserve">
     <value>Стан</value>
   </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Застарілий</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>Порада:</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>Не включено до списку</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Неопубліковано</value>
   </data>
   <data name="Upload History" xml:space="preserve">
     <value>Історія завантажень</value>
