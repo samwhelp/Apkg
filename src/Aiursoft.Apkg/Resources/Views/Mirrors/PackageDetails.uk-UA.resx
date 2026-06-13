@@ -87,6 +87,9 @@
   <data name="Package Details" xml:space="preserve">
     <value>Деталі пакета</value>
   </data>
+  <data name="package(s)" xml:space="preserve">
+    <value>пакет(и)</value>
+  </data>
   <data name="Physical (Cached)" xml:space="preserve">
     <value>Фізичний (кешований)</value>
   </data>
