@@ -18,7 +18,10 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
-      <data name="A bucket is a versioned snapshot of a repository&apos;s packages at a point in time. The primary bucket is the live one served to apt clients." xml:space="preserve">
+      <data name="(pending)" xml:space="preserve">
+    <value>(beklemede)</value>
+  </data>
+  <data name="A bucket is a versioned snapshot of a repository&apos;s packages at a point in time. The primary bucket is the live one served to apt clients." xml:space="preserve">
     <value>Bir bucket, bir depodaki paketlerin belirli bir anda oluşturulan versiyonlanmış anlık görüntüsüdür. Birincil bucket, apt istemcilerine sağlanan canlı olandır.</value>
   </data>
   <data name="Actions" xml:space="preserve">
@@ -38,6 +41,9 @@
   </data>
   <data name="Created Time" xml:space="preserve">
     <value>Oluşturulma Zamanı</value>
+  </data>
+  <data name="GC Policy:" xml:space="preserve">
+    <value>GC Politikası:</value>
   </data>
   <data name="ID" xml:space="preserve">
     <value>Kimlik</value>
@@ -71,6 +77,9 @@
   </data>
   <data name="Tip:" xml:space="preserve">
     <value>İpucu:</value>
+  </data>
+  <data name="Unreferenced buckets (not primary or secondary in any Mirror/Repository) are immediately pruned on the next GC run. In-progress builds are protected because both SyncJobs set &lt;code&gt;SecondaryBucketId&lt;/code&gt; immediately upon bucket creation." xml:space="preserve">
+    <value>Kullanılmayan kovalar (hiçbir Yansıma/Depoda birincil veya ikincil olmayan) bir sonraki GC çalıştırmasında hemen temizlenir. Devam eden derlemeler, her iki Eşitlemeİşi&apos;nin de kova oluşturulduğunda hemen &lt;code&gt;SecondaryBucketId&lt;/code&gt; değerini ayarlaması nedeniyle korunur.</value>
   </data>
   <data name="What is a Bucket?" xml:space="preserve">
     <value>Bir Bucket (Havuz) Nedir?</value>
