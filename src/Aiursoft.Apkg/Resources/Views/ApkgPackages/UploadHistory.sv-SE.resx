@@ -27,6 +27,15 @@
   <data name="Component" xml:space="preserve">
     <value>Komponent</value>
   </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Fortsätt</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Inaktiverad</value>
+  </data>
+  <data name="Disabling" xml:space="preserve">
+    <value>Inaktiverar</value>
+  </data>
   <data name="Distro" xml:space="preserve">
     <value>Distribution</value>
   </data>
@@ -35,6 +44,9 @@
   </data>
   <data name="File" xml:space="preserve">
     <value>Fil</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Aktiv</value>
   </data>
   <data name="My Upload History" xml:space="preserve">
     <value>Min uppladdningshistorik</value>
@@ -48,11 +60,26 @@
   <data name="Packages" xml:space="preserve">
     <value>Paket</value>
   </data>
+  <data name="Pending Sync" xml:space="preserve">
+    <value>Synkronisering pågår</value>
+  </data>
+  <data name="Staged for Signing" xml:space="preserve">
+    <value>Förberedd för signering</value>
+  </data>
   <data name="Status" xml:space="preserve">
     <value>Status</value>
   </data>
+  <data name="Superseded" xml:space="preserve">
+    <value>Föråldrad</value>
+  </data>
   <data name="Tip:" xml:space="preserve">
     <value>Tips:</value>
+  </data>
+  <data name="Unlisted" xml:space="preserve">
+    <value>Ej listad</value>
+  </data>
+  <data name="Unpublished" xml:space="preserve">
+    <value>Ej publicerad</value>
   </data>
   <data name="Upload History" xml:space="preserve">
     <value>Uppladdningshistorik</value>
