@@ -53,6 +53,46 @@ public class LocalizationFormatTests
     }
 
     [TestMethod]
+    public void AllLocalizerKeysInIndexView_ShouldHaveCorrespondingResxEntry()
+    {
+        var root = GetSolutionRoot();
+        var srcRoot = Path.Combine(root, "src");
+        var indexView = Path.Combine(srcRoot, "Aiursoft.Apkg", "Views", "Home", "Index.cshtml");
+
+        Assert.IsTrue(File.Exists(indexView),
+            $"Index.cshtml not found at expected path: {indexView}");
+
+        var content = File.ReadAllText(indexView);
+
+        // Extract all @Localizer["…"] keys
+        var localizerKeys = Regex.Matches(content, @"@Localizer\[""([^""]+)""")
+            .Select(m => m.Groups[1].Value)
+            .Distinct()
+            .ToList();
+
+        Assert.IsTrue(localizerKeys.Count > 0,
+            "Index.cshtml should contain at least one @Localizer call.");
+
+        // Load the en-GB resx file
+        var enGbResx = Path.Combine(srcRoot, "Aiursoft.Apkg", "Resources", "Views", "Home", "Index.en-GB.resx");
+        Assert.IsTrue(File.Exists(enGbResx),
+            $"Index.en-GB.resx not found at expected path: {enGbResx}");
+
+        var doc = XDocument.Load(enGbResx);
+        var resxKeys = doc.Descendants("data")
+            .Select(d => d.Attribute("name")?.Value)
+            .Where(n => n != null)
+            .ToHashSet();
+
+        // Report any Localizer key missing from the resx
+        var missing = localizerKeys.Where(k => !resxKeys.Contains(k)).ToList();
+
+        Assert.AreEqual(0, missing.Count,
+            "Localizer keys in Index.cshtml that have no corresponding resx entry in Index.en-GB.resx:\n"
+            + string.Join("\n", missing));
+    }
+
+    [TestMethod]
     public void ResxValues_ShouldNotContainNonIntegerFormatSpecifiers()
     {
         var root = GetSolutionRoot();

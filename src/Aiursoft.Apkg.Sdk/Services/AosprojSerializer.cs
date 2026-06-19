@@ -203,6 +203,13 @@ public class AosprojSerializer
                         Condition = condition
                     });
                     break;
+                case "DpkgTrigger":
+                    project.DpkgTriggers.Add(new DpkgTriggerItem
+                    {
+                        Type = (string?)el.Attribute("Type") ?? "interest-noawait",
+                        Name = (string?)el.Attribute("Include") ?? string.Empty,
+                    });
+                    break;
             }
         }
     }
@@ -326,6 +333,15 @@ public class AosprojSerializer
                         attrs.Add(new XAttribute("SuiteMap", s.SuiteMap));
                     return ItemElem("DependencyCheckSource", s.Condition, attrs.ToArray());
                 })));
+        }
+
+        if (project.DpkgTriggers.Count > 0)
+        {
+            itemGroups.Add(new XElement("ItemGroup",
+                project.DpkgTriggers.Select(t =>
+                    ItemElem("DpkgTrigger", condition: null,
+                        new XAttribute("Include", t.Name),
+                        new XAttribute("Type", t.Type)))));
         }
 
         var root = new XElement("Project",

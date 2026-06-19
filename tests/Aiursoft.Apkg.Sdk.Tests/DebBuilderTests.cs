@@ -3796,4 +3796,122 @@ public class DebBuilderTests
             Directory.Delete(tempDir, recursive: true);
         }
     }
+
+        // ── DpkgTrigger → DEBIAN/triggers generation ──────────────────────────
+
+        [TestMethod]
+        public async Task BuildAsync_DpkgTrigger_GeneratesTriggersFile()
+        {
+            var tempDir = CreateTestDirectory();
+            try
+            {
+                var projectDir = Path.Combine(tempDir, "project");
+                var outputDir = Path.Combine(tempDir, "output");
+                Directory.CreateDirectory(projectDir);
+
+                var project = new AosprojProject
+                {
+                    PackageName = "trigger-pkg",
+                    PackageVersion = "1.0.0",
+                    PackageDescription = "Package with dpkg triggers",
+                    Maintainer = "Test <test@example.com>",
+                    TargetSuites = "jammy",
+                    DpkgTriggers =
+                    {
+                        new DpkgTriggerItem { Name = "/etc/dconf/db", Type = "interest-noawait" }
+                    }
+                };
+
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+                var staging = Path.Combine(projectDir, "obj", "jammy_amd64");
+                var triggersPath = Path.Combine(staging, "DEBIAN", "triggers");
+                Assert.IsTrue(File.Exists(triggersPath), "DEBIAN/triggers should be generated.");
+                var content = await File.ReadAllTextAsync(triggersPath);
+                Assert.IsTrue(content.Contains("interest-noawait /etc/dconf/db"),
+                    $"Expected 'interest-noawait /etc/dconf/db' in triggers file. Actual content:\n{content}");
+            }
+            finally
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+
+        [TestMethod]
+        public async Task BuildAsync_DpkgTrigger_MultipleLines()
+        {
+            var tempDir = CreateTestDirectory();
+            try
+            {
+                var projectDir = Path.Combine(tempDir, "project");
+                var outputDir = Path.Combine(tempDir, "output");
+                Directory.CreateDirectory(projectDir);
+
+                var project = new AosprojProject
+                {
+                    PackageName = "multi-trigger-pkg",
+                    PackageVersion = "1.0.0",
+                    PackageDescription = "Package with multiple dpkg triggers",
+                    Maintainer = "Test <test@example.com>",
+                    TargetSuites = "jammy",
+                    DpkgTriggers =
+                    {
+                        new DpkgTriggerItem { Name = "/etc/dconf/db", Type = "interest-noawait" },
+                        new DpkgTriggerItem { Name = "/usr/share/glib-2.0/schemas", Type = "interest" },
+                        new DpkgTriggerItem { Name = "/etc/ld.so.conf.d", Type = "activate-noawait" }
+                    }
+                };
+
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+                var staging = Path.Combine(projectDir, "obj", "jammy_amd64");
+                var triggersPath = Path.Combine(staging, "DEBIAN", "triggers");
+                Assert.IsTrue(File.Exists(triggersPath), "DEBIAN/triggers should be generated.");
+                var content = await File.ReadAllTextAsync(triggersPath);
+
+                // Each trigger should appear on its own line
+                var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                Assert.AreEqual(3, lines.Length, $"Expected 3 trigger lines. Actual content:\n{content}");
+                Assert.IsTrue(lines.Any(l => l.Contains("interest-noawait /etc/dconf/db")));
+                Assert.IsTrue(lines.Any(l => l.Contains("interest /usr/share/glib-2.0/schemas")));
+                Assert.IsTrue(lines.Any(l => l.Contains("activate-noawait /etc/ld.so.conf.d")));
+            }
+            finally
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+
+        [TestMethod]
+        public async Task BuildAsync_NoDpkgTriggers_NoTriggersFile()
+        {
+            var tempDir = CreateTestDirectory();
+            try
+            {
+                var projectDir = Path.Combine(tempDir, "project");
+                var outputDir = Path.Combine(tempDir, "output");
+                Directory.CreateDirectory(projectDir);
+
+                var project = new AosprojProject
+                {
+                    PackageName = "no-trigger-pkg",
+                    PackageVersion = "1.0.0",
+                    PackageDescription = "Package without dpkg triggers",
+                    Maintainer = "Test <test@example.com>",
+                    TargetSuites = "jammy"
+                    // DpkgTriggers is empty by default
+                };
+
+                await _builder.BuildAsync(projectDir, project, "ubuntu", "jammy", "amd64", outputDir);
+
+                var staging = Path.Combine(projectDir, "obj", "jammy_amd64");
+                var triggersPath = Path.Combine(staging, "DEBIAN", "triggers");
+                Assert.IsFalse(File.Exists(triggersPath),
+                    "DEBIAN/triggers should NOT be generated when there are no DpkgTrigger items.");
+            }
+            finally
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
 }

@@ -135,6 +135,7 @@ public class AosprojProject
     public List<PreInstallScriptItem> PreInstallScripts { get; set; } = [];
     public List<PostRemoveScriptItem> PostRemoveScripts { get; set; } = [];
     public List<SystemdUnitItem> SystemdUnits { get; set; } = [];
+    public List<DpkgTriggerItem> DpkgTriggers { get; set; } = [];
 
     // ── Computed helpers ─────────────────────────────────────────────────────
     public string[] SuiteList => Split(TargetSuites);
@@ -265,4 +266,23 @@ public class PostRemoveScriptItem : BaseItem { }
 public class SystemdUnitItem : BaseItem
 {
     public bool AutoEnable { get; set; } = true;
+}
+
+/// <summary>
+/// Declares a dpkg trigger interest or activation directive.
+/// Each item becomes a line in the generated DEBIAN/triggers file.
+/// </summary>
+public class DpkgTriggerItem
+{
+    /// <summary>
+    /// Trigger directive type: "interest", "interest-noawait",
+    /// "activate", or "activate-noawait".
+    /// Defaults to "interest-noawait".
+    /// </summary>
+    public string Type { get; set; } = "interest-noawait";
+
+    /// <summary>
+    /// The trigger name — typically a filesystem path such as "/etc/dconf/db".
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
 }

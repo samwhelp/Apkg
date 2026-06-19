@@ -279,6 +279,20 @@ public class DebBuilder
                 Path.Combine(debianDir, "conffiles"),
                 string.Join('\n', confFiles) + "\n");
 
+        // ── DEBIAN/triggers ───────────────────────────────────────────────
+        if (project.DpkgTriggers.Count > 0)
+        {
+            var triggersContent = new StringBuilder();
+            foreach (var t in project.DpkgTriggers)
+            {
+                triggersContent.AppendLine($"{t.Type} {t.Name}");
+            }
+            var triggersPath = Path.Combine(debianDir, "triggers");
+            await File.WriteAllTextAsync(triggersPath, triggersContent.ToString());
+            SetFileMode(triggersPath, DefaultFileMode);
+            _logger.LogDebug("  + DEBIAN/triggers ({Count} directive(s))", project.DpkgTriggers.Count);
+        }
+
         // ── Copy SystemdUnit files ────────────────────────────────────────────
         var activeUnits = project.SystemdUnits.Where(u => Include(u.Condition)).ToList();
         var autoEnableUnits = activeUnits.Where(u => u.AutoEnable).ToList();

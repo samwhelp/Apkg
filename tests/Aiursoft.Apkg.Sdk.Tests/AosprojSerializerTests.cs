@@ -1127,6 +1127,211 @@ public class AosprojSerializerTests
         Assert.AreEqual("'$(Distro)' == 'anduinos'", project.DependencyCheckSources[1].Condition);
     }
 
+    // ── DpkgTrigger round-trip ──────────────────────────────────────────────
+
+    [TestMethod]
+    public void RoundTrip_DpkgTrigger_DefaultType()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "test",
+            DpkgTriggers =
+            {
+                new DpkgTriggerItem
+                {
+                    Name = "/etc/dconf/db"
+                    // Type omitted — should default to "interest-noawait"
+                }
+            }
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual(1, roundTripped.DpkgTriggers.Count);
+        Assert.AreEqual("/etc/dconf/db", roundTripped.DpkgTriggers[0].Name);
+        Assert.AreEqual("interest-noawait", roundTripped.DpkgTriggers[0].Type);
+    }
+
+    [TestMethod]
+    public void RoundTrip_DpkgTrigger_ExplicitType()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "test",
+            DpkgTriggers =
+            {
+                new DpkgTriggerItem
+                {
+                    Name = "/usr/share/glib-2.0/schemas",
+                    Type = "interest"
+                }
+            }
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual(1, roundTripped.DpkgTriggers.Count);
+        Assert.AreEqual("/usr/share/glib-2.0/schemas", roundTripped.DpkgTriggers[0].Name);
+        Assert.AreEqual("interest", roundTripped.DpkgTriggers[0].Type);
+    }
+
+    [TestMethod]
+    public void RoundTrip_DpkgTrigger_ActivateNoAwait()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "test",
+            DpkgTriggers =
+            {
+                new DpkgTriggerItem
+                {
+                    Name = "/etc/ld.so.conf.d",
+                    Type = "activate-noawait"
+                }
+            }
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual(1, roundTripped.DpkgTriggers.Count);
+        Assert.AreEqual("/etc/ld.so.conf.d", roundTripped.DpkgTriggers[0].Name);
+        Assert.AreEqual("activate-noawait", roundTripped.DpkgTriggers[0].Type);
+    }
+
+    [TestMethod]
+    public void RoundTrip_DpkgTrigger_Multiple()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "test",
+            DpkgTriggers =
+            {
+                new DpkgTriggerItem { Name = "/etc/dconf/db", Type = "interest-noawait" },
+                new DpkgTriggerItem { Name = "/usr/share/glib-2.0/schemas", Type = "interest" },
+                new DpkgTriggerItem { Name = "/etc/ld.so.conf.d", Type = "activate" }
+            }
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual(3, roundTripped.DpkgTriggers.Count);
+        Assert.AreEqual("/etc/dconf/db", roundTripped.DpkgTriggers[0].Name);
+        Assert.AreEqual("interest-noawait", roundTripped.DpkgTriggers[0].Type);
+        Assert.AreEqual("/usr/share/glib-2.0/schemas", roundTripped.DpkgTriggers[1].Name);
+        Assert.AreEqual("interest", roundTripped.DpkgTriggers[1].Type);
+        Assert.AreEqual("/etc/ld.so.conf.d", roundTripped.DpkgTriggers[2].Name);
+        Assert.AreEqual("activate", roundTripped.DpkgTriggers[2].Type);
+    }
+
+    [TestMethod]
+    public void Deserialize_DpkgTrigger_FromXml()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+              </PropertyGroup>
+              <ItemGroup>
+                <DpkgTrigger Include="/etc/dconf/db" Type="interest-noawait" />
+                <DpkgTrigger Include="/usr/share/glib-2.0/schemas" Type="interest" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+
+        Assert.AreEqual(2, project.DpkgTriggers.Count);
+        Assert.AreEqual("/etc/dconf/db", project.DpkgTriggers[0].Name);
+        Assert.AreEqual("interest-noawait", project.DpkgTriggers[0].Type);
+        Assert.AreEqual("/usr/share/glib-2.0/schemas", project.DpkgTriggers[1].Name);
+        Assert.AreEqual("interest", project.DpkgTriggers[1].Type);
+    }
+
+    [TestMethod]
+    public void Deserialize_DpkgTrigger_WithoutType_DefaultsToInterestNoAwait()
+    {
+        var xml = XDocument.Parse("""
+            <Project>
+              <PropertyGroup>
+                <PackageName>test</PackageName>
+                <PackageVersion>1.0</PackageVersion>
+                <PackageDescription>desc</PackageDescription>
+              </PropertyGroup>
+              <ItemGroup>
+                <DpkgTrigger Include="/etc/dconf/db" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var project = _serializer.Deserialize(xml);
+
+        Assert.AreEqual(1, project.DpkgTriggers.Count);
+        Assert.AreEqual("/etc/dconf/db", project.DpkgTriggers[0].Name);
+        Assert.AreEqual("interest-noawait", project.DpkgTriggers[0].Type,
+            "When Type attribute is omitted, it should default to 'interest-noawait'.");
+    }
+
+    [TestMethod]
+    public void Serialize_EmptyDpkgTriggers_Omitted()
+    {
+        var project = new AosprojProject
+        {
+            PackageName = "test",
+            PackageVersion = "1.0.0",
+            PackageDescription = "desc"
+        };
+
+        var doc = _serializer.Serialize(project);
+        var xml = doc.ToString();
+
+        Assert.IsFalse(xml.Contains("DpkgTrigger"), "Empty DpkgTriggers should be omitted.");
+    }
+
+    [TestMethod]
+    public void RoundTrip_FullProject_WithDpkgTriggers()
+    {
+        var original = new AosprojProject
+        {
+            PackageName = "full-pkg",
+            PackageVersion = "5.0.0",
+            PackageDescription = "Full-featured package with triggers",
+            Maintainer = "Team <team@example.com>",
+            TargetDistro = "ubuntu",
+            TargetSuites = "jammy noble",
+            TargetArchitectures = "amd64",
+            Dependencies =
+            {
+                new ConditionalValue { Value = "libc6" }
+            },
+            IncludeFiles =
+            {
+                new IncludeFileItem { Source = "src/app", Target = "/usr/bin/app" }
+            },
+            DpkgTriggers =
+            {
+                new DpkgTriggerItem { Name = "/etc/dconf/db", Type = "interest-noawait" },
+                new DpkgTriggerItem { Name = "/usr/share/glib-2.0/schemas", Type = "interest" }
+            }
+        };
+
+        var doc = _serializer.Serialize(original);
+        var roundTripped = _serializer.Deserialize(doc);
+
+        Assert.AreEqual(original.PackageName, roundTripped.PackageName);
+        Assert.AreEqual(1, roundTripped.IncludeFiles.Count);
+        Assert.AreEqual(2, roundTripped.DpkgTriggers.Count);
+        Assert.AreEqual("/etc/dconf/db", roundTripped.DpkgTriggers[0].Name);
+        Assert.AreEqual("interest-noawait", roundTripped.DpkgTriggers[0].Type);
+        Assert.AreEqual("/usr/share/glib-2.0/schemas", roundTripped.DpkgTriggers[1].Name);
+        Assert.AreEqual("interest", roundTripped.DpkgTriggers[1].Type);
+    }
+
     [TestMethod]
     public void Deserialize_DependencyCheckSource_NoSuiteMap()
     {
