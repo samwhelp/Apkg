@@ -27,6 +27,29 @@ public class LocalizationFormatTests
             ?? throw new InvalidOperationException("Solution root not found.");
     }
 
+    /// <summary>
+    /// Removes C# string literal escape sequences (like \" or \\) from text
+    /// read out of a .cshtml file so that the key matches the corresponding
+    /// resx entry (where the value is the actual, unescaped string).
+    /// </summary>
+    private static string UnescapeCSharpString(string s)
+    {
+        var sb = new System.Text.StringBuilder(s.Length);
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (s[i] == '\\' && i + 1 < s.Length)
+            {
+                sb.Append(s[i + 1]);
+                i++;
+            }
+            else
+            {
+                sb.Append(s[i]);
+            }
+        }
+        return sb.ToString();
+    }
+
     [TestMethod]
     public void LocalizerKeysInViews_ShouldNotContainNonIntegerFormatSpecifiers()
     {
@@ -37,11 +60,12 @@ public class LocalizationFormatTests
         foreach (var file in Directory.GetFiles(srcRoot, "*.cshtml", SearchOption.AllDirectories))
         {
             var content = File.ReadAllText(file);
-            // Extract the first argument (key) of every @Localizer["…"] call
-            var matches = Regex.Matches(content, @"@Localizer\[""([^""]+)""");
+            // Extract the first argument (key) of every @Localizer["…"] call.
+            // The pattern handles C#-style escaped quotes (\" inside the string).
+            var matches = Regex.Matches(content, @"Localizer\[""((?:[^""\\]|\\.)*)""");
             foreach (Match m in matches)
             {
-                var key = m.Groups[1].Value;
+                var key = UnescapeCSharpString(m.Groups[1].Value);
                 if (InvalidFormatSpec.IsMatch(key))
                     violations.Add($"{Path.GetRelativePath(root, file)}: key \"{key}\"");
             }
@@ -64,9 +88,10 @@ public class LocalizationFormatTests
 
         var content = File.ReadAllText(indexView);
 
-        // Extract all @Localizer["…"] keys
-        var localizerKeys = Regex.Matches(content, @"@Localizer\[""([^""]+)""")
-            .Select(m => m.Groups[1].Value)
+        // Extract all @Localizer["…"] keys, unescaping C# string literal syntax
+        // so keys match their resx counterparts (which store the actual string value).
+        var localizerKeys = Regex.Matches(content, @"Localizer\[""((?:[^""\\]|\\.)*)""")
+            .Select(m => UnescapeCSharpString(m.Groups[1].Value))
             .Distinct()
             .ToList();
 
